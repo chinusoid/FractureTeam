@@ -5,10 +5,10 @@
 import { AssistantRequestSchema, AssistantResponseSchema, type AssistantResponse } from "../schemas/assistant";
 import { checkAndReserve, costMicros, settle, storeForEnv } from "../limits/quota";
 import type { CounterStore } from "../limits/store";
-import { type ServerEnv, isProduction, mockActive, readEnv } from "./env";
+import { type ServerEnv, aiConfigured, isProduction, readEnv } from "./env";
 import { AssistantFailure, errorResponse } from "./errors";
-import { mockProvider } from "./mock";
-import { type ModelProvider, openAIProvider } from "./openai";
+import type { ModelProvider } from "./openai";
+import { type ProviderHandle, createProvider } from "./providers";
 import { deterministicResponse, runAssistant, type RunStats } from "./assistant";
 
 export const MAX_BODY_BYTES = 64 * 1024;
@@ -66,7 +66,7 @@ export function originAllowed(request: Request, env: ServerEnv): boolean {
   return Boolean(host) && host!.split(",")[0].trim().toLowerCase() === url.host.toLowerCase();
 }
 
-function json(body: AssistantResponse, stats: RunStats | null): Response {
+function json(body: AssistantResponse, stats: RunStats | null, served?: string): Response {
   const headers: Record<string, string> = {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
@@ -77,6 +77,7 @@ function json(body: AssistantResponse, stats: RunStats | null): Response {
     headers["x-ai-model-calls"] = String(stats.modelCalls);
     headers["x-ai-tools"] = stats.toolNames.join(",").slice(0, 200);
     headers["x-ai-guard"] = stats.guardReplaced ? "replaced" : "ok";
+    if (served) headers["x-ai-served"] = served;
   }
   return new Response(JSON.stringify(body), { status: 200, headers });
 }
@@ -140,7 +141,7 @@ export async function handleAssistant(request: Request, env: ServerEnv = readEnv
     done("ai_disabled", { reason: "mock_in_production" });
     return errorResponse("ai_disabled", "The assistant is misconfigured (mock mode is not allowed in production).");
   }
-  if (!deps.provider && !mockActive(env) && !env.openaiApiKey) {
+  if (!deps.provider && !aiConfigured(env)) {
     done("ai_disabled", { reason: "no_key" });
     return errorResponse("ai_disabled", "The assistant is not configured on this server. Manual planning still works.");
   }
@@ -159,7 +160,8 @@ export async function handleAssistant(request: Request, env: ServerEnv = readEnv
     return errorResponse(decision.code, decision.message, decision.retryAfterSeconds);
   }
 
-  const provider = deps.provider ?? (mockActive(env) ? mockProvider() : openAIProvider(env));
+  const handle: ProviderHandle = deps.provider ? { call: deps.provider, served: new Set(["custom"]) } : createProvider(env);
+  const provider = handle.call;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), env.timeoutMs);
   let stats: RunStats | null = null;
@@ -180,8 +182,9 @@ export async function handleAssistant(request: Request, env: ServerEnv = readEnv
       calls: stats.modelCalls,
       tools: stats.toolNames.length,
       guard: stats.guardReplaced,
+      served: [...handle.served].join("+"),
     });
-    return json(checked.data, stats);
+    return json(checked.data, stats, [...handle.served].join("+"));
   } catch (e) {
     const timedOut = controller.signal.aborted;
     const failure =
@@ -192,7 +195,7 @@ export async function handleAssistant(request: Request, env: ServerEnv = readEnv
           : new AssistantFailure("upstream_error", "The assistant hit an error. Use the form instead.", undefined, (e as Error)?.name);
     // Keep the reservation on timeouts (tokens may have been billed); refund otherwise.
     if (failure.code !== "timeout") await settle(store, decision.budgetKey, decision.reservationMicros, 0);
-    done(failure.code, { mode: req.mode, detail: failure.logDetail });
+    done(failure.code, { mode: req.mode, detail: failure.logDetail, served: [...handle.served].join("+") });
     return errorResponse(failure.code, failure.message, failure.retryAfterSeconds);
   } finally {
     clearTimeout(timer);

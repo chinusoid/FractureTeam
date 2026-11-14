@@ -1,6 +1,7 @@
 /** Server-only configuration. Never import this from client components. */
 
 export type QuotaMode = "upstash" | "memory" | "missing";
+export type ProviderName = "openai" | "local" | "own";
 
 /** The model the assistant was evaluated on, and its list price in USD per 1M tokens (OpenAI model page, 14 Nov 2026). */
 export const DEFAULT_MODEL = "gpt-6-luna";
@@ -34,6 +35,16 @@ export interface ServerEnv {
   clientPerDay: number;
   /** Assistant questions a day on the free plan; above it the app offers Covered Plus. */
   freePerDay: number;
+  /** AI_PROVIDER=own: the Covered model in this server. AI_PROVIDER=local: a self-hosted LLM (Chat Completions). */
+  provider: ProviderName;
+  localBaseUrl: string | null;
+  localApiKey: string | null;
+  localModel: string;
+  /** Time limit for our own model before the request falls back to OpenAI. */
+  localTimeoutMs: number;
+  /** Hand requests our model cannot answer to OpenAI (AI_FALLBACK_TO_OPENAI, default true). false = our model only. */
+  localFallback: boolean;
+  localThinking: boolean;
 }
 
 type Source = Record<string, string | undefined>;
@@ -90,7 +101,27 @@ export function readEnv(src: Source = process.env as Source): ServerEnv {
     ipPerMinute: Math.round(num(src, "AI_IP_PER_MINUTE", 30, 1)),
     clientPerDay: Math.round(num(src, "AI_CLIENT_PER_DAY", 60, 1)),
     freePerDay: Math.round(num(src, "AI_FREE_PER_DAY", 5, 1)),
+    provider: providerName(src.AI_PROVIDER),
+    localBaseUrl: localBaseUrl(str(src, "LOCAL_AI_BASE_URL")),
+    localApiKey: str(src, "LOCAL_AI_API_KEY"),
+    localModel: str(src, "LOCAL_AI_MODEL") ?? "covered-qwen",
+    localTimeoutMs: Math.round(num(src, "LOCAL_AI_TIMEOUT_MS", 15000, 1000)),
+    localFallback: !["false", "0", "off", "no"].includes((src.AI_FALLBACK_TO_OPENAI ?? src.LOCAL_AI_FALLBACK ?? "true").trim().toLowerCase()),
+    localThinking: ["1", "true", "yes", "on"].includes((src.LOCAL_AI_THINKING ?? "").trim().toLowerCase()),
   };
+}
+
+function providerName(raw: string | undefined): ProviderName {
+  const v = (raw ?? "").trim().toLowerCase();
+  return v === "own" || v === "covered" ? "own" : v === "local" ? "local" : "openai";
+}
+
+/** Accepts the server root or its /v1 URL. */
+function localBaseUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return /\/v1$/i.test(trimmed) ? trimmed : `${trimmed}/v1`;
 }
 
 export function isProduction(env: ServerEnv): boolean {
@@ -102,6 +133,10 @@ export function mockActive(env: ServerEnv): boolean {
   return env.aiMockRequested && !isProduction(env);
 }
 
+export function localConfigured(env: ServerEnv): boolean {
+  return env.provider === "local" && Boolean(env.localBaseUrl);
+}
+
 export function aiConfigured(env: ServerEnv): boolean {
-  return env.aiEnabled && (mockActive(env) || Boolean(env.openaiApiKey));
+  return env.aiEnabled && (mockActive(env) || env.provider === "own" || Boolean(env.openaiApiKey) || localConfigured(env));
 }

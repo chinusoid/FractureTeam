@@ -3570,3 +3570,10 @@ details p {
   justify-content: flex-start;
   margin-top: 12px;
 }
+
+.assistant-message .served-by {
+  display: block;
+  margin: -2px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
