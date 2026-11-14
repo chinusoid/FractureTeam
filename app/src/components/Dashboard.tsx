@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  buildSetupSuggestion,
   computePlan,
   dateLabel,
   daysBetween,
@@ -10,12 +11,13 @@ import {
   today,
 } from "@/lib/client/model";
 import { useApp } from "./context";
-import { Button, Gauge, Notice, PageHeading } from "./UI";
+import { Button, downloadText, Gauge, Notice, PageHeading } from "./UI";
+import { buildReminderIcs, REPEAT_LABEL } from "@/lib/client/reminder";
 import { billIcon, Icon } from "./Icon";
 import { parseMoney } from "@/lib/client/model";
 
 export function Dashboard() {
-  const { state, navigate, openAssistant } = useApp();
+  const { state, navigate, openAssistant, toast } = useApp();
   const plan = computePlan(state),
     p = state.plan;
   const [purchase, setPurchase] = useState(""),
@@ -23,6 +25,27 @@ export function Dashboard() {
     [result, setResult] = useState<ReturnType<typeof simulatePurchase> | null>(
       null,
     );
+  function remind() {
+    // Repeat only when the period really ends on the paycheck found in the import.
+    const suggestion = buildSetupSuggestion(state.transactions);
+    const cadence =
+      suggestion.endsOnPayday && suggestion.horizon === p.horizonEndDate
+        ? suggestion.payCadence
+        : null;
+    downloadText(
+      "covered-reminder.ics",
+      buildReminderIcs({
+        date: p.horizonEndDate,
+        url: `${window.location.origin}/app/update`,
+        cadence,
+      }),
+      "text/calendar",
+    );
+    const repeats = cadence ? REPEAT_LABEL[cadence] : null;
+    toast(
+      `Reminder for ${dateLabel(p.horizonEndDate)} downloaded${repeats ? `, repeating ${repeats}` : ""}. Open the file to add it to your calendar.`,
+    );
+  }
   const allocated =
     p.balanceCents > 0
       ? ((p.balanceCents - plan.remainderCents) / p.balanceCents) * 100
@@ -142,6 +165,12 @@ export function Dashboard() {
           Balance updated {dateLabel(p.balanceDate)}
           {state.sample ? " · Sample data" : ""}
         </span>
+        {p.horizonEndDate >= today() && (
+          <button className="text-button reminder-button" onClick={remind}>
+            <Icon name="calendar" size={13} />
+            Remind me on {dateLabel(p.horizonEndDate)}
+          </button>
+        )}
         <details className="calculation">
           <summary>
             How is this calculated?

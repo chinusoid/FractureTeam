@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  dateLabel,
   emptyState,
   generateSampleCsv,
   money,
@@ -349,7 +350,7 @@ export function ClientApp() {
             <span>Covered. A little more peace of mind.</span>
             <span>
               {state.plan.confirmed
-                ? `${money(state.plan.balanceCents)} balance · ${today()}`
+                ? `${money(state.plan.balanceCents)} balance · ${dateLabel(today(), true)}`
                 : "Your money. Your decisions."}
             </span>
           </footer>

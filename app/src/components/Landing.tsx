@@ -107,7 +107,7 @@ export function Landing() {
           [
             "refresh",
             "Keep up with real life.",
-            "Update your balance, check off paid bills, and see what’s changed.",
+            "Update your balance, check off paid bills, and see what’s changed. A calendar reminder brings you back on payday.",
           ],
         ].map(([icon, title, text]) => (
           <article key={title}>
@@ -118,6 +118,71 @@ export function Landing() {
             <p>{text}</p>
           </article>
         ))}
+      </section>
+      <section className="landing-pricing" aria-labelledby="pricing-title">
+        <div className="pricing-intro">
+          <span className="intro-label">
+            <span className="status-dot" />
+            Simple pricing
+          </span>
+          <h2 id="pricing-title">
+            Free to get clear.
+            <br />
+            $10 a month to stay clear.
+          </h2>
+          <p>
+            Made for people paid on a schedule, with bills due in between.
+            Everything is free during early access: no card, no sign-up.
+          </p>
+        </div>
+        <div className="pricing-grid">
+          <article className="price-card">
+            <h3>Starter</h3>
+            <p className="price">
+              <strong>$0</strong>
+            </p>
+            <ul>
+              {[
+                "Import a bank CSV and confirm your bills",
+                "See what’s left after bills, everyday spending and your reserve",
+                "Check a purchase with the form",
+              ].map((line) => (
+                <li key={line}>
+                  <Icon name="check" size={13} />
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <Button kind="secondary" onClick={() => sample("A")}>
+              See a sample plan
+            </Button>
+          </article>
+          <article className="price-card featured">
+            <span className="pill">Free during early access</span>
+            <h3>Covered Plus</h3>
+            <p className="price">
+              <strong>$10</strong>
+              <span>a month, planned</span>
+            </p>
+            <ul>
+              {[
+                "Everything in Starter",
+                "Ask the assistant before you spend",
+                "Change a bill in one sentence, with a before and after",
+                "Payday reminders and a recap of what changed",
+              ].map((line) => (
+                <li key={line}>
+                  <Icon name="check" size={13} />
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <Button onClick={() => navigate("/setup/import")}>
+              Start with my own CSV
+              <Icon name="arrow" size={15} />
+            </Button>
+          </article>
+        </div>
       </section>
       <section className="privacy-strip">
         <span className="feature-icon">
