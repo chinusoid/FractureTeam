@@ -58,7 +58,7 @@ function LatePayCard() {
           </button>
         ))}
       </div>
-      <div className={`late-pay-result ${result.status}`} role="status">
+      <div className={`late-pay-result ${result.status}`} aria-live="polite">
         <strong data-testid="late-pay-headline">
           {result.status === "covered"
             ? `Still covered: ${money(result.remainderCents)} free`
