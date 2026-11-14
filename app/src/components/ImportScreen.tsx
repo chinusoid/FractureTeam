@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   buildSetupSuggestion,
   detectDateFormats,
@@ -24,6 +24,16 @@ const CSV_TEMPLATE = [
   "",
 ].join("\n");
 
+/** The sample needs no column matching, so its mapping and row preview stay folded until asked for. */
+function MappingDetails({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
+  if (!collapsed) return <>{children}</>;
+  return (
+    <details className="mapping-details">
+      <summary>See how the columns were matched, and the first rows</summary>
+      {children}
+    </details>
+  );
+}
 export function ImportScreen({
   initialText,
   variant,
@@ -151,7 +161,7 @@ export function ImportScreen({
     <div className={`form-footer ${isSample ? "sample-ready" : ""}`}>
       <span className="small muted">
         {isSample
-          ? `Sample ready: ${selected.length} synthetic transactions, columns matched. Details below.`
+          ? `Sample ready: ${selected.length} synthetic transactions, columns matched for you.`
           : `${selected.length} transactions ready`}
       </span>
       <Button onClick={() => void confirm()} disabled={!selected.length || !format || busy || duplicateOfPlan}>
@@ -264,6 +274,7 @@ export function ImportScreen({
             <>
               {/* The sample's columns are already matched: the way forward comes first, the details stay below. */}
               {isSample && continueFooter}
+              <MappingDetails collapsed={isSample}>
               <div className="section-heading mapping-heading">
                 <h3>Match your columns</h3>
                 <span className="muted small">
@@ -403,7 +414,7 @@ export function ImportScreen({
                 </label>
               )}
               {selected.length > 0 && (
-                <div className="table-wrap">
+                <div className="table-wrap import-preview">
                   <table>
                     <caption>
                       Preview of the first{" "}
@@ -463,6 +474,7 @@ export function ImportScreen({
                   </table>
                 </div>
               )}
+              </MappingDetails>
               {state.plan.confirmed && (
                 <Notice>
                   Importing this file starts a new plan and replaces the current

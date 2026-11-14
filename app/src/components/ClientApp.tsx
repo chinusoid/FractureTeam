@@ -101,6 +101,8 @@ export function ClientApp() {
     navigate(to);
   }
   const needsPlan = path.startsWith("/app") && !state.plan.confirmed;
+  // A visitor without a plan sees the site, not an empty workspace around it.
+  const site = path === "/" && !state.plan.confirmed;
   const titles: Record<string, string> = {
     "/": "Your money, made clearer",
     "/setup/import": "Get started",
@@ -138,10 +140,11 @@ export function ClientApp() {
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <div className="app-shell">
+      <div className={`app-shell ${site ? "is-site" : ""}`}>
         <aside
           className={`sidebar ${menu ? "is-open" : ""}`}
           aria-label="Main navigation"
+          hidden={site}
         >
           <button
             className="brand-link"
@@ -211,6 +214,25 @@ export function ClientApp() {
           />
         )}
         <div className="main-shell">
+          {site ? (
+            <header className="site-header">
+              <button
+                className="brand-link"
+                aria-label="Covered home"
+                onClick={() => nav("/")}
+              >
+                <Logo />
+              </button>
+              <nav className="site-nav" aria-label="On this page">
+                <a href="#how-it-works">How it works</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#privacy">Privacy</a>
+              </nav>
+              <Button kind="secondary" onClick={() => nav("/setup/import")}>
+                Start my plan
+              </Button>
+            </header>
+          ) : (
           <header className="topbar">
             <div className="topbar-left">
               <button
@@ -259,6 +281,7 @@ export function ClientApp() {
               </button>
             </div>
           </header>
+          )}
           <main
             id="main-content"
             className={`main-content ${path === "/" ? "landing-content" : ""}`}

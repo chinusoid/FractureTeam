@@ -7,6 +7,14 @@ import { generateSampleCsv, money } from "@/lib/client/model";
 import { HERO_PRESETS, checkHeroPurchase, heroPlanSummary, parseHeroAmount } from "@/lib/demo/heroPlan";
 
 const PLAN = heroPlanSummary();
+/** The plan as one line of arithmetic: sign, amount, what it is. */
+const MATH_TERMS: [string, number, string][] = [
+  ["", PLAN.balanceCents, "in your bank account"],
+  ["−", PLAN.billsCents, "bills due before payday"],
+  ["−", PLAN.everydayCents, "everyday spending"],
+  ["−", PLAN.reserveCents, "your reserve"],
+  ["=", PLAN.availableCents, "yours to spend"],
+];
 
 /** "Can I afford it?" on the sample plan above: computed in the page, nothing stored or sent. */
 function HeroCheck({ tryOwn }: { tryOwn: () => void }) {
@@ -93,18 +101,18 @@ export function Landing() {
       <section className="landing-hero">
         <div className="hero-copy">
           <span className="intro-label">
-            <span className="status-dot" />A little clarity for your money
+            <span className="status-dot" />
+            For people paid on a schedule, with bills due in between
           </span>
           <h1>
-            Money in the bank.
+            Know what’s covered
             <br />
-            Peace of mind
-            <br />
-            in your plan.
+            before you spend.
           </h1>
           <p>
-            {BRAND.tagline} See your bills, set a little aside, and find out
-            what’s actually yours to spend.
+            {BRAND.name} turns your bank balance into one honest number: what
+            is left after your bills, everyday spending and a reserve. Then
+            ask it about any purchase.
           </p>
           <div className="hero-actions">
             <Button onClick={() => sample("A")}>
@@ -183,6 +191,27 @@ export function Landing() {
         <HeroCheck tryOwn={() => sample("A")} />
         </div>
       </section>
+      <section className="landing-math" id="how-it-works" aria-labelledby="math-title">
+        <h2 id="math-title">One number, and where it comes from.</h2>
+        <p className="sr-only">
+          {money(PLAN.balanceCents)} in your bank account, minus {money(PLAN.billsCents)} in bills
+          due before payday, minus {money(PLAN.everydayCents)} for everyday spending, minus{" "}
+          {money(PLAN.reserveCents)} kept in reserve, leaves {money(PLAN.availableCents)} to spend.
+        </p>
+        <div className="math-line" aria-hidden="true">
+          {MATH_TERMS.map(([sign, cents, label]) => (
+            <div key={label} className={`math-term ${sign === "=" ? "result" : ""}`}>
+              <span className="math-sign">{sign}</span>
+              <strong>{money(cents)}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+        <p>
+          Tested code does this arithmetic on the bills you confirm. The
+          assistant explains the plan and drafts changes; it never does the math.
+        </p>
+      </section>
       <section className="landing-features">
         {[
           [
@@ -225,7 +254,7 @@ export function Landing() {
           </article>
         ))}
       </section>
-      <section className="landing-pricing" aria-labelledby="pricing-title">
+      <section className="landing-pricing" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-intro">
           <span className="intro-label">
             <span className="status-dot" />
@@ -292,7 +321,7 @@ export function Landing() {
           </article>
         </div>
       </section>
-      <section className="privacy-strip">
+      <section className="privacy-strip" id="privacy">
         <span className="feature-icon">
           <Icon name="shield" size={26} />
         </span>
