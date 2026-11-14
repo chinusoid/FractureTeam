@@ -99,7 +99,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 29 automated unit tests for independent financial examples, CSV input, proposal application, persisted-data validation, and assistant request boundaries.
+There are 111 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
@@ -113,13 +113,9 @@ Use `BASE_URL=http://localhost:3001 npm run e2e` if the app uses another port. `
 
 The interface was also inspected through **Playwright MCP**; Next.js documentation was checked through **Context7 MCP**. No external font or CDN is required at runtime.
 
-## Remaining integration work
+## Not included
 
-- Supply the shared base and reconcile its exported types and function signatures with the client adapter.
-- Add the real assistant endpoint and its shared schema, privacy handling, quota enforcement, and server tests.
-- Configure hosting separately; pushing this repository does not by itself create a public deployment.
-
-Bank connections, login/sync, credit-card interest, payments, investment features, and JSON restoration are outside this client version.
+Bank connections, login/sync, credit-card interest, payments, investment features, and JSON restoration are outside this version. Hosting is configured separately (see the end of "Assistant server"); pushing this repository does not by itself create a public deployment.
 
 ## Assistant server
 
@@ -147,6 +143,17 @@ cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, bu
 | `AI_IP_PER_MINUTE`, `AI_CLIENT_PER_DAY` | Soft limits (the venue network is shared) |
 | `AI_MOCK=1`, `QUOTA_MODE=memory` | Local development and tests only; refused in production |
 
+### Check the model
+
+Before deploying, confirm that the key can use the configured model (the key is read from `.env.local` and not printed):
+
+```sh
+cd app
+node --env-file=.env.local -e "fetch('https://api.openai.com/v1/models/' + (process.env.OPENAI_MODEL || 'gpt-6.1-sol'), { headers: { authorization: 'Bearer ' + process.env.OPENAI_API_KEY } }).then(async (r) => console.log(r.status, JSON.stringify(await r.json()).slice(0, 160)))"
+```
+
+`200` with the model's `id` means the key has access. `401` means the key is wrong; `404` means this key cannot use that model: set `OPENAI_MODEL` to one it can, and `OPENAI_REASONING_EFFORT=none` if that model has no reasoning setting. Then run the eval below with the real model before the first deploy.
+
 ### Evaluate the assistant
 
 ```sh
@@ -158,4 +165,9 @@ npx tsx --env-file=.env.local tests/ai-eval/run.ts --repeat 3
 
 The 25 scenarios in `tests/ai-eval/scenarios.ts` cover purchase phrasings, bill changes, unknown dates, two similar bills, wrong names, requests without data, API failures, prompt injection in transaction text, and the setup review of sample A (the savings transfer must not be called a bill).
 
-On Vercel set the Root Directory to `app`, add the variables above, deploy, then open `/api/health`: it should show `"aiConfigured": true` and `"quota": "upstash"`.
+On Vercel set the Root Directory to `app`, add the variables above, deploy, then open `/api/health`: it should show `"aiConfigured": true` and `"quota": "upstash"`. Then run the release check against the public URL: it walks the main scenario with the real model at 1280 and 390 px.
+
+```sh
+cd app
+BASE_URL=https://your-site.vercel.app node tests/e2e/release.mjs
+```
