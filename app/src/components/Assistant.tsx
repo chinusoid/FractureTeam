@@ -36,13 +36,20 @@ export function Assistant({
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
-  // Voice input (Web Speech API, where the browser has it). The text is shown and sent like a typed message.
+  // Voice input (Web Speech API, where the browser has it). Speech is written into the message box and is
+  // never sent by itself: listening stops on a second tap or after VOICE_SILENCE_MS of silence, and the
+  // user sends the text (or edits it first).
   const [voice, setVoice] = useState(false),
     [listening, setListening] = useState(false);
   const recognition = useRef<{ stop: () => void } | null>(null);
+  const silence = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const w = window as unknown as Record<string, unknown>;
     setVoice(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+    return () => {
+      if (silence.current) clearTimeout(silence.current);
+      recognition.current?.stop();
+    };
   }, []);
   function listen() {
     if (listening) {
@@ -54,24 +61,36 @@ export function Assistant({
     if (!Ctor) return;
     const rec = new Ctor();
     rec.lang = "en-US";
+    rec.continuous = true; // a pause in speech does not end the session; the silence timer does
     rec.interimResults = true;
     rec.maxAlternatives = 1;
-    let finalText = "";
-    rec.onresult = (e) => {
-      const parts = Array.from(e.results);
-      const text = parts.map((r) => r[0].transcript).join("").trim();
-      setMessage(text);
-      if (parts.length && parts[parts.length - 1].isFinal) finalText = text;
+    const typed = message.trim();
+    const stopAfterSilence = () => {
+      if (silence.current) clearTimeout(silence.current);
+      silence.current = setTimeout(() => rec.stop(), VOICE_SILENCE_MS);
     };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => {
+    rec.onresult = (e) => {
+      const spoken = Array.from(e.results)
+        .map((r) => r[0].transcript)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+      setMessage([typed, spoken].filter(Boolean).join(" ").slice(0, 500));
+      stopAfterSilence();
+    };
+    const finish = () => {
+      if (silence.current) clearTimeout(silence.current);
+      silence.current = null;
       setListening(false);
       recognition.current = null;
-      if (finalText) void send(finalText);
+      document.getElementById("assistant-message")?.focus();
     };
+    rec.onerror = finish;
+    rec.onend = finish;
     recognition.current = rec;
     setListening(true);
     rec.start();
+    stopAfterSilence();
   }
 
   async function send(text: string) {
@@ -421,7 +440,7 @@ export function Assistant({
                   disabled={busy}
                   aria-pressed={listening}
                   aria-label={listening ? "Stop listening" : "Ask by voice"}
-                  title={listening ? "Listening… tap to stop" : "Ask by voice"}
+                  title={listening ? "Listening… tap to stop. Nothing is sent until you press Send" : "Ask by voice"}
                 >
                   <Icon name="mic" size={18} />
                 </button>
@@ -445,8 +464,12 @@ export function Assistant({
   );
 }
 
+/** Listening stops after this much silence; the text stays in the box, unsent. */
+const VOICE_SILENCE_MS = 5000;
+
 interface SpeechLike {
   lang: string;
+  continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
   onresult: ((e: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;

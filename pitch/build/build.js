@@ -286,18 +286,22 @@ async function build() {
       if (i < flow.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + fw + (gap - 0.3) / 2, y: TOP + 0.45, w: 0.3, h: 0.3, objectName: name("Arrow") });
     }
     const cards = [
-      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Live today: ~2 ms, $0 per request. OpenAI only when it is unsure."],
+      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Live today: ~2 ms, $0 per request."],
       [fi.FiDollarSign, "Amounts are checked", "A dollar figure in any model’s text that does not match a computed value is replaced before you see it."],
       [fi.FiEdit3, "Drafts, not writes", "The server stores nothing. A change applies only after Confirm, and only to the plan version it was drafted for."],
     ];
     const cw = (CW - 0.6) / 3;
     for (let i = 0; i < cards.length; i++) {
       const x = MX + i * (cw + 0.3), y = TOP + 1.6;
-      box(s, { x, y, w: cw, h: 2.45, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
+      box(s, { x, y, w: cw, h: 2.1, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
       await iconCircle(s, cards[i][0], x + 0.3, y + 0.3);
       text(s, cards[i][1], { x: x + 1.02, y: y + 0.3, w: cw - 1.3, h: 0.56, fontSize: 16, bold: true, color: C.text1, valign: "middle" });
-      text(s, cards[i][2], { x: x + 0.3, y: y + 1.05, w: cw - 0.6, h: 1.25, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
+      text(s, cards[i][2], { x: x + 0.3, y: y + 1.05, w: cw - 0.6, h: 0.85, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
     }
+    text(s, [
+      { text: "Who answers. ", options: { bold: true, color: C.text1 } },
+      { text: "Our model takes clear requests: a purchase check, a bill change, explaining the plan. OpenAI takes vague or unusual wording (our model under 50% sure) and the five-question setup. Every answer in the app names the model that gave it." },
+    ], { x: MX, y: 5.82, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     text(s, "Private by default: the CSV is parsed in the browser, the assistant is off until you agree, and account numbers and emails are removed. If a model guesses a bill or invents a date, the server rejects the draft and asks instead.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     s.addNotes("3:00. Covered has its own AI. We trained a small model, covered-nlu-1, 254 thousand parameters, on 7,672 examples we generated ourselves. It runs inside our own server: about two milliseconds, zero cost, no data sent to anyone. It understands the request and picks one of four functions; it also recognises bill types, which is how 'rent' finds 'Oakwood Apartments' and how it spots subscriptions. When it is less than 50% sure, OpenAI answers instead, and the app says which model replied. In both cases the money is computed by tested code and nothing is saved until you press Confirm.");
   }
