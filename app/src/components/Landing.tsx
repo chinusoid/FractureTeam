@@ -1,6 +1,7 @@
 import { useApp } from "./context";
 import { BRAND } from "./brand";
 import { Button, downloadText, Gauge } from "./UI";
+import { PLUS_FEATURES } from "./Plus";
 import { Icon } from "./Icon";
 import { useState } from "react";
 import { generateSampleCsv, money } from "@/lib/client/model";
@@ -102,7 +103,7 @@ export function Landing() {
         <div className="hero-copy">
           <span className="intro-label">
             <span className="status-dot" />
-            For people paid on a schedule, with bills due in between
+            For people paid every two weeks, with bills due in between
           </span>
           <h1>
             Know what’s covered
@@ -110,9 +111,9 @@ export function Landing() {
             before you spend.
           </h1>
           <p>
-            {BRAND.name} turns your bank balance into one honest number: what
-            is left after your bills, everyday spending and a reserve. Then
-            ask it about any purchase.
+            See how much you can spend until your next paycheck, with your
+            bills and a reserve set aside. No bank login: {BRAND.name} works
+            from a file, five questions, or your own numbers.
           </p>
           <div className="hero-actions">
             <Button onClick={() => sample("A")}>
@@ -216,8 +217,8 @@ export function Landing() {
         {[
           [
             "bill",
-            "See what’s spoken for.",
-            "Bring a CSV. Review the recurring bills we find, and add anything we missed.",
+            "Set up once.",
+            "Bring a CSV, answer five questions, or type it in. Confirm the bills we find. You do not import again every period.",
           ],
           [
             "bag",
@@ -226,8 +227,8 @@ export function Landing() {
           ],
           [
             "refresh",
-            "Keep up with real life.",
-            "Update your balance, check off paid bills, and see what’s changed. A calendar reminder brings you back on payday.",
+            "Come back on payday.",
+            "Open the reminder, enter your balance, tick what was paid: a new number. Your bills, reserve and settings carry over.",
           ],
           [
             "shield",
@@ -261,13 +262,18 @@ export function Landing() {
             Simple pricing
           </span>
           <h2 id="pricing-title">
-            Free to get clear.
+            Free to get your number.
             <br />
-            $10 a month to stay clear.
+            $10 a month to keep it true.
           </h2>
           <p>
-            Made for people paid on a schedule, with bills due in between.
-            Everything is free during early access: no card, no sign-up.
+            The first plan is free. Plus is for coming back, paycheck after
+            paycheck. $10 a month is the price we are testing; everything is
+            free during early access, with no card and no sign-up.
+          </p>
+          <p className="small muted pricing-note">
+            The cloud assistant answers 5 questions a day on Starter and 60 on
+            Plus. The assistant on your device has no limit.
           </p>
         </div>
         <div className="pricing-grid">
@@ -278,12 +284,10 @@ export function Landing() {
             </p>
             <ul>
               {[
-                "Import a bank CSV and confirm your bills",
-                "See what’s left after bills, everyday spending and your reserve",
-                "Check a purchase with the form",
-                "Payday reminders and a recap of what changed",
-                "5 cloud assistant questions a day",
-                "Private mode: our model on your device, no daily limit",
+                "Build your first plan from a CSV, five questions or by hand",
+                "See what you can spend until your next paycheck",
+                "Check a purchase before you make it",
+                "Get the math explained by the assistant on your device",
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />
@@ -300,14 +304,12 @@ export function Landing() {
             <h3>Covered Plus</h3>
             <p className="price">
               <strong>$10</strong>
-              <span>a month, planned</span>
+              <span>a month, being tested</span>
             </p>
             <ul>
               {[
                 "Everything in Starter",
-                "Up to 60 cloud assistant questions a day, instead of 5",
-                "Our model plus OpenAI for anything it is unsure about",
-                "Coming with the pilot: bank sync instead of a CSV",
+                ...PLUS_FEATURES,
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />
@@ -329,7 +331,8 @@ export function Landing() {
         <div>
           <h2>Your money is personal. Your data should be too.</h2>
           <p>
-            Your CSV is processed in this browser and stays on this device. The
+            Covered never asks for your bank login. Your CSV is processed in
+            this browser and stays on this device. The
             optional AI assistant works only after your consent; it receives
             your messages, plan details, bill names, amounts and dates, and
             limited cleaned descriptions during setup. In private mode the

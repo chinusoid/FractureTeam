@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   addDays,
+  buildSetupSuggestion,
   computePlan,
   dateLabel,
   emptyState,
+  everydayForNextPeriod,
   markBillPaid,
   money,
   newId,
+  nextPayday,
   parseMoney,
   previewBalanceUpdate,
+  startNextPeriod,
   today,
   type Bill,
 } from "@/lib/client/model";
@@ -508,17 +512,38 @@ export function UpdateScreen() {
     [allocate, setAllocate] = useState(true),
     [ack, setAck] = useState(false),
     [error, setError] = useState("");
-  const cents = parseMoney(balance),
-    preview =
-      cents !== null && cents >= 0
-        ? previewBalanceUpdate(state, cents, paidIds, allocate)
-        : null;
   const expired = today() > state.plan.horizonEndDate;
+  // A paycheck in the new balance starts the next pay period; once the period has ended that is the only way on.
+  const [paycheck, setPaycheck] = useState(false);
+  const next = expired || paycheck;
+  const cadence = useMemo(() => buildSetupSuggestion(state.transactions).payCadence, [state.transactions]);
+  const [payday, setPayday] = useState(() => nextPayday(state.plan.horizonEndDate, cadence)),
+    [everyday, setEveryday] = useState(() => String(everydayForNextPeriod(state) / 100));
+  const cents = parseMoney(balance),
+    everydayCents = parseMoney(everyday);
+  const preview =
+    !next && cents !== null && cents >= 0
+      ? previewBalanceUpdate(state, cents, paidIds, allocate)
+      : null;
+  let nextError = "";
+  let nextPreview: ReturnType<typeof startNextPeriod> | null = null;
+  if (next && cents !== null && cents >= 0) {
+    try {
+      nextPreview = startNextPeriod(state, cents, paidIds, payday, everydayCents ?? -1);
+    } catch (e) {
+      nextError = e instanceof Error ? e.message : "Check the numbers for the new period.";
+    }
+  }
+  const nextPlan = nextPreview ? computePlan(nextPreview.state) : null;
   return (
     <>
       <PageHeading
-        title="Life moves. Your plan can too."
-        description="Refresh your balance and check off what’s been paid."
+        title={expired ? "Payday. Start your next period." : "Life moves. Your plan can too."}
+        description={
+          expired
+            ? "Enter your new balance and next payday. Your bills, reserve and settings carry over."
+            : "Refresh your balance and check off what’s been paid."
+        }
       />
       <div className="update-layout">
         <section className="panel">
@@ -543,6 +568,31 @@ export function UpdateScreen() {
               />
             </div>
           </label>
+          {expired ? (
+            <Notice>
+              Your period ended {dateLabel(state.plan.horizonEndDate)}, so this update starts the next one.
+            </Notice>
+          ) : (
+            <label className="checkbox-row">
+              <input type="checkbox" checked={paycheck} onChange={(e) => setPaycheck(e.target.checked)} />
+              <span>My paycheck is in this balance: start the next period</span>
+            </label>
+          )}
+          {next && (
+            <div className="next-period-fields">
+              <label className="field-block">
+                Next payday
+                <input type="date" aria-label="Next payday" value={payday} onChange={(e) => setPayday(e.target.value)} />
+              </label>
+              <label className="field-block">
+                Everyday spending until then
+                <div className="money-input">
+                  <span>$</span>
+                  <input aria-label="Everyday spending for the new period" inputMode="decimal" value={everyday} onChange={(e) => setEveryday(e.target.value)} />
+                </div>
+              </label>
+            </div>
+          )}
           <h3>What’s been paid?</h3>
           <p className="small muted">
             Select bills already deducted from the new balance above.
@@ -577,8 +627,42 @@ export function UpdateScreen() {
         </section>
         <section className="panel update-preview">
           <span className="pill">Before you confirm</span>
-          <h2>Since your last update</h2>
-          {preview ? (
+          <h2>{next ? "Your next period" : "Since your last update"}</h2>
+          {next ? (
+            nextPreview && nextPlan ? (
+              <>
+                <div className="preview-money">
+                  <span>Available to spend until {dateLabel(payday)}</span>
+                  <strong data-testid="next-period-remainder">{money(nextPreview.remainderCents)}</strong>
+                </div>
+                <div className="detail-rows">
+                  <p>
+                    Bills marked paid<strong>{nextPreview.closed.length}</strong>
+                  </p>
+                  <p>
+                    Bills due before {dateLabel(payday)}
+                    <strong>
+                      {nextPlan.bills.length} · {money(nextPlan.billsCents)}
+                    </strong>
+                  </p>
+                  <p>
+                    Everyday spending<strong>{money(nextPreview.state.plan.essentialsCents)}</strong>
+                  </p>
+                  <p>
+                    Your reserve, carried over<strong>{money(nextPreview.state.plan.reserveCents)}</strong>
+                  </p>
+                </div>
+                <p className="small muted">
+                  Your bills, reserve and settings carry over. Nothing is imported again.
+                </p>
+              </>
+            ) : (
+              <div className="empty-inline">
+                <Icon name="refresh" size={30} />
+                <p>{nextError || "Enter your new balance to see the next period."}</p>
+              </div>
+            )
+          ) : preview ? (
             <>
               <div className="preview-money">
                 <span>Available to spend after update</span>
@@ -629,7 +713,8 @@ export function UpdateScreen() {
                   <Notice>
                     Your balance is {money(-preview.unexplainedCents)} higher
                     than expected. Did income or a refund arrive? If this is a
-                    paycheck, start a new period in Settings.
+                    paycheck, tick “My paycheck is in this balance” to start
+                    the next period.
                   </Notice>
                   <label className="checkbox-row">
                     <input
@@ -648,32 +733,40 @@ export function UpdateScreen() {
               <p>Enter your new balance to see exactly what will change.</p>
             </div>
           )}
-          {expired && (
-            <Notice error>
-              This period has ended. Start a new period in Settings to update
-              your balance.
-            </Notice>
-          )}
           {error && <Notice error>{error}</Notice>}
           <div className="form-footer">
             <Button kind="ghost" onClick={() => navigate("/app")}>
               Cancel
             </Button>
-            <Button
-              disabled={
-                !preview || expired || (preview.unexplainedCents < 0 && !ack)
-              }
-              onClick={() => {
-                if (!preview) {
-                  setError("Enter a valid balance.");
-                  return;
-                }
-                change(() => preview.state);
-                navigate("/app");
-              }}
-            >
-              Confirm update
-            </Button>
+            {next ? (
+              <Button
+                disabled={!nextPreview}
+                onClick={() => {
+                  if (!nextPreview) {
+                    setError(nextError || "Enter a valid balance.");
+                    return;
+                  }
+                  change(() => nextPreview.state);
+                  navigate("/app");
+                }}
+              >
+                Start next period
+              </Button>
+            ) : (
+              <Button
+                disabled={!preview || (preview.unexplainedCents < 0 && !ack)}
+                onClick={() => {
+                  if (!preview) {
+                    setError("Enter a valid balance.");
+                    return;
+                  }
+                  change(() => preview.state);
+                  navigate("/app");
+                }}
+              >
+                Confirm update
+              </Button>
+            )}
           </div>
         </section>
       </div>

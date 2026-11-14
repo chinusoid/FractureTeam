@@ -11,8 +11,8 @@ const sans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${BRAND.name} — A little clarity for your money`,
-  description: BRAND.tagline,
+  title: `${BRAND.name} — Know what you can spend until payday`,
+  description: "See how much you can spend until your next paycheck, with your bills and a reserve set aside. No bank login.",
 };
 export const viewport: Viewport = {
   width: "device-width",

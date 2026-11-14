@@ -106,6 +106,7 @@ export function SetupScreen() {
         balanceCents,
         balanceDate: today(),
         essentialsCents,
+        everydayPerPeriodCents: essentialsCents,
         reserveCents: reserve,
         horizonEndDate: end,
         confirmed: true,

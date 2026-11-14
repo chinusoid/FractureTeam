@@ -81,6 +81,12 @@ const BillSchema = z.object({
   evidence: z.array(z.string()),
   note: z.string().max(1000),
 });
+/** A saved what-if. It is kept with the plan and re-evaluated against it; it never changes the plan. */
+const ScenarioSchema = z.discriminatedUnion("kind", [
+  z.object({ id: z.string(), kind: z.literal("purchase"), label: z.string().max(60), amountCents: cents }),
+  z.object({ id: z.string(), kind: z.literal("new_bill"), label: z.string().min(1).max(60), amountCents: cents, dueDate: day }),
+  z.object({ id: z.string(), kind: z.literal("late_payday"), lateDays: z.number().int().min(1).max(60) }),
+]);
 export const AppStateSchema = z.object({
   schemaVersion: z.literal(1),
   stateVersion: z.number().int().min(0),
@@ -90,6 +96,8 @@ export const AppStateSchema = z.object({
       balanceDate: day,
       horizonEndDate: day,
       essentialsCents: cents,
+      /** Everyday spending planned for a whole period; the next period starts from it. */
+      everydayPerPeriodCents: cents.optional(),
       reserveCents: cents,
       confirmed: z.boolean(),
     })
@@ -110,13 +118,18 @@ export const AppStateSchema = z.object({
       closedBills: z.array(z.string()),
       essentialsSpentCents: cents,
       excessCents: cents,
+      /** True when this update started a new pay period. */
+      newPeriod: z.boolean().optional(),
     })
     .nullable(),
+  /** Absent in plans saved before what-ifs existed. */
+  scenarios: z.array(ScenarioSchema).max(20).default([]),
 });
 export type AppState = z.infer<typeof AppStateSchema>;
 export type Bill = z.infer<typeof BillSchema>;
 export type Transaction = z.infer<typeof TransactionSchema>;
 export type Plan = AppState["plan"];
+export type Scenario = z.infer<typeof ScenarioSchema>;
 export function emptyState(): AppState {
   return {
     schemaVersion: 1,
@@ -136,6 +149,7 @@ export function emptyState(): AppState {
     sample: false,
     appliedProposalIds: [],
     lastUpdate: null,
+    scenarios: [],
   };
 }
 export const STATUS_LABEL = {
@@ -304,6 +318,63 @@ export function previewBalanceUpdate(
     excessCents,
     remainderCents: computePlan(next).remainderCents,
   };
+}
+/** Everyday spending for a full period: what setup planned, or the best reconstruction for older plans. */
+export function everydayForNextPeriod(state: AppState): number {
+  return (
+    state.plan.everydayPerPeriodCents ??
+    state.plan.essentialsCents + (state.lastUpdate?.essentialsSpentCents ?? 0)
+  );
+}
+/**
+ * A paycheck arrived: the plan moves to the next pay period. Bills, the reserve and settings carry over;
+ * bills ticked as paid are closed (repeating ones get their next date); everyday spending starts again.
+ */
+export function startNextPeriod(
+  state: AppState,
+  newBalanceCents: number,
+  paidIds: string[],
+  endDate: string,
+  everydayCents: number,
+  now = today(),
+) {
+  if (!Number.isSafeInteger(newBalanceCents) || newBalanceCents < 0 || newBalanceCents > 1e12)
+    throw new Error("Enter a valid non-negative balance.");
+  if (!Number.isSafeInteger(everydayCents) || everydayCents < 0 || everydayCents > 1e12)
+    throw new Error("Enter everyday spending for the new period, $0 or more.");
+  if (!day.safeParse(endDate).success || endDate <= now)
+    throw new Error("Choose your next payday: a date after today.");
+  const closed = state.bills.filter((b) => paidIds.includes(b.id) && b.status === "confirmed");
+  const next: AppState = {
+    ...state,
+    stateVersion: state.stateVersion + 1,
+    plan: {
+      ...state.plan,
+      balanceCents: newBalanceCents,
+      balanceDate: now,
+      horizonEndDate: endDate,
+      essentialsCents: everydayCents,
+      everydayPerPeriodCents: everydayCents,
+    },
+    bills: closeBills(state.bills, closed.map((b) => b.id)),
+    lastUpdate: {
+      date: now,
+      previousBalanceCents: state.plan.balanceCents,
+      newBalanceCents,
+      closedBills: closed.map((b) => b.name),
+      essentialsSpentCents: 0,
+      excessCents: 0,
+      newPeriod: true,
+    },
+  };
+  return { state: next, closed, remainderCents: computePlan(next).remainderCents };
+}
+/** The payday after `lastPayday`, at the rhythm found in the import (two weeks when none was found). */
+export function nextPayday(lastPayday: string, cadence: string | null, now = today()): string {
+  const step = cadence === "weekly" ? 7 : cadence === "semimonthly" ? 15 : cadence === "monthly" ? 0 : 14;
+  let next = lastPayday;
+  for (let i = 0; i < 120 && next <= now; i++) next = step ? addDays(next, step) : addMonths(next, 1, Number(lastPayday.slice(8)));
+  return next > now ? next : addDays(now, 14);
 }
 export const ProposalSchema = ChangeProposalSchema.pick({ id: true, payload: true }).extend({
   stateVersion: z.number().int().min(0),

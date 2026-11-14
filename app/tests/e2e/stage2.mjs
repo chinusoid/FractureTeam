@@ -171,10 +171,15 @@ export async function runStage2Scenario(page, baseURL, width, height, directory)
   await load(short);
   await expect(page.getByTestId("plan-remainder")).toHaveText("-$900");
   await shot("insufficient-money");
+  // An old balance is not shown as today's answer: the update is asked for first.
   const stale = structuredClone(baseline); stale.plan.balanceDate = plusDays(baseline.plan.balanceDate, -8);
-  await load(stale);
+  await page.evaluate((value) => localStorage.setItem("covered:v1", JSON.stringify(value)), stale);
+  await page.goto(`${baseURL}/app`);
   await expect(page.getByRole("button", { name: "Update now", exact: true })).toBeVisible();
+  await expect(page.getByTestId("plan-remainder")).toHaveCount(0);
   await shot("stale-data");
+  await page.getByRole("button", { name: /plan anyway$/ }).click();
+  await expect(page.getByTestId("plan-remainder")).toHaveText("$300");
 
   // A storage write failure keeps the in-memory plan and can be retried.
   await load(baseline);

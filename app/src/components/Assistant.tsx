@@ -10,7 +10,6 @@ import {
   simulatePurchase,
 } from "@/lib/client/model";
 import {
-  activatePlus,
   buildAssistantRequest,
   describeShared,
   PlusRequiredError,
@@ -29,6 +28,7 @@ import {
 import { useApp } from "./context";
 import { Button, Modal, Notice } from "./UI";
 import { Icon } from "./Icon";
+import { PlusOffer, usePlus } from "./Plus";
 
 export function Assistant({
   close,
@@ -41,6 +41,7 @@ export function Assistant({
   byHand?: boolean;
 }) {
   const { state, change, navigate, toast } = useApp();
+  const [, turnOnPlus] = usePlus();
   const [message, setMessage] = useState(""),
     [messages, setMessages] = useState<
       {
@@ -306,28 +307,20 @@ export function Assistant({
                   <div className="user-message">{item.question}</div>
                   {item.error && item.plusOffer && (
                     <div className="assistant-message">
-                      <div className="proposal-card plus-offer">
-                        <span className="pill">Free during early access</span>
-                        <h3>Keep asking with Covered Plus</h3>
-                        <p>{item.error}</p>
-                        <ul>
-                          <li>Up to 60 assistant questions a day</li>
-                          <li>Planned price: $10 a month. No card and no sign-up today.</li>
-                          <li>Private mode stays free with no limit: it runs on your device.</li>
-                        </ul>
-                        <Button
-                          disabled={busy}
-                          onClick={() => {
-                            void activatePlus().then(() => {
-                              toast("Covered Plus is on for this browser.");
-                              // The offer is answered: drop it and ask the same question again.
-                              setMessages((m) => m.filter((x) => x !== item));
-                              void send(item.question);
-                            });
-                          }}
-                        >
-                          Get Plus free
-                        </Button>
+                      <PlusOffer
+                        title="Keep your plan going with Covered Plus"
+                        lead={item.error}
+                        extra="Up to 60 cloud assistant questions a day instead of 5. Private mode on your device stays free, with no limit."
+                        busy={busy}
+                        onAccept={() => {
+                          void turnOnPlus().then(() => {
+                            toast("Covered Plus is on for this browser.");
+                            // The offer is answered: drop it and ask the same question again.
+                            setMessages((m) => m.filter((x) => x !== item));
+                            void send(item.question);
+                          });
+                        }}
+                      >
                         <Button
                           kind="secondary"
                           disabled={busy}
@@ -348,7 +341,7 @@ export function Assistant({
                         >
                           Not now, use the forms
                         </Button>
-                      </div>
+                      </PlusOffer>
                     </div>
                   )}
                   {item.error && !item.plusOffer && (
