@@ -3570,3 +3570,79 @@ details p {
   justify-content: flex-start;
   margin-top: 12px;
 }
+
+/* Import: what the file should look like, shown until a file is chosen. */
+.format-help {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.format-help h3 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.format-help ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.format-help ul strong {
+  color: #1f1f1c;
+  font-weight: 500;
+}
+.format-example {
+  display: grid;
+  gap: 2px;
+  background: var(--cream);
+  border-radius: 7px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.format-example code {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.hero-by-hand {
+  margin-top: 14px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .hero-by-hand {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Setup: "Build my plan" and what is still open stay in view while the bill list scrolls. */
+.setup-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 25px;
+  background: #fffffff2;
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--line);
+}
+.setup-dock > .notice {
+  margin: 12px 0 0;
+}
+.setup-dock .setup-footer {
+  margin-top: 0;
+  padding: 14px 0;
+}
+.setup-dock .setup-footer > p .text-button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  color: #1f1f1c;
+}

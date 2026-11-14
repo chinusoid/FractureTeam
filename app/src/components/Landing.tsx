@@ -123,6 +123,10 @@ export function Landing() {
             <Icon name="shield" size={14} />
             No sign-up. No bank connection. Just clarity.
           </span>
+          <button className="text-button hero-by-hand" onClick={() => navigate("/setup/plan")}>
+            No file? Enter your numbers by hand
+            <Icon name="arrow" size={13} />
+          </button>
         </div>
         <div className="hero-side">
         <div className="hero-preview">

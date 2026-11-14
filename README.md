@@ -43,6 +43,9 @@ Open the URL printed by Next.js (normally `http://localhost:3000`). For producti
 ## What's implemented
 
 - English landing page, downloadable synthetic CSVs A and B, and sample onboarding through the real import screen.
+- Three ways to start: a bank CSV, the sample, or **by hand** without a file ("No file? Enter your numbers by hand"): balance, the day the plan runs to, everyday spending, a reserve and your bills. In that mode **Add bills by typing** lets the assistant turn a sentence ("rent, $1,100, due Nov 19") into a bill draft you confirm; if the amount or the date is missing, it asks.
+- The import screen says what the file should look like (CSV; from Excel or Google Sheets use Save As → CSV; date, description, amount), offers a template to download, and answers an uploaded Excel workbook with how to save it as CSV.
+- In setup, **Build my plan** and the number of suggested bills still waiting for a decision stay docked at the bottom of the screen.
 - CSV upload and drag/drop, column mapping, amount sign, mandatory ambiguous-date selection, row errors, partial import, duplicate review, transfer flags, row exclusions, and SHA-256 re-import detection. Limits: 2 MB / 5,000 records.
 - One-click confirmation of the clear suggestions (flagged ones, such as a transfer to savings, wait for their own decision), a payday reminder as a calendar file that repeats on the detected pay rhythm, and a pricing section on the landing page.
 - Suggested recurring bills, expected-paycheck period, an editable everyday-spending estimate, selectable/custom reserve, and explicit confirmation of bills and plan.

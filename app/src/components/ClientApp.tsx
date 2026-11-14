@@ -311,6 +311,9 @@ export function ClientApp() {
                       >
                         Import transactions
                       </Button>
+                      <Button kind="ghost" onClick={() => nav("/setup/plan")}>
+                        Enter by hand
+                      </Button>
                     </>
                   )}
                 </div>
@@ -360,7 +363,8 @@ export function ClientApp() {
       {assistant && (
         <Assistant
           close={() => setAssistant(false)}
-          setup={path === "/setup/plan"}
+          setup={path === "/setup/plan" && state.transactions.length > 0}
+          byHand={path === "/setup/plan" && state.transactions.length === 0}
         />
       )}{" "}
       {toastText && (

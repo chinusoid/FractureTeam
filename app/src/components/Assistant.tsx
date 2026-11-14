@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  addDays,
+  today,
   applyConfirmedProposal,
   computePlan,
   dateLabel,
@@ -20,9 +22,12 @@ import { Icon } from "./Icon";
 export function Assistant({
   close,
   setup,
+  byHand = false,
 }: {
   close: () => void;
   setup: boolean;
+  /** Setup without a file: the assistant turns a typed sentence into a bill draft to confirm. */
+  byHand?: boolean;
 }) {
   const { state, change, navigate, toast } = useApp();
   const [message, setMessage] = useState(""),
@@ -116,13 +121,20 @@ export function Assistant({
               <span className="assistant-symbol">
                 <Icon name="spark" size={28} />
               </span>
-              <h3>More clarity, one question at a time.</h3>
+              <h3>{byHand ? "Tell me a bill, I’ll write it down." : "More clarity, one question at a time."}</h3>
               <p>
-                Check a purchase, talk through a bill, or understand your plan.
+                {byHand
+                  ? "Type a name, an amount and a due date. You confirm each bill before it is added."
+                  : "Check a purchase, talk through a bill, or understand your plan."}
               </p>
             </div>
             <div className="suggestions">
-              {(setup
+              {(byHand
+                ? [
+                    `Add rent, $1,100, due ${dateLabel(addDays(today(), 5), true)}`,
+                    `Add my phone bill, $65, due ${dateLabel(addDays(today(), 9), true)}`,
+                  ]
+                : setup
                 ? [
                     "Review the recurring bills in my import",
                     "What should I check before building my plan?",
@@ -169,7 +181,7 @@ export function Assistant({
                         <Button
                           kind="ghost"
                           onClick={() => {
-                            navigate(setup ? "/setup/plan" : "/app/bills");
+                            navigate(setup || byHand ? "/setup/plan" : "/app/bills");
                             close();
                           }}
                         >
@@ -187,7 +199,7 @@ export function Assistant({
                       <Button
                         kind="secondary"
                         onClick={() => {
-                          navigate(setup ? "/setup/plan" : "/app/bills");
+                          navigate(setup || byHand ? "/setup/plan" : "/app/bills");
                           close();
                         }}
                       >
@@ -343,7 +355,7 @@ export function Assistant({
                 maxLength={500}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask about your plan…"
+                placeholder={byHand ? "Internet, $50, due on the 22nd…" : "Ask about your plan…"}
                 disabled={busy}
               />
               <button

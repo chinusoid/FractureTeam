@@ -37,13 +37,39 @@ export function SetupScreen() {
     [custom, setCustom] = useState(false),
     [error, setError] = useState(""),
     [editor, setEditor] = useState<Bill | "new" | null>(null);
+  /** Started without a file: nothing was detected, every number comes from the person. */
+  const byHand = state.transactions.length === 0;
   const bills = state.bills.filter((b) => b.status !== "dismissed");
+  const pending = bills.filter((b) => b.status === "candidate");
   const clear = bills.filter(
     (b) => b.status === "candidate" && !NEEDS_A_LOOK.test(b.note),
   );
   const flagged = bills.filter(
     (b) => b.status === "candidate" && NEEDS_A_LOOK.test(b.note),
   );
+  /** By hand: the assistant shows what each bill leaves, so it needs the numbers typed so far. */
+  function typeBills() {
+    const balanceCents = parseMoney(balance),
+      essentialsCents = parseMoney(essentials);
+    if (balanceCents === null || balanceCents <= 0) {
+      setError("Enter your current balance first, so each bill can show what it leaves you.");
+      return;
+    }
+    setError("");
+    change((s) => ({
+      ...s,
+      stateVersion: s.stateVersion + 1,
+      plan: {
+        ...s.plan,
+        balanceCents,
+        balanceDate: today(),
+        essentialsCents: essentialsCents !== null && essentialsCents >= 0 ? essentialsCents : s.plan.essentialsCents,
+        reserveCents: Number.isSafeInteger(reserve) && reserve >= 0 ? reserve : s.plan.reserveCents,
+        horizonEndDate: end >= today() ? end : s.plan.horizonEndDate,
+      },
+    }));
+    openAssistant();
+  }
   function save() {
     const balanceCents = parseMoney(balance),
       essentialsCents = parseMoney(essentials);
@@ -89,14 +115,18 @@ export function SetupScreen() {
     <>
       <PageHeading
         title="Let’s make it your plan."
-        description="A few details today. A little more peace of mind tomorrow."
+        description={
+          byHand
+            ? "Four numbers and your bills. No file needed."
+            : "A few details today. A little more peace of mind tomorrow."
+        }
       />
       <div className="steps">
         <span className="complete">
           <b>
             <Icon name="check" size={12} />
           </b>{" "}
-          Import transactions
+          {byHand ? "Start by hand" : "Import transactions"}
         </span>
         <i />
         <span className="active">
@@ -145,7 +175,7 @@ export function SetupScreen() {
                   setEnd(e.target.value);
                 }}
               />
-              <small>{suggestion.horizonSource}</small>
+              <small>{byHand ? "Usually your next payday. Bills due up to this day are counted." : suggestion.horizonSource}</small>
             </label>
             <label>
               Everyday spending
@@ -159,8 +189,9 @@ export function SetupScreen() {
                 />
               </div>
               <small>
-                Estimate from the last {suggestion.basisDays} days. Review for
-                your selected period.
+                {byHand
+                  ? "Groceries, transport and other day-to-day costs until that day."
+                  : `Estimate from the last ${suggestion.basisDays} days. Review for your selected period.`}
               </small>
             </label>
           </div>
@@ -225,9 +256,11 @@ export function SetupScreen() {
         <section className="panel">
           <div className="section-heading">
             <div>
-              <h2>Bills we spotted</h2>
+              <h2>{byHand ? "Your bills" : "Bills we spotted"}</h2>
               <p className="small muted">
-                Recurring transactions, ready for your review.
+                {byHand
+                  ? "Add each bill due before the end of your plan."
+                  : "Recurring transactions, ready for your review."}
               </p>
             </div>
             <span className="count">{bills.length}</span>
@@ -235,8 +268,12 @@ export function SetupScreen() {
           {bills.length === 0 && (
             <div className="empty-inline">
               <Icon name="bill" size={30} />
-              <h3>No recurring bills found</h3>
-              <p>Add any upcoming payments you want your plan to cover.</p>
+              <h3>{byHand ? "No bills yet" : "No recurring bills found"}</h3>
+              <p>
+                {byHand
+                  ? "Add rent, insurance, phone, subscriptions: a name, an amount and a due date each."
+                  : "Add any upcoming payments you want your plan to cover."}
+              </p>
             </div>
           )}
           {clear.length > 1 && (
@@ -267,7 +304,7 @@ export function SetupScreen() {
           )}
           <div className="candidate-list">
             {bills.map((b) => (
-              <article className="candidate" key={b.id}>
+              <article className="candidate" key={b.id} data-pending={b.status === "candidate" ? "" : undefined}>
                 <div className="candidate-top">
                   <span className="entity-icon">
                     <Icon name={billIcon(b.name)} size={20} />
@@ -364,22 +401,41 @@ export function SetupScreen() {
             >
               Add a bill
             </Button>
-            <Button kind="ghost" icon="spark" onClick={openAssistant}>
-              Review with assistant
+            <Button kind="ghost" icon="spark" onClick={byHand ? typeBills : openAssistant}>
+              {byHand ? "Add bills by typing" : "Review with assistant"}
             </Button>
           </div>
         </section>
       </div>
+      <div className="setup-dock">
       {error && <Notice error>{error}</Notice>}
       <div className="setup-footer">
-        <p>
-          <Icon name="shield" size={16} />
-          You’re in control. Change anything later.
-        </p>
+        {pending.length > 0 ? (
+          <p>
+            <Icon name="bill" size={16} />
+            {pending.length === 1
+              ? "1 suggested bill still needs Confirm or Dismiss."
+              : `${pending.length} suggested bills still need Confirm or Dismiss.`}
+            <button
+              className="text-button"
+              onClick={() =>
+                document.querySelector("[data-pending]")?.scrollIntoView({ block: "center" })
+              }
+            >
+              Show me
+            </button>
+          </p>
+        ) : (
+          <p>
+            <Icon name="shield" size={16} />
+            You’re in control. Change anything later.
+          </p>
+        )}
         <Button onClick={save}>
           Build my plan
           <Icon name="arrow" size={16} />
         </Button>
+      </div>
       </div>
       {editor && (
         <BillDialog
