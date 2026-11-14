@@ -15,6 +15,88 @@ import { Button, downloadText, Gauge, Notice, PageHeading } from "./UI";
 import { buildReminderIcs, REPEAT_LABEL } from "@/lib/client/reminder";
 import { billIcon, Icon } from "./Icon";
 import { parseMoney, today as todayIso } from "@/lib/client/model";
+import { lateCushionDays, latePaycheck } from "@/lib/client/stress";
+
+const LATE_OPTIONS = [
+  [1, "1 day"],
+  [3, "3 days"],
+  [7, "A week"],
+] as const;
+
+/** "What if payday is late?" A stress test of the plan; nothing is stored. */
+function LatePayCard() {
+  const { state } = useApp();
+  const [late, setLate] = useState(3);
+  const result = latePaycheck(state, late);
+  const cushion = lateCushionDays(state);
+  return (
+    <section className="late-pay-panel" aria-labelledby="late-pay-title" data-testid="late-pay">
+      <div className="section-heading">
+        <span className="entity-icon">
+          <Icon name="clock" size={20} />
+        </span>
+        <span className="small muted">Stress test</span>
+      </div>
+      <h2 id="late-pay-title">What if payday is late?</h2>
+      <p>
+        {cushion === 0
+          ? "Your plan is already short, so any delay adds to the gap."
+          : cushion >= 30
+            ? "Your bills and everyday spending stay covered even a month past payday."
+            : `Your bills and everyday spending stay covered for up to ${cushion} extra day${cushion === 1 ? "" : "s"}.`}
+      </p>
+      <div className="segmented" role="group" aria-label="Days late">
+        {LATE_OPTIONS.map(([days, label]) => (
+          <button
+            key={days}
+            type="button"
+            aria-pressed={late === days}
+            className={late === days ? "active" : ""}
+            onClick={() => setLate(days)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className={`late-pay-result ${result.status}`} role="status">
+        <strong data-testid="late-pay-headline">
+          {result.status === "covered"
+            ? `Still covered: ${money(result.remainderCents)} free`
+            : result.status === "reserve"
+              ? `Covered, using ${money(result.gapCents)} of your reserve`
+              : `${money(result.gapCents)} short`}
+        </strong>
+        <span>Paycheck on {dateLabel(result.newEnd)} instead of {dateLabel(state.plan.horizonEndDate)}</span>
+        <ul>
+          {result.gapBills.map((b) => (
+            <li key={`${b.name}-${b.dueDate}`}>
+              {b.name}
+              <span>
+                {dateLabel(b.dueDate)}
+                {b.expected ? " (repeats)" : ""} · {money(b.amountCents)}
+              </span>
+            </li>
+          ))}
+          {result.extraEverydayCents > 0 && (
+            <li>
+              Everyday spending, {result.lateDays} more day{result.lateDays === 1 ? "" : "s"}
+              <span>{money(result.extraEverydayCents)}</span>
+            </li>
+          )}
+          {!result.gapBills.length && (
+            <li className="muted">No bills fall in the gap.</li>
+          )}
+        </ul>
+        {result.status === "short" && (
+          <p>
+            Ask about moving a due date past payday, or lower everyday
+            spending until the money arrives.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 /** What is free per day from today through the end of the period (whole cents, rounded down). */
 function perDay(remainderCents: number, endDate: string): number | null {
@@ -459,6 +541,7 @@ export function Dashboard() {
                 </div>
               ))}
           </section>
+          {p.horizonEndDate >= today() && <LatePayCard />}
           <section className="reserve-panel">
             <span className="reserve-mark">
               <Icon name="shield" size={23} />

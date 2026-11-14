@@ -3826,3 +3826,231 @@ details p {
   background: #eef0e3;
   color: var(--muted);
 }
+
+/* Private mode: where the assistant runs */
+.where-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: 3px;
+  margin-top: 14px;
+  background: var(--soft);
+  border-radius: 8px;
+  gap: 2px;
+}
+.where-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.where-toggle button.active {
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 1px 3px #0000000d;
+}
+.where-toggle button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 1px;
+}
+.assistant-intro .where-note {
+  margin-top: 8px;
+  max-width: 320px;
+}
+.panel .where-toggle {
+  margin: 0 0 12px;
+}
+.private-option {
+  margin: 18px 0 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--cream);
+}
+.private-option h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.private-option p {
+  font-size: 12px;
+  color: #6f7564;
+  margin-bottom: 10px;
+}
+.private-option .button {
+  width: 100%;
+}
+.assistant-message .served-by.on-device {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--green);
+}
+.assistant-message .served-by.on-device svg {
+  flex: none;
+  margin-top: 2px;
+}
+.shared-details {
+  margin: -2px 0 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.shared-details summary {
+  cursor: pointer;
+  width: fit-content;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.shared-details > div {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+.shared-details strong {
+  display: block;
+  font-size: 11px;
+  color: var(--ink);
+  margin: 2px 0 4px;
+}
+.shared-details ul {
+  padding-left: 16px;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+/* Stress test: late paycheck */
+.late-pay-panel {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+}
+.late-pay-panel .entity-icon {
+  width: 34px;
+  height: 34px;
+}
+.late-pay-panel h2 {
+  font-size: 19px;
+  letter-spacing: -0.5px;
+  margin: 10px 0 6px;
+}
+.late-pay-panel > p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.late-pay-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--cream);
+  font-size: 12px;
+}
+.late-pay-result.reserve {
+  background: #f8f1e4;
+}
+.late-pay-result.short {
+  background: #f8e9e6;
+}
+.late-pay-result > strong {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+}
+.late-pay-result.short > strong {
+  color: var(--danger);
+}
+.late-pay-result > span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin: 2px 0 8px;
+}
+.late-pay-result ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.late-pay-result li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-top: 1px solid #00000010;
+}
+.late-pay-result li span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.late-pay-result p {
+  margin-top: 8px;
+  color: var(--ink);
+}
+
+/* Lower a bill / cancel a subscription */
+.lower-link {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: var(--green);
+}
+.subs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.subs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e3e5d6;
+  background: var(--white);
+  cursor: pointer;
+  font-size: 11px;
+}
+.subs-pill:hover {
+  border-color: var(--green);
+}
+.lower-bill h3 {
+  font-size: 13px;
+  margin: 16px 0 6px;
+}
+.lower-bill .lower-lead {
+  font-size: 13px;
+  margin: 6px 0 10px;
+}
+.lower-bill ol {
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #4d5245;
+}
+.lower-bill ol li {
+  margin-bottom: 4px;
+}
+.lower-script {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--green);
+  border-radius: 8px;
+  background: var(--cream);
+  font-size: 12px;
+  line-height: 1.55;
+  user-select: text;
+}
+.lower-bill .form-footer {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.lower-bill > p.small {
+  margin-top: 10px;
+}

@@ -200,6 +200,21 @@ export function Landing() {
             "Keep up with real life.",
             "Update your balance, check off paid bills, and see what’s changed. A calendar reminder brings you back on payday.",
           ],
+          [
+            "shield",
+            "AI that stays on your device.",
+            "Private mode runs our own Covered model in your browser. Nothing is sent, and it keeps working offline.",
+          ],
+          [
+            "clock",
+            "Ready for a late paycheck.",
+            "See which bills would land before a delayed payday, and how many days your plan can take.",
+          ],
+          [
+            "down",
+            "Lower a bill yourself.",
+            "What to try and what to say for each bill, with your own numbers. No middleman takes a cut.",
+          ],
         ].map(([icon, title, text]) => (
           <article key={title}>
             <span className="feature-icon">
@@ -237,7 +252,8 @@ export function Landing() {
                 "Import a bank CSV and confirm your bills",
                 "See what’s left after bills, everyday spending and your reserve",
                 "Check a purchase with the form",
-                "5 assistant questions a day",
+                "5 cloud assistant questions a day",
+                "Private mode: the assistant on your device, no daily limit",
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />
@@ -286,7 +302,8 @@ export function Landing() {
             Your CSV is processed in this browser and stays on this device. The
             optional AI assistant works only after your consent; it receives
             your messages, plan details, bill names, amounts and dates, and
-            limited cleaned descriptions during setup.
+            limited cleaned descriptions during setup. In private mode the
+            assistant runs in this browser and sends nothing at all.
           </p>
         </div>
         <span className="pill">You’re in control</span>
