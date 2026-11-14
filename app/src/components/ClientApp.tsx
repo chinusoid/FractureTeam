@@ -50,7 +50,8 @@ export function ClientApp() {
     if (window.location.pathname !== to) window.history.pushState({}, "", to);
     setPath(to);
     setMenu(false);
-    window.scrollTo({ top: 0 });
+    // A new screen starts at its top at once; the page-wide smooth scrolling is for in-page jumps only.
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
   const toast = useCallback((text: string) => {
     setToastText(text);

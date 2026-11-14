@@ -124,6 +124,19 @@ export function ImportScreen({
       setBusy(false);
     }
   }
+  const continueFooter = (
+    <div className={`form-footer ${isSample ? "sample-ready" : ""}`}>
+      <span className="small muted">
+        {isSample
+          ? `Sample ready: ${selected.length} synthetic transactions, columns matched. Details below.`
+          : `${selected.length} transactions ready`}
+      </span>
+      <Button onClick={() => void confirm()} disabled={!selected.length || !format || busy}>
+        {busy ? "Preparing…" : "Continue to setup"}
+        <Icon name="arrow" size={16} />
+      </Button>
+    </div>
+  );
   return (
     <>
       <PageHeading
@@ -177,6 +190,8 @@ export function ImportScreen({
           {error && <Notice error>{error}</Notice>}
           {parsed && (
             <>
+              {/* The sample's columns are already matched: the way forward comes first, the details stay below. */}
+              {isSample && continueFooter}
               <div className="section-heading mapping-heading">
                 <h3>Match your columns</h3>
                 <span className="muted small">
@@ -383,18 +398,7 @@ export function ImportScreen({
                   if you want to keep it.
                 </Notice>
               )}
-              <div className="form-footer">
-                <span className="small muted">
-                  {selected.length} transactions ready
-                </span>
-                <Button
-                  onClick={() => void confirm()}
-                  disabled={!selected.length || !format || busy}
-                >
-                  {busy ? "Preparing…" : "Continue to setup"}
-                  <Icon name="arrow" size={16} />
-                </Button>
-              </div>
+              {!isSample && continueFooter}
             </>
           )}
         </section>

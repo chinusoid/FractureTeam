@@ -3432,3 +3432,9 @@ details p {
   gap: 4px;
   font-size: 13px;
 }
+
+/* Sample import: "Continue to setup" sits right under the file box. */
+.form-footer.sample-ready {
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
