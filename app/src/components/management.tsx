@@ -16,6 +16,70 @@ import { useApp } from "./context";
 import { Button, downloadText, Modal, Notice, PageHeading } from "./UI";
 import { billIcon, Icon } from "./Icon";
 import { clearState } from "@/lib/storage/local";
+import { aiWhere, onAiWhereChange, setAiWhere, type AiWhere } from "@/lib/client/onDevice";
+import { guideDueLine, lowerBillGuide } from "@/lib/client/lowerBill";
+
+/** What to try and what to say to lower a bill or cancel a subscription. Built on the device. */
+function LowerBillDialog({
+  bill,
+  category,
+  periodEnd,
+  close,
+  edit,
+}: {
+  bill: Bill;
+  category: string | null;
+  periodEnd: string;
+  close: () => void;
+  edit: () => void;
+}) {
+  const { toast } = useApp();
+  const guide = lowerBillGuide(bill, category, { periodEnd });
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(guide.script);
+      toast("Script copied. Paste it into their chat or read it on the call.");
+    } catch {
+      toast("Copying isn’t available here. Select the text and copy it instead.");
+    }
+  }
+  return (
+    <Modal title={guide.title} close={close}>
+      <div className="lower-bill" data-testid="lower-bill">
+        <p className="small muted">{guideDueLine(bill)}</p>
+        <p className="lower-lead">{guide.lead}</p>
+        {guide.dueDateTip && <Notice>{guide.dueDateTip}</Notice>}
+        <h3>What to try</h3>
+        <ol>
+          {guide.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <h3>What to say</h3>
+        <blockquote className="lower-script" data-testid="lower-script">
+          {guide.script}
+        </blockquote>
+        <div className="form-footer">
+          <Button kind="secondary" onClick={() => void copy()}>
+            Copy the script
+          </Button>
+          <Button
+            onClick={() => {
+              close();
+              edit();
+            }}
+          >
+            Got a new price? Update the bill
+          </Button>
+        </div>
+        <p className="small muted">
+          Covered doesn’t call anyone for you or take a cut. Whatever you
+          save stays yours.
+        </p>
+      </div>
+    </Modal>
+  );
+}
 
 export function BillDialog({
   bill,
@@ -142,6 +206,16 @@ const CATEGORY_LABEL: Record<string, string> = {
 const PER_MONTH: Record<Bill["frequency"], number> = { Monthly: 1, Biweekly: 26 / 12, Weekly: 52 / 12, "One-time": 0 };
 
 type Category = { label: string; confidence: number };
+/** The model's category when it is at least 50% sure. */
+const sureCategory = (c: Category | undefined) => (c && c.confidence >= 0.5 ? c.label : null);
+/** Money moved to savings or to a person, income and everyday spending get no "lower this bill" guide. */
+const NOT_A_BILL = new Set(["savings_transfer", "person_transfer", "income", "everyday"]);
+const GUIDE_LINK: Record<string, string> = {
+  subscription: "Cancel or pause",
+  gym: "Cancel or pause",
+  rent: "Ease it",
+  utilities: "Ease it",
+};
 
 /** Bill categories from the Covered model (our own, runs in the browser; loaded only on this screen). */
 function useCategories(bills: Bill[]) {
@@ -173,6 +247,7 @@ export function BillsScreen() {
   const [editor, setEditor] = useState<Bill | "new" | null>(null),
     [pay, setPay] = useState<Bill | null>(null),
     [remove, setRemove] = useState<Bill | null>(null),
+    [lower, setLower] = useState<Bill | null>(null),
     [filter, setFilter] = useState("unpaid"),
     [error, setError] = useState("");
   const bills = state.bills
@@ -225,10 +300,23 @@ export function BillsScreen() {
               {money(subsMonthly)} a month, {money(subsMonthly * 12)} a year
             </strong>
             <p>
-              {subs.map((b) => b.name).join(", ")}. Found by the Covered model,
-              our own model running on your device. Worth a look if you want
-              more room before payday.
+              Found by the Covered model, our own model running on your
+              device. Worth a look if you want more room before payday.
             </p>
+            <div className="subs-actions">
+              {subs.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  className="pill subs-pill"
+                  onClick={() => setLower(b)}
+                  aria-label={`Cancel or pause ${b.name}`}
+                >
+                  {b.name} · {money(b.amountCents)}
+                  <Icon name="arrow" size={12} />
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -273,6 +361,18 @@ export function BillsScreen() {
                       {CATEGORY_LABEL[cats[b.id].label] ?? "Bill"}
                     </span>
                   )}
+                  {b.status === "confirmed" &&
+                    b.amountCents > 0 &&
+                    !NOT_A_BILL.has(sureCategory(cats[b.id]) ?? "") && (
+                      <button
+                        type="button"
+                        className="text-button lower-link"
+                        onClick={() => setLower(b)}
+                      >
+                        {GUIDE_LINK[sureCategory(cats[b.id]) ?? ""] ?? "Lower it"}
+                        <span className="sr-only"> {b.name}</span>
+                      </button>
+                    )}
                 </p>
               </div>
               <strong>{money(b.amountCents)}</strong>
@@ -340,6 +440,15 @@ export function BillsScreen() {
             setEditor(null);
             toast("Bill saved.");
           }}
+        />
+      )}
+      {lower && (
+        <LowerBillDialog
+          bill={lower}
+          category={sureCategory(cats[lower.id])}
+          periodEnd={state.plan.horizonEndDate}
+          close={() => setLower(null)}
+          edit={() => setEditor(lower)}
         />
       )}
       {pay && (
@@ -583,6 +692,11 @@ export function SettingsScreen() {
     [clear, setClear] = useState(false),
     [newPeriod, setNewPeriod] = useState(false),
     [error, setError] = useState("");
+  const [where, setWhere] = useState<AiWhere>("cloud");
+  useEffect(() => {
+    setWhere(aiWhere());
+    return onAiWhereChange(setWhere);
+  }, []);
   const changedDate = end !== state.plan.horizonEndDate;
   return (
     <>
@@ -699,16 +813,46 @@ export function SettingsScreen() {
                 <Icon name="spark" />
               </span>
               <span className="pill">
-                {state.aiConsent ? "Enabled" : "Off"}
+                {where === "device"
+                  ? "Private mode"
+                  : state.aiConsent
+                    ? "Enabled"
+                    : "Off"}
               </span>
             </div>
             <h2>Your assistant, your choice.</h2>
-            <p>
-              With your permission, your messages, plan balances, amounts,
-              dates, bill names, and a limited set of cleaned transaction
-              descriptions may be sent to the assistant service and its AI
-              provider.
-            </p>
+            <div className="where-toggle" role="group" aria-label="Where the assistant runs">
+              {(
+                [
+                  ["cloud", "Cloud"],
+                  ["device", "Private, on this device"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={where === value}
+                  className={where === value ? "active" : ""}
+                  onClick={() => setAiWhere(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {where === "device" ? (
+              <p>
+                Private mode: our own Covered model answers inside this
+                browser. Nothing is sent anywhere, it works offline, and there
+                is no daily limit.
+              </p>
+            ) : (
+              <p>
+                With your permission, your messages, plan balances, amounts,
+                dates, bill names, and a limited set of cleaned transaction
+                descriptions may be sent to the assistant service and its AI
+                provider.
+              </p>
+            )}
             <p className="small muted">
               Your full CSV stays in this browser. You can always use every
               manual form without AI.

@@ -24,8 +24,11 @@ export const AssistantResponseSchema = z
         purchaseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       })
       .optional(),
-    /** Which model answered (from the server's x-ai-served header): our Covered model or OpenAI. */
-    servedBy: z.enum(["own", "openai", "local", "mock"]).optional(),
+    /**
+     * Which model answered: from the server's x-ai-served header (our Covered model, OpenAI, ...),
+     * or "device" when the Covered model answered in this browser and nothing was sent.
+     */
+    servedBy: z.enum(["own", "openai", "local", "mock", "device"]).optional(),
     setupReview: z
       .object({
         items: z.array(
@@ -77,6 +80,12 @@ export const CONTRACT_CODE: Record<string, string> = {
 
 /** The free plan's daily questions are used up; the UI answers with the Covered Plus offer. */
 export class PlusRequiredError extends Error {}
+
+/**
+ * The assistant server could not be reached at all (no network, or no assistant endpoint on this host).
+ * The UI can still answer with the Covered model on this device.
+ */
+export class ServerUnreachableError extends Error {}
 
 const PLUS_KEY = "covered:plus";
 let memoryPlus = false;
@@ -197,6 +206,31 @@ export function buildAssistantRequest(
   return request;
 }
 
+/**
+ * Plain-language list of what one request shares with the assistant server, shown under each cloud answer.
+ * Built from the exact request body, so it cannot drift from what is sent.
+ */
+export function describeShared(request: AssistantRequest, transactionCount: number): { sent: string[]; kept: string[] } {
+  const history = request.context.history?.length ?? 0;
+  const bills = request.context.obligations.length;
+  const candidates = request.context.candidates ?? [];
+  const descriptions = candidates.reduce((n, c) => n + c.sampleDescriptions.length, 0);
+  const sent = [
+    history ? `Your question and the last ${history} message${history === 1 ? "" : "s"} of this chat` : "Your question",
+    ...(request.context.plan ? ["Your balance, period dates, everyday spending and reserve"] : []),
+    ...(bills ? [`${bills} bill${bills === 1 ? "" : "s"}: name, amount and due date`] : []),
+    ...(candidates.length
+      ? [`${candidates.length} possible bill${candidates.length === 1 ? "" : "s"} from your file, with ${descriptions} cleaned description${descriptions === 1 ? "" : "s"}`]
+      : []),
+  ];
+  const kept = [
+    transactionCount ? `Your file and its ${transactionCount} transactions` : "Your file and transactions",
+    "Long numbers, emails and phone numbers: masked in every name before sending",
+    "No bank login, name or email: Covered never asks for them",
+  ];
+  return { sent, kept };
+}
+
 /** Contract response -> what the assistant UI renders. */
 export function toUiResponse(r: ContractResponse): AssistantResponse {
   const base = { message: r.message };
@@ -270,9 +304,10 @@ export async function requestAssistant(
         /* Non-JSON proxy response. */
       }
       const known = ERROR_MESSAGES[code];
+      if (response.status === 404 || response.status === 405) throw new ServerUnreachableError(ERROR_MESSAGES.AI_UNAVAILABLE);
       throw new Error(code === "UPSTREAM_ERROR" && serverMessage ? serverMessage : (known ?? ERROR_MESSAGES.UPSTREAM_ERROR));
     }
-    if (!response.headers.get("content-type")?.includes("application/json")) throw new Error(ERROR_MESSAGES.AI_UNAVAILABLE);
+    if (!response.headers.get("content-type")?.includes("application/json")) throw new ServerUnreachableError(ERROR_MESSAGES.AI_UNAVAILABLE);
     let body: unknown;
     try {
       body = await response.json();
@@ -288,7 +323,7 @@ export async function requestAssistant(
     return ui.data;
   } catch (e) {
     if (controller.signal.aborted) throw new Error(ERROR_MESSAGES.TIMEOUT);
-    if (e instanceof TypeError) throw new Error(ERROR_MESSAGES.AI_UNAVAILABLE);
+    if (e instanceof TypeError) throw new ServerUnreachableError(ERROR_MESSAGES.AI_UNAVAILABLE);
     throw e;
   } finally {
     clearTimeout(timer);
