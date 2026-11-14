@@ -9,3 +9,5 @@ playwright-report/
 .DS_Store
 **/tests/ai-eval/last-run.json
 .vercel
+__pycache__/
+*.pyc

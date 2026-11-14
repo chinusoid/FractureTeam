@@ -24,6 +24,8 @@ export const AssistantResponseSchema = z
         purchaseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       })
       .optional(),
+    /** Which model answered (from the server's x-ai-served header): our Covered model or OpenAI. */
+    servedBy: z.enum(["own", "openai", "local", "mock"]).optional(),
     setupReview: z
       .object({
         items: z.array(
@@ -277,7 +279,9 @@ export async function requestAssistant(
     }
     const contract = ContractResponseSchema.safeParse(body);
     if (!contract.success) throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
-    const ui = AssistantResponseSchema.safeParse(toUiResponse(contract.data));
+    const served = (response.headers.get("x-ai-served") ?? "").split("+").pop() ?? "";
+    const servedBy = (["own", "openai", "local", "mock"] as const).find((s) => s === served);
+    const ui = AssistantResponseSchema.safeParse({ ...toUiResponse(contract.data), ...(servedBy ? { servedBy } : {}) });
     if (!ui.success) throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
     return ui.data;
   } catch (e) {

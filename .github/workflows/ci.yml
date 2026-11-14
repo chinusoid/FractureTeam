@@ -28,6 +28,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run eval:ai
+      # Our own model alone (no OpenAI): must keep at least 90% of the scenarios.
+      - run: npx tsx tests/ai-eval/run.ts --min 0.9
+        env:
+          AI_PROVIDER: own
+          AI_FALLBACK_TO_OPENAI: "false"
       - run: npm run build
 
   e2e:
