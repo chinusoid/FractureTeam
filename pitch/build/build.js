@@ -159,26 +159,35 @@ async function build() {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Problem" });
     kicker(s, "THE PROBLEM");
     s.addText("Money in the bank is not money to spend", { placeholder: "title" });
-    box(s, { x: MX, y: TOP, w: 6.9, h: 2.85, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
+    box(s, { x: MX, y: TOP, w: 5.6, h: 2.95, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
     tag(s, "HYPOTHESIS", MX + 0.35, TOP + 0.32);
     text(s, "“There’s money in my account, but I don’t know how much of it is already needed for bills — or what happens if I buy this now.”", {
-      x: MX + 0.35, y: TOP + 0.78, w: 6.2, h: 1.25, fontSize: 20, italic: true, color: C.text1, lineSpacingMultiple: 1.12,
+      x: MX + 0.35, y: TOP + 0.78, w: 4.9, h: 1.5, fontSize: 18, italic: true, color: C.text1, lineSpacingMultiple: 1.12,
     });
-    text(s, "Our statement of the pain. Not yet a quote from an interview.", { x: MX + 0.35, y: TOP + 2.3, w: 6.2, h: 0.3, fontSize: 12, color: C.text2 });
-    await iconCircle(s, fi.FiUser, MX, 5.25);
+    text(s, "Our hypothesis. Interviews in the US segment come next.", { x: MX + 0.35, y: TOP + 2.42, w: 4.9, h: 0.3, fontSize: 12, color: C.text2 });
+    await iconCircle(s, fi.FiUser, MX, 5.3);
     text(s, [
       { text: "Starting segment. ", options: { bold: true } },
       { text: "A working adult in the US, 25–45: a regular paycheck, several fixed bills, tried a budgeting app and stopped keeping it up." },
-    ], { x: MX + 0.8, y: 5.22, w: 6.1, h: 1.0, fontSize: 14, color: C.text1, lineSpacingMultiple: 1.15 });
+    ], { x: MX + 0.8, y: 5.27, w: 4.8, h: 1.2, fontSize: 14, color: C.text1, lineSpacingMultiple: 1.15 });
 
-    const x = 7.9, w = W - MX - 7.9;
+    const x = 6.5, w = W - MX - 6.5;
     box(s, { x, y: TOP, w, h: 4.45, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
-    tag(s, "FACT", x + 0.4, TOP + 0.32);
-    text(s, "37%", { x: x + 0.4, y: TOP + 0.7, w: w - 0.8, h: 1.2, fontSize: 72, bold: true, color: C.text1, valign: "middle" });
-    text(s, "of US adults would not cover a $400 emergency expense with cash or its equivalent", { x: x + 0.4, y: TOP + 1.9, w: w - 0.8, h: 0.95, fontSize: 16, color: C.text1, lineSpacingMultiple: 1.12 });
-    text(s, "A $400 decision is not small. It is the exact check our demo runs.", { x: x + 0.4, y: TOP + 3.05, w: w - 0.8, h: 0.6, fontSize: 14, bold: true, color: C.accent1, lineSpacingMultiple: 1.12 });
-    text(s, "Source: Federal Reserve, Economic Well-Being of U.S. Households in 2025 (63% would cover it).", { x: x + 0.4, y: TOP + 3.85, w: w - 0.8, h: 0.4, fontSize: 10, color: C.text2 });
-    s.addNotes("0:20. The person: a regular paycheck, rent, insurance, internet, a phone bill. The balance looks fine, but part of it is already promised. The Fed's 2025 survey: 37% of adults would not cover a $400 surprise from cash. So 'can I afford $400' is a real question. The quote and the segment are our hypothesis; interviews come next.");
+    tag(s, "FACT", x + 0.4, TOP + 0.28);
+    text(s, "The pain is measured, in public data", { x: x + 0.4 + 0.72 + 0.15, y: TOP + 0.28, w: w - 1.7, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    const facts = [
+      ["63%", "of Americans live paycheck to paycheck; 90% of them have under $500 left each month", "CNBC | SurveyMonkey Quarterly Money Survey, July 2026"],
+      ["37%", "of US adults would not cover a $400 emergency expense with cash or its equivalent", "Federal Reserve, Economic Well-Being of U.S. Households, 2025"],
+      ["$14.5B", "in credit card late fees charged to US cardholders in a single year", "CFPB Consumer Credit Card Market Report, 2023 (2022 data)"],
+    ];
+    facts.forEach((f, i) => {
+      const y = TOP + 0.78 + i * 1.2;
+      if (i > 0) s.addShape(S.line, { x: x + 0.4, y: y - 0.1, w: w - 0.8, h: 0, line: { color: C.accent3, width: 1 }, objectName: name("Divider") });
+      text(s, f[0], { x: x + 0.4, y, w: 2.0, h: 0.95, fontSize: 34, bold: true, color: C.text1, valign: "middle" });
+      text(s, f[1], { x: x + 2.15, y: y + 0.02, w: w - 2.55, h: 0.62, fontSize: 12, color: C.text1, lineSpacingMultiple: 1.1, valign: "middle" });
+      text(s, f[2], { x: x + 2.15, y: y + 0.68, w: w - 2.55, h: 0.24, fontSize: 9, color: C.text2, valign: "middle" });
+    });
+    s.addNotes("0:20. The person: a regular paycheck, rent, insurance, internet, a phone bill. The balance looks fine, but part of it is already promised. Three public numbers: 63% live paycheck to paycheck, 37% would not cover a $400 surprise from cash, and card issuers charged $14.5 billion in late fees in a year. So 'can I afford $400' is a real question. The quote is our hypothesis; interviews come next.");
   }
 
   // 3 — alternatives
@@ -194,8 +203,8 @@ async function build() {
     text(s, "Where Covered focuses", { x: cols[2], y: TOP, w: 2.2, h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
     tag(s, "HYPOTHESIS", cols[2] + 2.15, TOP + 0.01);
     const rows = [
-      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "Start by confirming bills, not by building categories"],
-      ["PocketGuard", "$12.99 a month", "“Leftover” shows what remains after bills, goals and debt", "Every number opens down to the transactions behind it"],
+      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account and no bank login: a plan from a CSV, in your browser"],
+      ["PocketGuard", "$12.99 a month", "“Leftover” shows what remains after bills, goals and debt", "Not only the leftover: the answer names what a purchase would break"],
       ["Monarch", "$14.99 a month", "AI assistant, explanations and a weekly review", "A sentence becomes a before/after draft you confirm"],
       ["Spreadsheet", "free", "Whatever the template allows", "Import, suggestions and recalculation in one flow"],
     ];
@@ -207,9 +216,9 @@ async function build() {
       text(s, r[2], { x: cols[1], y, w: widths[1], h: 0.74, fontSize: 14, color: C.text2, valign: "middle" });
       text(s, r[3], { x: cols[2], y, w: widths[2], h: 0.74, fontSize: 14, bold: true, color: C.text1, valign: "middle" });
     });
-    text(s, "In one line: one sentence checks a purchase or changes a bill, and you see before and after ahead of saving.", { x: MX, y: 5.9, w: CW, h: 0.35, fontSize: 15, bold: true, color: C.accent1 });
+    text(s, "What is new: no sign-up, no bank login, and an answer that names what a purchase breaks.", { x: MX, y: 5.9, w: CW, h: 0.35, fontSize: 15, bold: true, color: C.accent1 });
     text(s, "Features: YNAB, PocketGuard and Monarch help pages. Prices: list prices reported in November 2026 (PocketGuard from its own site; YNAB and Monarch from review sites).", { x: MX, y: 6.38, w: CW, h: 0.3, fontSize: 10, color: C.text2 });
-    s.addNotes("0:40. These tools are good and they already compute a leftover. People still quit them because of upkeep. Our bet is the whole flow: import, confirm, ask, update. That it is faster and clearer than the alternatives is a hypothesis we test on the same task after the hackathon.");
+    s.addNotes("0:40. These tools are good and they already compute a leftover. People still quit them because of upkeep. What is new here: no account and no bank login, the plan is built from a CSV in the browser, and the answer to 'can I afford it' names what breaks: the reserve, everyday spending or a bill. That this is faster and clearer than the alternatives is a hypothesis we test on the same task after the hackathon.");
   }
 
   // 4 — product
@@ -332,35 +341,50 @@ async function build() {
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "BUSINESS POTENTIAL");
-    s.addText("$100M ARR is under 1% of the segment", { placeholder: "title" });
-    const stats = [["10,000", "$1.2M"], ["100,000", "$12M"], ["834,000", "$100M"]];
-    const cw = (CW - 0.6) / 3;
-    stats.forEach((st, i) => {
-      const x = MX + i * (cw + 0.3), dark = i === 2;
-      box(s, { x, y: TOP, w: cw, h: 1.85, fill: { color: dark ? C.text1 : C.background2 }, line: { color: dark ? C.text1 : C.background2, width: 0 } });
-      text(s, "paying users", { x: x + 0.35, y: TOP + 0.2, w: cw - 0.7, h: 0.28, fontSize: 12, color: dark ? C.accent3 : C.text2 });
-      text(s, st[0], { x: x + 0.35, y: TOP + 0.45, w: cw - 0.7, h: 0.7, fontSize: 36, bold: true, color: dark ? C.background1 : C.text1, valign: "middle" });
-      text(s, [
-        { text: st[1], options: { bold: true, color: dark ? C.background1 : C.text1 } },
-        { text: "  a year", options: { color: dark ? C.accent3 : C.text2 } },
-      ], { x: x + 0.35, y: TOP + 1.22, w: cw - 0.7, h: 0.4, fontSize: 18, valign: "middle" });
-    });
-    const y2 = TOP + 2.15, h2 = 1.9, lw = 5.75;
-    box(s, { x: MX, y: y2, w: lw, h: h2, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
-    text(s, "0.9%", { x: MX + 0.35, y: y2 + 0.25, w: 1.9, h: 0.8, fontSize: 40, bold: true, color: C.text1, valign: "middle" });
-    text(s, "834,000 subscribers is about 0.9% of roughly 89 million US adults aged 25–44.", { x: MX + 2.3, y: y2 + 0.25, w: lw - 2.6, h: 0.95, fontSize: 14, color: C.text1, lineSpacingMultiple: 1.15 });
-    text(s, "Population: US Census Bureau estimates, 2024 (approximate).", { x: MX + 0.35, y: y2 + 1.35, w: lw - 0.7, h: 0.28, fontSize: 10, color: C.text2 });
+    s.addText("$100M ARR: 0.9% of the segment, if they stay", { placeholder: "title" });
 
-    const rx = MX + lw + 0.3, rw = CW - lw - 0.3;
-    box(s, { x: rx, y: y2, w: rw, h: h2, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
-    text(s, "Unit economics so far", { x: rx + 0.35, y: y2 + 0.22, w: 3.2, h: 0.35, fontSize: 16, bold: true, color: C.text1, valign: "middle" });
-    tag(s, "FACT", rx + rw - 0.72 - 0.35, y2 + 0.25);
+    // scale strip
+    box(s, { x: MX, y: TOP, w: CW, h: 0.8, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
     text(s, [
-      { text: "AI costs $0.0003 per task, measured on gpt-6-luna: 100 tasks a month is 3 cents", options: { bullet: true, breakLine: true } },
-      { text: "LTV and CAC: from the pilot, not guessed", options: { bullet: true } },
-    ], { x: rx + 0.35, y: y2 + 0.7, w: rw - 0.7, h: 1.0, fontSize: 14, color: C.text2, paraSpaceAfter: 5 });
-    text(s, "Yearly revenue = users × $10 × 12, before discounts, churn and fees. Scale arithmetic at a hypothetical price, not a demand forecast.", { x: MX, y: 6.38, w: CW, h: 0.3, fontSize: 10, color: C.text2 });
-    s.addNotes("4:00. This is arithmetic, not a forecast: at $10 a month, $100M a year needs 834,000 subscribers, under 1% of US adults aged 25 to 44. The AI costs three hundredths of a cent per task, measured on the real model, so the margin does not depend on it. LTV and CAC we will measure in a pilot.");
+      { text: "834,000", options: { bold: true, color: C.background1 } },
+      { text: "  subscribers × $10 × 12 = ", options: { color: C.accent3 } },
+      { text: "$100M a year", options: { bold: true, color: C.background1 } },
+    ], { x: MX + 0.4, y: TOP, w: 6.6, h: 0.8, fontSize: 20, valign: "middle" });
+    text(s, "About 0.9% of roughly 89 million US adults aged 25–44 (US Census Bureau estimates, 2024). Arithmetic, not a forecast.", { x: MX + 7.1, y: TOP, w: CW - 7.5, h: 0.8, fontSize: 12, color: C.accent3, valign: "middle", lineSpacingMultiple: 1.1 });
+
+    // LTV scenarios
+    const y1 = TOP + 1.0;
+    const tw = tag(s, "ESTIMATE", MX, y1);
+    text(s, "LTV per subscriber = $9.38 margin a month × months they keep paying. CAC ceiling = LTV ÷ 3.", { x: MX + tw + 0.15, y: y1, w: CW - tw - 0.15, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    const sc = [["6 months", "$56", "$19"], ["12 months", "$113", "$38"], ["24 months", "$225", "$75"]];
+    const cw = (CW - 0.6) / 3, y2 = y1 + 0.42, ch = 1.3;
+    sc.forEach((c, i) => {
+      const x = MX + i * (cw + 0.3), mid = i === 1;
+      box(s, { x, y: y2, w: cw, h: ch, fill: { color: mid ? C.accent4 : C.background2 }, line: { color: mid ? C.accent2 : C.background2, width: mid ? 1 : 0 } });
+      text(s, "stays " + c[0], { x: x + 0.35, y: y2 + 0.13, w: cw - 0.7, h: 0.26, fontSize: 12, color: C.text2 });
+      text(s, [
+        { text: "LTV " + c[1], options: { fontSize: 28, bold: true, color: C.text1 } },
+      ], { x: x + 0.35, y: y2 + 0.38, w: cw - 0.7, h: 0.5, valign: "middle" });
+      text(s, [
+        { text: "pays back if CAC is under ", options: { color: C.text2 } },
+        { text: c[2], options: { bold: true, color: C.accent1 } },
+      ], { x: x + 0.35, y: y2 + 0.9, w: cw - 0.7, h: 0.3, fontSize: 13, valign: "middle" });
+    });
+
+    // facts behind the estimate
+    const y3 = y2 + ch + 0.2, h3 = 1.1, lw = (CW - 0.3) / 2;
+    box(s, { x: MX, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
+    tag(s, "FACT", MX + 0.3, y3 + 0.18);
+    text(s, "We keep $9.38 of $10: − $0.59 card fee − $0.03 AI", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s, "Stripe list price 2.9% + 30¢. AI: $0.0003 per task measured on gpt-6-luna, at 100 tasks a month.", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    const rx = MX + lw + 0.3;
+    box(s, { x: rx, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
+    tag(s, "FACT", rx + 0.3, y3 + 0.18);
+    text(s, "Retention decides: 54–57% renew after month one", { x: rx + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s, "Median first renewal of monthly plans, Productivity and Utilities apps. RevenueCat, State of Subscription Apps 2026.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+
+    text(s, "Months retained and CAC are assumptions until the pilot measures them. First channel to test: the free, no-sign-up purchase check as the entry point from search and personal-finance communities.", { x: MX, y: 6.28, w: CW, h: 0.45, fontSize: 10, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. That is arithmetic. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay: a year gives $113, which pays back if a subscriber costs under $38 to acquire. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month. That is why the product is built around payday, the moment people have a reason to return. Months retained and CAC are assumptions; the pilot measures both.");
   }
 
   // 9 — evidence
