@@ -15,6 +15,7 @@ import { Icon } from "./Icon";
 import { Landing } from "./Landing";
 import { ImportScreen } from "./ImportScreen";
 import { SetupScreen } from "./SetupScreen";
+import { InterviewScreen } from "./InterviewScreen";
 import { Dashboard } from "./Dashboard";
 import {
   BillsScreen,
@@ -104,6 +105,7 @@ export function ClientApp() {
     "/": "Your money, made clearer",
     "/setup/import": "Get started",
     "/setup/plan": "Your first plan",
+    "/setup/interview": "Interview",
     "/app": "Overview",
     "/app/bills": "Bills & payments",
     "/app/update": "Update balance",
@@ -311,6 +313,12 @@ export function ClientApp() {
                       >
                         Import transactions
                       </Button>
+                      <Button kind="ghost" onClick={() => nav("/setup/interview")}>
+                        Answer five questions
+                      </Button>
+                      <Button kind="ghost" onClick={() => nav("/setup/plan")}>
+                        Enter by hand
+                      </Button>
                     </>
                   )}
                 </div>
@@ -323,6 +331,8 @@ export function ClientApp() {
                 initialText={initialCsv}
                 variant={variant}
               />
+            ) : path === "/setup/interview" ? (
+              <InterviewScreen />
             ) : path === "/setup/plan" ? (
               <SetupScreen />
             ) : path === "/app" ? (
@@ -360,7 +370,8 @@ export function ClientApp() {
       {assistant && (
         <Assistant
           close={() => setAssistant(false)}
-          setup={path === "/setup/plan"}
+          setup={path === "/setup/plan" && state.transactions.length > 0}
+          byHand={path === "/setup/plan" && state.transactions.length === 0}
         />
       )}{" "}
       {toastText && (

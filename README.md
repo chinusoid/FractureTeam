@@ -43,6 +43,10 @@ Open the URL printed by Next.js (normally `http://localhost:3000`). For producti
 ## What's implemented
 
 - English landing page, downloadable synthetic CSVs A and B, and sample onboarding through the real import screen.
+- **Setup interview** ("Answer five questions"): balance, next payday, bills, everyday spending and a reserve, asked in a fixed order and answered in your own words ("about 2 grand", "next Friday", "rent 1100 on the 17th and phone $65 on the 18th"). A bill without an amount or a date is asked about, not guessed. Nothing becomes a plan there: the answers open the setup screen as suggestions to confirm, edit, dismiss or add to. The interview is free and does not use the free plan's assistant questions.
+- Other ways to start: a bank CSV, the sample, or **by hand** without a file ("No file? Enter your numbers by hand"): balance, the day the plan runs to, everyday spending, a reserve and your bills. In that mode **Add bills by typing** lets the assistant turn a sentence ("rent, $1,100, due Nov 19") into a bill draft you confirm; if the amount or the date is missing, it asks.
+- The import screen says what the file should look like (CSV; from Excel or Google Sheets use Save As → CSV; date, description, amount), offers a template to download, and answers an uploaded Excel workbook with how to save it as CSV.
+- In setup, **Build my plan** and the number of suggested bills still waiting for a decision stay docked at the bottom of the screen.
 - CSV upload and drag/drop, column mapping, amount sign, mandatory ambiguous-date selection, row errors, partial import, duplicate review, transfer flags, row exclusions, and SHA-256 re-import detection. Limits: 2 MB / 5,000 records.
 - One-click confirmation of the clear suggestions (flagged ones, such as a transfer to savings, wait for their own decision), a payday reminder as a calendar file that repeats on the detected pay rhythm, and a pricing section on the landing page.
 - Suggested recurring bills, expected-paycheck period, an editable everyday-spending estimate, selectable/custom reserve, and explicit confirmation of bills and plan.
@@ -124,7 +128,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 131 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
+There are 141 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
@@ -151,6 +155,21 @@ Bank connections, login/sync, credit-card interest, payments, investment feature
 - The bill tools refuse to guess. When the user's words fit two bills equally well, or a new bill has no amount or due date in what the user wrote, the server rejects the draft and the model asks instead (`app/src/lib/ai/tools.ts`).
 - Transaction descriptions and bill names are treated as data. Account numbers, card numbers, emails and phone numbers are removed before sending (`app/src/lib/ai/scrub.ts`).
 - Quotas (`app/src/lib/limits`): global daily budget, per-IP per-minute and per-browser daily limits in Upstash Redis (REST). In production without Upstash the model is never called.
+
+### Setup interview
+
+`POST /api/intake` reads one answer to one question (`app/src/lib/ai/intake.ts`, contract in `app/src/lib/schemas/intake.ts`).
+
+- The questions and their order are fixed in code. The model never talks to the person: it fills a JSON form (amount, date, bills, "no more", "unclear") from the answer.
+- `interpretIntake` checks every value (ranges, real calendar days, a payday within two months, bill dates within a year), keeps only the field the current step asks for, removes account numbers and emails from bill names, and writes the reply itself from the checked values.
+- The interview has its own daily allowance per browser, so it never uses up the free plan's five questions.
+- Results on the real model (15 Nov 2026, `gpt-6-luna`): **34 of 34 scenarios passed in two consecutive runs** (`tests/ai-eval/intake.ts`: slang amounts, relative dates, several bills in one sentence, missing amount or date, repeats, instructions inside the answer). Median 1.5 s and about $0.0001 per answer.
+
+```sh
+cd app
+npm run eval:intake                                         # test model, no key needed
+npx tsx --env-file=.env.local tests/ai-eval/intake.ts       # real model
+```
 
 ### Free plan and Covered Plus
 
