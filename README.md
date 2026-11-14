@@ -2,7 +2,29 @@
 
 **Know what's covered before you spend.**
 
-A browser-local financial planner for one USD account. Import a CSV, review recurring bills, enter an available balance, and see what remains after bills, everyday spending, and your reserve. The design follows a quiet, monochrome workspace: white, pale cream `#f6f7ed`, thin borders, dark accents, a sidebar, and a radial allocation indicator.
+Covered is a bill planner for working adults in the US. Import a bank CSV, confirm the recurring bills it finds, enter your balance, and see what is actually yours to spend after bills, everyday spending and a reserve. Before a purchase you can ask in plain English; a bill change is a draft with a before and after that you confirm. Everything is stored in your browser.
+
+![Covered overview: $300 available to spend after bills, everyday spending and a reserve](docs/overview.png)
+
+## Try it in a minute
+
+1. Press **Try sample data**: a synthetic three-month bank export is loaded.
+2. **Continue to setup**, press **Confirm 7 bills**, decide the flagged savings transfer, then **Build my plan**: $2,200 in the account, **$300** free.
+3. **Ask assistant** → “Can I afford $400 this weekend?” → $100 below the reserve; bills and everyday spending are still covered.
+4. “My car insurance went up by $30” → a draft with before and after → **Confirm change** → **$270**.
+5. **Remind me on …** downloads a calendar reminder for payday. **Update balance** then shows what changed since last time.
+
+## Where to look
+
+| Question | Where |
+| --- | --- |
+| Does it work end to end? | `app/tests/e2e/release.mjs` walks the main scenario against a deployment with the real model, at 1280 and 390 px |
+| Is the core real? | Money is computed by `app/src/lib/finance` (integer cents, covered by tests). The model only picks one of four functions (`app/src/lib/ai/tools.ts`); any amount in its text is checked against computed values (`app/src/lib/ai/guard.ts`) |
+| What do we sell? | The landing page: a free plan and Covered Plus at a planned $10 a month, free during early access |
+| Why come back? | A payday calendar reminder, the “Since last update” recap after each balance update, and a notice when the plan is stale |
+| How is quality kept? | CI on every pull request: typecheck, unit tests, 25 assistant scenarios, build, browser walkthroughs on desktop and phone |
+
+The design follows a quiet, monochrome workspace: white, pale cream `#f6f7ed`, thin borders, dark accents, a sidebar, and a radial allocation indicator.
 
 ## Run
 
@@ -20,6 +42,7 @@ Open the URL printed by Next.js (normally `http://localhost:3000`). For producti
 
 - English landing page, downloadable synthetic CSVs A and B, and sample onboarding through the real import screen.
 - CSV upload and drag/drop, column mapping, amount sign, mandatory ambiguous-date selection, row errors, partial import, duplicate review, transfer flags, row exclusions, and SHA-256 re-import detection. Limits: 2 MB / 5,000 records.
+- One-click confirmation of the clear suggestions (flagged ones, such as a transfer to savings, wait for their own decision), a payday reminder as a calendar file that repeats on the detected pay rhythm, and a pricing section on the landing page.
 - Suggested recurring bills, expected-paycheck period, an editable everyday-spending estimate, selectable/custom reserve, and explicit confirmation of bills and plan.
 - Overview with available money, period, balance age, status, an expandable calculation, payment cards, allocation breakdown, recent transactions, and a purchase simulator.
 - Bill creation, editing, deletion, and marking paid with an explicit question about whether the payment is already reflected in the entered balance.
@@ -99,7 +122,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 111 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, and the assistant's request boundaries and guards.
+There are 123 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
@@ -123,6 +146,7 @@ Bank connections, login/sync, credit-card interest, payments, investment feature
 
 - The model only understands the request and calls one of four fixed server functions: plan summary, purchase check, propose a bill change, propose a new bill. Nothing is saved on the server. A change is applied only when the user presses **Confirm change** in the browser, which re-checks the plan version.
 - Money is computed by `app/src/lib/finance` (shared, integer cents). Any dollar amount in the model's text that does not match a computed value is replaced with a template (`app/src/lib/ai/guard.ts`).
+- The bill tools refuse to guess. When the user's words fit two bills equally well, or a new bill has no amount or due date in what the user wrote, the server rejects the draft and the model asks instead (`app/src/lib/ai/tools.ts`).
 - Transaction descriptions and bill names are treated as data. Account numbers, card numbers, emails and phone numbers are removed before sending (`app/src/lib/ai/scrub.ts`).
 - Quotas (`app/src/lib/limits`): global daily budget, per-IP per-minute and per-browser daily limits in Upstash Redis (REST). In production without Upstash the model is never called.
 
@@ -135,7 +159,7 @@ cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, bu
 
 | Variable | Purpose |
 | --- | --- |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6.1-sol`) | Model access. No automatic fallback: switch the model manually if the key has no access. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`) | Model access. No automatic fallback: switch the model manually if the key has no access. |
 | `OPENAI_REASONING_EFFORT` | `low` by default; `none` for models without reasoning |
 | `AI_ENABLED` | `false` turns the assistant off; manual forms keep working |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production |
@@ -149,7 +173,7 @@ Before deploying, confirm that the key can use the configured model (the key is 
 
 ```sh
 cd app
-node --env-file=.env.local -e "fetch('https://api.openai.com/v1/models/' + (process.env.OPENAI_MODEL || 'gpt-6.1-sol'), { headers: { authorization: 'Bearer ' + process.env.OPENAI_API_KEY } }).then(async (r) => console.log(r.status, JSON.stringify(await r.json()).slice(0, 160)))"
+node --env-file=.env.local -e "fetch('https://api.openai.com/v1/models/' + (process.env.OPENAI_MODEL || 'gpt-6-luna'), { headers: { authorization: 'Bearer ' + process.env.OPENAI_API_KEY } }).then(async (r) => console.log(r.status, JSON.stringify(await r.json()).slice(0, 160)))"
 ```
 
 `200` with the model's `id` means the key has access. `401` means the key is wrong; `404` means this key cannot use that model: set `OPENAI_MODEL` to one it can, and `OPENAI_REASONING_EFFORT=none` if that model has no reasoning setting. Then run the eval below with the real model before the first deploy.
@@ -162,6 +186,8 @@ npm run eval:ai                                            # mock model, no key 
 npx tsx --env-file=.env.local tests/ai-eval/run.ts         # real model: pass/fail, tokens, cost per task
 npx tsx --env-file=.env.local tests/ai-eval/run.ts --repeat 3
 ```
+
+Results on the real model (14 Nov 2026, `gpt-6-luna`, reasoning effort `low`): **25 of 25 scenarios passed in two consecutive runs**. Median answer time 3.2 s (90% under 5.0 s); about $0.0003 per assistant task (on average 2,300 input and 85 output tokens at $0.10 / $0.50 per 1M tokens). The same day `tests/e2e/release.mjs` passed in the browser against a local server with the real model.
 
 The 25 scenarios in `tests/ai-eval/scenarios.ts` cover purchase phrasings, bill changes, unknown dates, two similar bills, wrong names, requests without data, API failures, prompt injection in transaction text, and the setup review of sample A (the savings transfer must not be called a bill).
 
