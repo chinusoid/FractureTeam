@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixtures from "./fixtures/own-model-parity.json";
 import { features } from "../../src/lib/ai/own/features";
 import { predictCategory, predictIntent } from "../../src/lib/ai/own/model";
-import { amountsIn, matchBills, ownProvider, parseDate } from "../../src/lib/ai/own/provider";
+import { amountsIn, lonePrice, matchBills, ownProvider, parseDate } from "../../src/lib/ai/own/provider";
 import { createProvider } from "../../src/lib/ai/providers";
 import { readEnv } from "../../src/lib/ai/env";
 import { handleAssistant } from "../../src/lib/ai/handler";
@@ -69,6 +69,18 @@ describe("Covered model runtime", () => {
     expect(amountsIn("Add my phone bill, $65, due Nov 24")).toEqual([65]);
     expect(amountsIn("Add rent, $1,100, due Nov 20")).toEqual([1100]);
     expect(amountsIn("is 120 dollars ok?")).toEqual([120]);
+  });
+  it("reads a price said as a plain number, but not a date or a year", () => {
+    expect(lonePrice("is it ok to spend 1500 on a laptop")).toBe(1500);
+    expect(lonePrice("thinking about a ps5, 499")).toBe(499);
+    expect(lonePrice("a 1,200 couch?")).toBe(1200);
+    expect(lonePrice("new shoes 89.99")).toBe(89.99);
+    expect(lonePrice("can I buy a tv on the 22nd")).toBeNull();
+    expect(lonePrice("a trip on nov 22")).toBeNull();
+    expect(lonePrice("a trip in 2027")).toBeNull();
+    expect(lonePrice("pay 300 over 12 months")).toBe(300);
+    expect(lonePrice("two things, 40 and 60")).toBeNull();
+    expect(lonePrice("can I afford a tv")).toBeNull();
   });
   it("reads dates", () => {
     expect(parseDate("on Nov 22", "2026-11-14")).toBe("2026-11-22");

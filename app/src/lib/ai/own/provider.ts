@@ -132,6 +132,27 @@ export function amountsIn(text: string): number[] {
   return out;
 }
 
+/**
+ * A price said as a plain number: "spend 1500 on a laptop", "a ps5, 499". Used for purchases only, and only
+ * when the sentence has exactly one such number, so a day of the month or a year is never taken for a price.
+ */
+export function lonePrice(text: string): number | null {
+  const found: number[] = [];
+  const months = "jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december";
+  const re = new RegExp(
+    String.raw`(?<![\w.,/$-])(?<!\b(?:${months}|the|on|in)\s)((?:\d{1,3}(?:,\d{3})+|\d{2,6})(?:\.\d{1,2})?)(?![\w/-]|\.\d|,\d|\s*(?:st|nd|rd|th|am|pm|days?|weeks?|months?|years?|hours?|%)\b)`,
+    "gi",
+  );
+  for (const m of text.matchAll(re)) {
+    const c = parseMoneyString(m[1]);
+    if (c === null || c <= 0) continue;
+    const n = c / 100;
+    if (Number.isInteger(n) && n >= 2020 && n <= 2039 && !m[1].includes(",")) continue;
+    found.push(n);
+  }
+  return found.length === 1 ? found[0] : null;
+}
+
 const GENERIC = new Set(["bill", "bills", "payment", "monthly", "my", "the", "auto", "pay", "plan", "now", "due", "month", "this", "went", "new"]);
 const words = (s: string) =>
   s
@@ -199,8 +220,11 @@ function decideChat(userText: string, ctx: Context | null, opts: OwnOptions): Ou
     case "explain":
       return call("get_plan_summary", {});
     case "purchase":
-      if (!amounts.length) return message("How much would it cost?");
-      return call("simulate_purchase", { amount_usd: amounts[0], purchase_date: date });
+    {
+      const price = amounts[0] ?? lonePrice(userText);
+      if (price == null) return message("How much would it cost?");
+      return call("simulate_purchase", { amount_usd: price, purchase_date: date });
+    }
     case "bill_new": {
       const name = newBillName(userText);
       if (!name) return message("Which bill would you like to add, how much is it, and when is it due?");

@@ -404,6 +404,12 @@ export function Assistant({
                 maxLength={500}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter sends, Shift+Enter starts a new line; not while an input method is composing.
+                  if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+                  e.preventDefault();
+                  if (!busy && message.trim()) void send(message);
+                }}
                 placeholder={byHand ? "Internet, $50, due on the 22nd…" : "Ask about your plan…"}
                 disabled={busy}
               />

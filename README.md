@@ -8,6 +8,8 @@ Covered is a bill planner for working adults in the US. Import a bank CSV, confi
 
 **Live:** <https://covered-fracture.vercel.app> · **Pitch deck:** [pitch/covered-pitch.pdf](pitch/covered-pitch.pdf)
 
+**AI in production:** our own model, covered-nlu-1 (`AI_PROVIDER=own`), with OpenAI as the backup when it is unsure. Each answer in the app says which model replied. One setting switches engines: `AI_PROVIDER=own`, `openai` or `local` — see [Our own model](#our-own-model-ai_providerown).
+
 ## Try it in a minute
 
 1. Press **Try sample data**: a synthetic three-month bank export is loaded.
@@ -128,7 +130,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 152 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
+There are 154 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
