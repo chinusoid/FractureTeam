@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   addDays,
   today,
@@ -36,6 +36,44 @@ export function Assistant({
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
+  // Voice input (Web Speech API, where the browser has it). The text is shown and sent like a typed message.
+  const [voice, setVoice] = useState(false),
+    [listening, setListening] = useState(false);
+  const recognition = useRef<{ stop: () => void } | null>(null);
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    setVoice(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+  function listen() {
+    if (listening) {
+      recognition.current?.stop();
+      return;
+    }
+    const w = window as unknown as Record<string, new () => SpeechLike>;
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    let finalText = "";
+    rec.onresult = (e) => {
+      const parts = Array.from(e.results);
+      const text = parts.map((r) => r[0].transcript).join("").trim();
+      setMessage(text);
+      if (parts.length && parts[parts.length - 1].isFinal) finalText = text;
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      recognition.current = null;
+      if (finalText) void send(finalText);
+    };
+    recognition.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
   async function send(text: string) {
     if (!text.trim() || busy || !state.aiConsent) return;
     setMessage("");
@@ -369,6 +407,19 @@ export function Assistant({
                 placeholder={byHand ? "Internet, $50, due on the 22nd…" : "Ask about your plan…"}
                 disabled={busy}
               />
+              {voice && (
+                <button
+                  className={`icon-button mic-button ${listening ? "listening" : ""}`}
+                  type="button"
+                  onClick={listen}
+                  disabled={busy}
+                  aria-pressed={listening}
+                  aria-label={listening ? "Stop listening" : "Ask by voice"}
+                  title={listening ? "Listening… tap to stop" : "Ask by voice"}
+                >
+                  <Icon name="mic" size={18} />
+                </button>
+              )}
               <button
                 className="icon-button send-button"
                 type="submit"
@@ -386,4 +437,15 @@ export function Assistant({
       </div>
     </Modal>
   );
+}
+
+interface SpeechLike {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((e: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
 }
