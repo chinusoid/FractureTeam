@@ -3571,9 +3571,258 @@ details p {
   margin-top: 12px;
 }
 
+/* Import: what the file should look like, shown until a file is chosen. */
+.format-help {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.format-help h3 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.format-help ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.format-help ul strong {
+  color: #1f1f1c;
+  font-weight: 500;
+}
+.format-example {
+  display: grid;
+  gap: 2px;
+  background: var(--cream);
+  border-radius: 7px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.format-example code {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.hero-by-hand {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.hero-by-hand .text-button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  color: #1f1f1c;
+}
+@media (max-width: 700px) {
+  .hero-by-hand {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Setup interview: the questions on the left, what was understood on the right. */
+.interview-consent {
+  max-width: 620px;
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.interview-consent h2 {
+  font-size: 20px;
+  font-weight: 400;
+}
+.interview-consent p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.interview-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+.interview-chat .section-heading .pill {
+  white-space: normal;
+}
+.interview-chat .chat-messages {
+  flex: 1;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.interview-chat .assistant-message > .button {
+  margin-top: 12px;
+}
+.interview-chat .assistant-form textarea {
+  min-height: 64px;
+}
+.interview-facts {
+  display: grid;
+  gap: 0;
+  margin: 0 0 18px;
+}
+.interview-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.interview-facts dt {
+  color: var(--muted);
+}
+.interview-facts dd {
+  margin: 0;
+  font-weight: 500;
+}
+.interview-bills-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.interview-bills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.interview-bills li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.interview-bills li > span {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+.interview-bills li small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.interview-note {
+  margin: 16px 0 12px;
+}
+
+/* Setup: "Build my plan" and what is still open stay in view while the bill list scrolls. */
+.setup-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 25px;
+  background: #fffffff2;
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--line);
+}
+.setup-dock > .notice {
+  margin: 12px 0 0;
+}
+.setup-dock .setup-footer {
+  margin-top: 0;
+  padding: 14px 0;
+}
+.setup-dock .setup-footer > p .text-button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  color: #1f1f1c;
+}
+
 .assistant-message .served-by {
   display: block;
   margin: -2px 0 8px;
   font-size: 11px;
+  color: var(--muted);
+}
+
+/* Safe to spend per day */
+.per-day {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.purchase-result .per-day-after {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Voice input */
+.mic-button {
+  position: absolute;
+  right: 40px;
+  bottom: 10px;
+  width: 27px;
+  height: 27px;
+  background: #eef0e3;
+  color: var(--ink);
+}
+.assistant-form:has(.mic-button) textarea {
+  padding-right: 76px;
+}
+.mic-button.listening {
+  background: var(--ink);
+  color: #fff;
+  animation: mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(28, 28, 25, 0.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mic-button.listening {
+    animation: none;
+  }
+}
+/* Subscriptions found by the Covered model */
+.subs-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  margin: 0 0 18px;
+  border: 1px solid #e3e5d6;
+  border-radius: 12px;
+  background: #f6f7ed;
+}
+.subs-card strong {
+  display: block;
+  font-size: 14px;
+}
+.subs-card p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.row-flag.category-flag {
+  display: inline-block;
+  margin: 4px 0 0 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef0e3;
   color: var(--muted);
 }

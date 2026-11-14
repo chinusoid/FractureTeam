@@ -226,23 +226,23 @@ async function build() {
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
     kicker(s, "THE PRODUCT");
-    s.addText("Import. Confirm. See what is yours", { placeholder: "title" });
+    s.addText("Start your way. Confirm. See what is yours", { placeholder: "title" });
     const steps = [
-      ["Import a bank CSV", "Read in your browser, never uploaded."],
-      ["Confirm the bills we found", "Nothing enters the plan until you confirm it."],
+      ["CSV, five questions, or by hand", "The CSV is read in your browser. No file? Answer five questions in your own words."],
+      ["Confirm each number and bill", "Edit, dismiss or add. Nothing enters the plan until you confirm it."],
       ["See what is left", "After bills, daily spending and your reserve."],
     ];
     steps.forEach((st, i) => {
       const y = TOP + 0.05 + i * 1.08;
       numberCircle(s, i + 1, MX, y);
       text(s, st[0], { x: MX + 0.8, y: y - 0.02, w: 4.6, h: 0.35, fontSize: 18, bold: true, color: C.text1 });
-      text(s, st[1], { x: MX + 0.8, y: y + 0.38, w: 4.6, h: 0.3, fontSize: 14, color: C.text2 });
+      text(s, st[1], { x: MX + 0.8, y: y + 0.38, w: 4.6, h: 0.55, fontSize: 13, color: C.text2, lineSpacingMultiple: 1.1 });
     });
     box(s, { x: MX, y: 5.25, w: 5.2, h: 1.1, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
     text(s, "$2,200 − $1,300 − $350 − $250 = $300", { x: MX + 0.3, y: 5.4, w: 4.6, h: 0.4, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
     text(s, "balance − bills − everyday spending − reserve = available", { x: MX + 0.3, y: 5.85, w: 4.6, h: 0.3, fontSize: 11, color: C.text2, valign: "middle" });
     await shot(s, "overview.png", { x: 6.2, y: TOP + 0.1, w: W - MX - 6.2, alt: "Covered overview: $300 available to spend, upcoming bills and a purchase check" });
-    s.addNotes("1:00 — switch to the live product here. Try sample data, continue to setup, confirm the bills (point at the savings transfer it flagged), build the plan. $2,200 in the account, $300 actually free.");
+    s.addNotes("1:00 — switch to the live product here. Three ways in: a bank CSV, five questions answered in plain words, or the numbers typed by hand; whichever you pick, you confirm every bill before the plan exists. For the demo: Try sample data, continue to setup, confirm the bills (point at the savings transfer it flagged), build the plan. $2,200 in the account, $300 actually free.");
   }
 
   // 5 — demo
@@ -398,9 +398,9 @@ async function build() {
     text(s, "Verified", { x: MX + 0.4, y: TOP + 0.78, w: lw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
     text(s, [
       { text: "Our own model alone: 24 of 25 assistant scenarios, 77% on phrasings it never saw in training", options: { bullet: true, breakLine: true } },
-      { text: "With OpenAI (gpt-6-luna): 25 of 25, twice in a row", options: { bullet: true, breakLine: true } },
-      { text: "142 automated unit tests: money math, CSV import, quotas, guards, model parity", options: { bullet: true, breakLine: true } },
-      { text: "Release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
+      { text: "With OpenAI (gpt-6-luna), twice in a row: 25 of 25 scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
+      { text: "152 automated unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
+      { text: "Live: release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
     ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
 
     const mx = MX + lw + 0.3;

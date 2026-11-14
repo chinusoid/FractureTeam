@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   addDays,
   computePlan,
@@ -123,6 +123,51 @@ export function BillDialog({
     </Modal>
   );
 }
+const CATEGORY_LABEL: Record<string, string> = {
+  rent: "Housing",
+  insurance: "Insurance",
+  phone: "Phone",
+  internet: "Internet",
+  utilities: "Utilities",
+  subscription: "Subscription",
+  gym: "Membership",
+  loan: "Loan",
+  other_bill: "Bill",
+  card_payment: "Card payment",
+  savings_transfer: "Transfer",
+  person_transfer: "Transfer",
+  everyday: "Everyday",
+  income: "Income",
+};
+const PER_MONTH: Record<Bill["frequency"], number> = { Monthly: 1, Biweekly: 26 / 12, Weekly: 52 / 12, "One-time": 0 };
+
+type Category = { label: string; confidence: number };
+
+/** Bill categories from the Covered model (our own, runs in the browser; loaded only on this screen). */
+function useCategories(bills: Bill[]) {
+  const [cats, setCats] = useState<Record<string, Category>>({});
+  const key = bills.map((b) => `${b.id}:${b.name}`).join("|");
+  useEffect(() => {
+    let alive = true;
+    import("@/lib/ai/own/model")
+      .then(({ predictCategory }) => {
+        if (!alive) return;
+        const out: Record<string, Category> = {};
+        for (const b of bills) {
+          const p = predictCategory(b.name);
+          out[b.id] = { label: p.label, confidence: p.confidence };
+        }
+        setCats(out);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return cats;
+}
+
 export function BillsScreen() {
   const { state, change, toast } = useApp();
   const [editor, setEditor] = useState<Bill | "new" | null>(null),
@@ -139,6 +184,17 @@ export function BillsScreen() {
           (filter === "paid" ? b.status === "paid" : b.status === "confirmed")),
     )
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const active = state.bills.filter((b) => b.status === "confirmed" || b.status === "paid");
+  const cats = useCategories(active);
+  const recurring = new Map<string, Bill>();
+  for (const b of active) {
+    const c = cats[b.id];
+    if (c && (c.label === "subscription" || c.label === "gym") && c.confidence >= 0.5 && PER_MONTH[b.frequency] > 0) {
+      if (!recurring.has(b.name)) recurring.set(b.name, b);
+    }
+  }
+  const subs = [...recurring.values()];
+  const subsMonthly = Math.round(subs.reduce((s, b) => s + b.amountCents * PER_MONTH[b.frequency], 0));
   function paid(already: boolean) {
     try {
       change((s) => markBillPaid(s, pay!.id, already));
@@ -158,6 +214,24 @@ export function BillsScreen() {
           Add a bill
         </Button>
       </PageHeading>
+      {subs.length > 0 && (
+        <section className="subs-card" aria-label="Subscriptions and memberships">
+          <span className="entity-icon">
+            <Icon name="spark" size={20} />
+          </span>
+          <div>
+            <strong>
+              {subs.length} subscription{subs.length > 1 ? "s" : ""} and memberships:{" "}
+              {money(subsMonthly)} a month, {money(subsMonthly * 12)} a year
+            </strong>
+            <p>
+              {subs.map((b) => b.name).join(", ")}. Found by the Covered model,
+              our own model running on your device. Worth a look if you want
+              more room before payday.
+            </p>
+          </div>
+        </section>
+      )}
       <div className="section-heading">
         <div className="segmented">
           {[
@@ -190,6 +264,14 @@ export function BillsScreen() {
                   {dateLabel(b.dueDate)}
                   {b.dueDate > state.plan.horizonEndDate && (
                     <span className="row-flag">Outside this period</span>
+                  )}
+                  {cats[b.id] && cats[b.id].confidence >= 0.5 && (
+                    <span
+                      className="row-flag category-flag"
+                      title={`Covered model, ${Math.round(cats[b.id].confidence * 100)}% sure`}
+                    >
+                      {CATEGORY_LABEL[cats[b.id].label] ?? "Bill"}
+                    </span>
                   )}
                 </p>
               </div>

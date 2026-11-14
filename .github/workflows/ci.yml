@@ -28,6 +28,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run eval:ai
+      - run: npm run eval:intake
       # Our own model alone (no OpenAI): must keep at least 90% of the scenarios.
       - run: npx tsx tests/ai-eval/run.ts --min 0.9
         env:

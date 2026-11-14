@@ -30,6 +30,104 @@ async function waitForText(page: Page, selector: string, expected: string) {
   throw new Error(`${selector}: expected "${expected}", got "${last}"`);
 }
 
+/** A calendar day `days` from now in the browser's own time zone, as YYYY-MM-DD. */
+const dayFromNow = (page: Page, days: number) =>
+  page.evaluate((n) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, days);
+
+async function overflowing(page: Page) {
+  return page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+}
+
+/**
+ * Starting without a file: the import help, the interview (UI -> /api/intake -> checks) with the review
+ * that follows it, and the by-hand form with a bill typed to the assistant.
+ */
+async function startWithoutFile(page: Page, checks: string[]) {
+  const answer = async (text: string) => {
+    await page.locator("#interview-answer").fill(text);
+    await page.getByRole("button", { name: "Send answer" }).click();
+    await page.locator(".thinking").waitFor({ state: "detached", timeout: 20000 });
+  };
+  const payday = await dayFromNow(page, 10);
+  const soon = await dayFromNow(page, 3);
+  const later = await dayFromNow(page, 5);
+
+  // Import screen: what the file should look like, and a plain answer to an Excel workbook.
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(`${baseURL}/setup/import`);
+  await page.getByRole("heading", { name: "What the file should look like" }).waitFor();
+  await page.getByRole("button", { name: "Download a template" }).waitFor();
+  await page.getByLabel("Upload transactions CSV").setInputFiles({ name: "bank.xlsx", mimeType: "application/octet-stream", buffer: Buffer.from("PK not a csv") });
+  await waitForText(page, "main [role=alert]", "Save As");
+  assert.equal(await overflowing(page), false, "import: no horizontal overflow");
+  checks.push("file format help and Excel answer");
+
+  // Interview: five fixed questions, answered in words.
+  await page.goto(baseURL);
+  await page.getByRole("button", { name: "Answer five questions" }).click();
+  await page.getByRole("button", { name: "I agree, start the interview" }).click();
+  await page.getByText("Question 1 of 5").waitFor();
+  await answer("no idea");
+  await page.getByText("Question 1 of 5").waitFor();
+  assert.equal(await textOf(page, '[data-testid="iv-balance"]'), "—");
+  await answer("2200");
+  assert.equal(await textOf(page, '[data-testid="iv-balance"]'), "$2,200");
+  await answer(payday);
+  await page.getByText("Question 3 of 5").waitFor();
+  await answer(`rent $1,100 on ${soon}; phone $65 on ${soon}`);
+  await waitForText(page, ".interview-summary", "Phone");
+  await answer("internet $50");
+  await waitForText(page, ".interview-chat", "the due date for Internet");
+  assert.equal(await page.locator(".interview-bills li").count(), 2, "an incomplete bill is not added");
+  await answer(later);
+  await waitForText(page, ".interview-summary", "Internet");
+  await answer("that's all");
+  await page.getByText("Question 4 of 5").waitFor();
+  await answer("350");
+  await answer("250");
+  await page.getByText("All five answered").waitFor();
+  assert.equal(await textOf(page, '[data-testid="iv-everyday"]'), "$350");
+  assert.equal(await textOf(page, '[data-testid="iv-reserve"]'), "$250");
+  assert.equal(await overflowing(page), false, "interview: no horizontal overflow");
+  checks.push("interview fills the draft");
+
+  // Review: nothing counts until the person has checked it.
+  await page.getByRole("button", { name: "Check my answers" }).click();
+  await page.getByText("came from your answers").waitFor();
+  assert.equal(await page.locator("#balance").inputValue(), "2200");
+  await page.getByRole("button", { name: "Build my plan" }).click();
+  await waitForText(page, "main [role=alert]", "Confirm or dismiss each suggested bill");
+  assert.ok(page.url().endsWith("/setup/plan"), "unreviewed bills block the plan");
+  await page.locator("[data-pending]").filter({ hasText: "Phone" }).getByRole("button", { name: "Dismiss" }).click();
+  await page.getByRole("button", { name: "Confirm 2 bills" }).click();
+  await page.getByRole("button", { name: "Build my plan" }).click();
+  assert.equal(await textOf(page, '[data-testid="plan-remainder"]'), "$450");
+  checks.push("review then plan $450");
+
+  // By hand: the form, plus one bill typed to the assistant.
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(baseURL);
+  await page.getByRole("button", { name: "enter your numbers by hand" }).click();
+  await page.getByRole("heading", { name: "Your bills" }).waitFor();
+  await page.getByRole("button", { name: "Add bills by typing" }).click();
+  await waitForText(page, "main [role=alert]", "Enter your current balance first");
+  await page.locator("#balance").fill("2200");
+  await page.getByLabel("Everyday spending").fill("350");
+  await page.getByRole("button", { name: "Add bills by typing" }).click();
+  await page.getByRole("button", { name: "I agree, enable assistant", exact: true }).click();
+  await page.locator(".suggestions button").first().click();
+  await page.getByRole("button", { name: "Confirm change", exact: true }).click();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Build my plan" }).click();
+  assert.equal(await textOf(page, '[data-testid="plan-remainder"]'), "$500");
+  assert.equal(await overflowing(page), false, "by hand: no horizontal overflow");
+  checks.push("by hand with a typed bill $500");
+}
+
 async function run(page: Page, width: number, height: number) {
   const checks: string[] = [];
   const errors: string[] = [];
@@ -89,6 +187,7 @@ async function run(page: Page, width: number, height: number) {
   await page.reload();
   assert.equal(await textOf(page, '[data-testid="plan-remainder"]'), "$270");
   checks.push("persisted $270");
+  await startWithoutFile(page, checks);
   assert.deepEqual(errors, [], "no browser exceptions");
   return { viewport: `${width}×${height}`, status: "passed", checks };
 }

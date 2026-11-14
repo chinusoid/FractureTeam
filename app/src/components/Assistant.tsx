@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  addDays,
+  today,
   applyConfirmedProposal,
   computePlan,
   dateLabel,
@@ -20,9 +22,12 @@ import { Icon } from "./Icon";
 export function Assistant({
   close,
   setup,
+  byHand = false,
 }: {
   close: () => void;
   setup: boolean;
+  /** Setup without a file: the assistant turns a typed sentence into a bill draft to confirm. */
+  byHand?: boolean;
 }) {
   const { state, change, navigate, toast } = useApp();
   const [message, setMessage] = useState(""),
@@ -31,6 +36,44 @@ export function Assistant({
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
+  // Voice input (Web Speech API, where the browser has it). The text is shown and sent like a typed message.
+  const [voice, setVoice] = useState(false),
+    [listening, setListening] = useState(false);
+  const recognition = useRef<{ stop: () => void } | null>(null);
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    setVoice(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+  function listen() {
+    if (listening) {
+      recognition.current?.stop();
+      return;
+    }
+    const w = window as unknown as Record<string, new () => SpeechLike>;
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    let finalText = "";
+    rec.onresult = (e) => {
+      const parts = Array.from(e.results);
+      const text = parts.map((r) => r[0].transcript).join("").trim();
+      setMessage(text);
+      if (parts.length && parts[parts.length - 1].isFinal) finalText = text;
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      recognition.current = null;
+      if (finalText) void send(finalText);
+    };
+    recognition.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
   async function send(text: string) {
     if (!text.trim() || busy || !state.aiConsent) return;
     setMessage("");
@@ -116,13 +159,20 @@ export function Assistant({
               <span className="assistant-symbol">
                 <Icon name="spark" size={28} />
               </span>
-              <h3>More clarity, one question at a time.</h3>
+              <h3>{byHand ? "Tell me a bill, I’ll write it down." : "More clarity, one question at a time."}</h3>
               <p>
-                Check a purchase, talk through a bill, or understand your plan.
+                {byHand
+                  ? "Type a name, an amount and a due date. You confirm each bill before it is added."
+                  : "Check a purchase, talk through a bill, or understand your plan."}
               </p>
             </div>
             <div className="suggestions">
-              {(setup
+              {(byHand
+                ? [
+                    `Add rent, $1,100, due ${dateLabel(addDays(today(), 5), true)}`,
+                    `Add my phone bill, $65, due ${dateLabel(addDays(today(), 9), true)}`,
+                  ]
+                : setup
                 ? [
                     "Review the recurring bills in my import",
                     "What should I check before building my plan?",
@@ -169,7 +219,7 @@ export function Assistant({
                         <Button
                           kind="ghost"
                           onClick={() => {
-                            navigate(setup ? "/setup/plan" : "/app/bills");
+                            navigate(setup || byHand ? "/setup/plan" : "/app/bills");
                             close();
                           }}
                         >
@@ -187,7 +237,7 @@ export function Assistant({
                       <Button
                         kind="secondary"
                         onClick={() => {
-                          navigate(setup ? "/setup/plan" : "/app/bills");
+                          navigate(setup || byHand ? "/setup/plan" : "/app/bills");
                           close();
                         }}
                       >
@@ -354,9 +404,22 @@ export function Assistant({
                 maxLength={500}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask about your plan…"
+                placeholder={byHand ? "Internet, $50, due on the 22nd…" : "Ask about your plan…"}
                 disabled={busy}
               />
+              {voice && (
+                <button
+                  className={`icon-button mic-button ${listening ? "listening" : ""}`}
+                  type="button"
+                  onClick={listen}
+                  disabled={busy}
+                  aria-pressed={listening}
+                  aria-label={listening ? "Stop listening" : "Ask by voice"}
+                  title={listening ? "Listening… tap to stop" : "Ask by voice"}
+                >
+                  <Icon name="mic" size={18} />
+                </button>
+              )}
               <button
                 className="icon-button send-button"
                 type="submit"
@@ -374,4 +437,15 @@ export function Assistant({
       </div>
     </Modal>
   );
+}
+
+interface SpeechLike {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((e: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
 }

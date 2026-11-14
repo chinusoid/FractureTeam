@@ -12,8 +12,17 @@ import {
   type Mapping,
 } from "@/lib/client/model";
 import { useApp } from "./context";
-import { Button, Notice, PageHeading } from "./UI";
+import { Button, downloadText, Notice, PageHeading } from "./UI";
 import { Icon } from "./Icon";
+
+/** A starting point for people who keep their own spreadsheet: fill it in, save as CSV, upload. */
+const CSV_TEMPLATE = [
+  "Date,Description,Amount",
+  "11/01/2026,RENT PAYMENT,-1100.00",
+  "11/05/2026,PAYCHECK,2100.00",
+  "11/06/2026,GROCERY STORE,-65.40",
+  "",
+].join("\n");
 
 export function ImportScreen({
   initialText,
@@ -69,6 +78,14 @@ export function ImportScreen({
     setDuplicateOfPlan(false);
     setExcluded([]);
     setIsSample(false);
+    if (/\.(xlsx?|xlsm|numbers|ods)$/i.test(file.name)) {
+      setText("");
+      setFilename("");
+      setError(
+        "This is a spreadsheet workbook, not a CSV. Open it and choose File → Save As (or Download) → CSV (.csv), then upload that file.",
+      );
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
       setError("This file is larger than 2 MB. Export a smaller date range.");
       return;
@@ -193,6 +210,48 @@ export function ImportScreen({
             </span>
             <small>Up to 2 MB and 5,000 transactions</small>
           </label>
+          {!parsed && (
+            <div className="format-help">
+              <h3>What the file should look like</h3>
+              <ul>
+                <li>
+                  <strong>A CSV file (.csv).</strong> In your bank’s website,
+                  look for Export or Download transactions and pick CSV.
+                </li>
+                <li>
+                  <strong>Have an Excel or Google Sheets file?</strong> Choose
+                  File → Save As (or Download) → CSV (.csv) first.
+                </li>
+                <li>
+                  <strong>Three columns are enough:</strong> a date, a
+                  description and an amount. Separate debit and credit columns
+                  work too.
+                </li>
+                <li>
+                  <strong>Two or three months</strong> of history let us spot
+                  bills that repeat.
+                </li>
+              </ul>
+              <div className="format-example" role="img" aria-label="Example: a header row Date, Description, Amount followed by one row per transaction">
+                <code>Date,Description,Amount</code>
+                <code>11/01/2026,OAKWOOD APARTMENTS,-1100.00</code>
+                <code>11/05/2026,ACME PAYROLL,2100.00</code>
+              </div>
+              <div className="inline-actions">
+                <Button
+                  kind="secondary"
+                  icon="download"
+                  onClick={() => downloadText("covered-template.csv", CSV_TEMPLATE, "text/csv")}
+                >
+                  Download a template
+                </Button>
+                <button className="text-button" onClick={() => navigate("/setup/plan")}>
+                  No file? Enter your numbers by hand
+                  <Icon name="arrow" size={13} />
+                </button>
+              </div>
+            </div>
+          )}
           {error && <Notice error>{error}</Notice>}
           {error && duplicateOfPlan && (
             <div className="form-footer duplicate-import">
@@ -426,6 +485,16 @@ export function ImportScreen({
             one amount column or separate debit and credit columns. Two or
             three months of history helps spot recurring bills.
           </p>
+          <h3>No file handy?</h3>
+          <p>Let the assistant ask you five questions, or type the numbers in yourself. Either takes a couple of minutes.</p>
+          <div className="inline-actions">
+            <Button kind="secondary" icon="spark" onClick={() => navigate("/setup/interview")}>
+              Answer five questions
+            </Button>
+            <Button kind="ghost" onClick={() => navigate("/setup/plan")}>
+              Enter by hand
+            </Button>
+          </div>
           <h3>Want a quick look first?</h3>
           <p>Use a synthetic sample. No bank connection or account needed.</p>
           <Button

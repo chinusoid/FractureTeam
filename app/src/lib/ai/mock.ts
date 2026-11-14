@@ -6,6 +6,7 @@ import { parseMoneyString } from "../finance/money";
 import { addDays, isISODate, makeISODate, addMonths } from "../finance/dates";
 import type { InputItem, ModelProvider, OutputItem, ResponsesRequestBody, ResponsesResult } from "./openai";
 import { CANDIDATES_PREFIX, CONTEXT_PREFIX } from "./prompts";
+import { INTAKE_CONTEXT_PREFIX, INTAKE_FORMAT_NAME } from "../schemas/intake";
 
 interface MockBill {
   id: string;
@@ -94,7 +95,8 @@ function amountsIn(text: string): number[] {
   const out: number[] = [];
   const re = /\$\s?(\d[\d,]*(?:\.\d{1,2})?)|\b(\d[\d,]*(?:\.\d{1,2})?)\s?(?:dollars|usd|bucks)\b/gi;
   for (const m of text.matchAll(re)) {
-    const c = parseMoneyString(m[1] ?? m[2]);
+    // "$1,100, due …": the comma after the amount belongs to the sentence, not to the number.
+    const c = parseMoneyString((m[1] ?? m[2]).replace(/,+$/, ""));
     if (c !== null && c > 0) out.push(c / 100);
   }
   if (out.length === 0) {
@@ -220,8 +222,77 @@ function decideSetup(body: ResponsesRequestBody): OutputItem {
   return message(JSON.stringify({ items }));
 }
 
+const MONTH_ABBR = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** Dates the test model understands: 2026-11-20, 11/20, Nov 20, "the 20th", today, tomorrow. */
+function mockDate(text: string, today: string): string | null {
+  const iso = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (iso && isISODate(iso[0])) return iso[0];
+  if (/\btoday\b/i.test(text)) return today;
+  if (/\btomorrow\b/i.test(text)) return addDays(today, 1);
+  const [ty, tm] = today.split("-").map(Number);
+  const onOrAfter = (month: number, day: number): string | null => {
+    const d = makeISODate(ty, month, day);
+    if (d && d >= today) return d;
+    return makeISODate(ty + 1, month, day);
+  };
+  const slash = text.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+  if (slash) return onOrAfter(Number(slash[1]), Number(slash[2]));
+  const named = text.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/i);
+  if (named) return onOrAfter(MONTH_ABBR.indexOf(named[1].toLowerCase()) + 1, Number(named[2]));
+  const nth = text.match(/\bthe\s+(\d{1,2})(?:st|nd|rd|th)\b/i);
+  if (nth) {
+    const thisMonth = makeISODate(ty, tm, Number(nth[1]));
+    if (thisMonth && thisMonth >= today) return thisMonth;
+    const next = makeISODate(tm === 12 ? ty + 1 : ty, tm === 12 ? 1 : tm + 1, Number(nth[1]));
+    return next;
+  }
+  return null;
+}
+
+function mockAmount(text: string): number | null {
+  const m = text.match(/\$\s*([\d,]+(?:\.\d{1,2})?)/) ?? text.match(/(?<![\d\/-])([\d,]+(?:\.\d{1,2})?)(?![\d\/]|(?:st|nd|rd|th)\b)/);
+  if (!m) return null;
+  const n = Number(m[1].replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** The interview's JSON form, filled by plain rules (see lib/ai/intake.ts for the real prompt). */
+function readInterviewAnswer(body: ResponsesRequestBody) {
+  const ctx = (parseJsonAfter(INTAKE_CONTEXT_PREFIX, body.input) ?? {}) as { step?: string; today?: string };
+  const today = ctx.today ?? "2026-01-01";
+  let answer = "";
+  for (const item of body.input) if ((item as { role?: string }).role === "user") answer = contentOf(item) ?? "";
+  const empty = { amount_usd: null as number | null, date: null as string | null, bills: [] as { name: string; amount_usd: number | null; due_date: string | null }[], no_more: false, unclear: false };
+  if (ctx.step === "payday") {
+    const date = mockDate(answer, today);
+    return { ...empty, date, unclear: date === null };
+  }
+  if (ctx.step === "bills") {
+    const noMore = /\b(that'?s all|that’s all|no more|nothing else|none|done|no)\b/i.test(answer);
+    const bills = answer
+      .split(/;|\n|,\s*(?=[a-z])|\band\b/i)
+      .map((part) => part.trim())
+      .filter((part) => /[a-z]/i.test(part) && !/^(that'?s all|that’s all|no more|nothing else|none|done|no)\.?$/i.test(part))
+      .map((part) => {
+        const date = mockDate(part, today);
+        const withoutDate = part.replace(/\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|\bthe\s+\d{1,2}(?:st|nd|rd|th)\b/gi, " ");
+        const name = withoutDate.replace(/\$?\s*[\d,]+(?:\.\d{1,2})?/g, " ").replace(/\b(due|on|is|my|bill|dollars|for|of)\b/gi, " ").replace(/[^a-z ]/gi, " ").replace(/\s+/g, " ").trim();
+        return { name, amount_usd: mockAmount(withoutDate), due_date: date };
+      })
+      .filter((b) => b.name);
+    return { ...empty, bills, no_more: noMore && bills.length === 0, unclear: bills.length === 0 && !noMore };
+  }
+  if (/\b(nothing|zero|none)\b/i.test(answer)) return { ...empty, amount_usd: 0 };
+  const amount = mockAmount(answer);
+  return { ...empty, amount_usd: amount, unclear: amount === null };
+}
+
 export function mockProvider(): ModelProvider {
   return async (body) => {
+    if (body.text?.format?.type === "json_schema" && body.text.format.name === INTAKE_FORMAT_NAME) {
+      return result([message(JSON.stringify(readInterviewAnswer(body)))], body);
+    }
     if (body.text?.format?.type === "json_schema") return result([decideSetup(body)], body);
     const input = body.input;
     let lastUser = -1;

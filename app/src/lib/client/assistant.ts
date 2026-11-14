@@ -61,7 +61,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /** Contract error codes (lower case) -> messages above. Upper-case codes are accepted as they are. */
-const CONTRACT_CODE: Record<string, string> = {
+export const CONTRACT_CODE: Record<string, string> = {
   bad_request: "INVALID_REQUEST",
   too_large: "INVALID_REQUEST",
   forbidden_origin: "INVALID_REQUEST",
@@ -106,6 +106,8 @@ export async function activatePlus(): Promise<void> {
 export type HistoryItem = { role: "user" | "assistant"; text: string };
 
 let memoryId = "";
+/** The browser's anonymous id for usage limits (also used by the setup interview). */
+export const assistantClientId = () => clientId();
 function clientId() {
   try {
     const existing = localStorage.getItem("covered:client-id");
