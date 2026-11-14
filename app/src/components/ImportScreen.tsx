@@ -486,10 +486,15 @@ export function ImportScreen({
             three months of history helps spot recurring bills.
           </p>
           <h3>No file handy?</h3>
-          <p>Type in your balance and bills instead. It takes a couple of minutes.</p>
-          <Button kind="secondary" onClick={() => navigate("/setup/plan")}>
-            Enter by hand
-          </Button>
+          <p>Let the assistant ask you five questions, or type the numbers in yourself. Either takes a couple of minutes.</p>
+          <div className="inline-actions">
+            <Button kind="secondary" icon="spark" onClick={() => navigate("/setup/interview")}>
+              Answer five questions
+            </Button>
+            <Button kind="ghost" onClick={() => navigate("/setup/plan")}>
+              Enter by hand
+            </Button>
+          </div>
           <h3>Want a quick look first?</h3>
           <p>Use a synthetic sample. No bank connection or account needed.</p>
           <Button

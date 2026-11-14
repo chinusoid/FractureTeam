@@ -123,10 +123,16 @@ export function Landing() {
             <Icon name="shield" size={14} />
             No sign-up. No bank connection. Just clarity.
           </span>
-          <button className="text-button hero-by-hand" onClick={() => navigate("/setup/plan")}>
-            No file? Enter your numbers by hand
-            <Icon name="arrow" size={13} />
-          </button>
+          <span className="hero-by-hand">
+            No file?
+            <button className="text-button" onClick={() => navigate("/setup/interview")}>
+              Answer five questions
+            </button>
+            or
+            <button className="text-button" onClick={() => navigate("/setup/plan")}>
+              enter your numbers by hand
+            </button>
+          </span>
         </div>
         <div className="hero-side">
         <div className="hero-preview">

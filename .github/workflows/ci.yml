@@ -28,6 +28,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run eval:ai
+      - run: npm run eval:intake
       - run: npm run build
 
   e2e:

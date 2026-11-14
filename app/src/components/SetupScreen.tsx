@@ -13,6 +13,7 @@ import { useApp } from "./context";
 import { Button, Notice, PageHeading } from "./UI";
 import { billIcon, Icon } from "./Icon";
 import { BillDialog } from "./management";
+import { INTERVIEW_NOTE } from "@/lib/client/intake";
 
 /** Suggestions with one of these notes need the user's own decision and are never confirmed in bulk. */
 const NEEDS_A_LOOK =
@@ -39,6 +40,7 @@ export function SetupScreen() {
     [editor, setEditor] = useState<Bill | "new" | null>(null);
   /** Started without a file: nothing was detected, every number comes from the person. */
   const byHand = state.transactions.length === 0;
+  const fromInterview = byHand && state.bills.some((b) => b.note === INTERVIEW_NOTE);
   const bills = state.bills.filter((b) => b.status !== "dismissed");
   const pending = bills.filter((b) => b.status === "candidate");
   const clear = bills.filter(
@@ -137,6 +139,12 @@ export function SetupScreen() {
           <b>3</b> See your plan
         </span>
       </div>
+      {fromInterview && (
+        <Notice>
+          These numbers and bills came from your answers. Check each one: edit a number, confirm or dismiss a bill,
+          or add one that is missing. Nothing counts until you press “Build my plan”.
+        </Notice>
+      )}
       <div className="setup-layout">
         <section className="panel">
           <div className="section-heading">
@@ -258,7 +266,9 @@ export function SetupScreen() {
             <div>
               <h2>{byHand ? "Your bills" : "Bills we spotted"}</h2>
               <p className="small muted">
-                {byHand
+                {fromInterview
+                  ? "From your answers. Confirm, edit or dismiss each one, and add any that are missing."
+                  : byHand
                   ? "Add each bill due before the end of your plan."
                   : "Recurring transactions, ready for your review."}
               </p>

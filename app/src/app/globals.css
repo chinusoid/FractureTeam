@@ -3611,15 +3611,118 @@ details p {
 }
 .hero-by-hand {
   margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.hero-by-hand .text-button {
   background: none;
   border: 0;
   cursor: pointer;
+  text-decoration: underline;
+  color: #1f1f1c;
 }
 @media (max-width: 700px) {
   .hero-by-hand {
     justify-content: center;
     width: 100%;
   }
+}
+
+/* Setup interview: the questions on the left, what was understood on the right. */
+.interview-consent {
+  max-width: 620px;
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.interview-consent h2 {
+  font-size: 20px;
+  font-weight: 400;
+}
+.interview-consent p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.interview-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+.interview-chat .section-heading .pill {
+  white-space: normal;
+}
+.interview-chat .chat-messages {
+  flex: 1;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.interview-chat .assistant-message > .button {
+  margin-top: 12px;
+}
+.interview-chat .assistant-form textarea {
+  min-height: 64px;
+}
+.interview-facts {
+  display: grid;
+  gap: 0;
+  margin: 0 0 18px;
+}
+.interview-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.interview-facts dt {
+  color: var(--muted);
+}
+.interview-facts dd {
+  margin: 0;
+  font-weight: 500;
+}
+.interview-bills-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.interview-bills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.interview-bills li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.interview-bills li > span {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+.interview-bills li small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.interview-note {
+  margin: 16px 0 12px;
 }
 
 /* Setup: "Build my plan" and what is still open stay in view while the bill list scrolls. */
