@@ -1,6 +1,6 @@
 // Builds the Covered pitch deck (10 slides, 16:9).
 //   npm install pptxgenjs sharp react react-dom react-icons      (in the folder you run this from)
-//   PROD_URL=https://your-site.vercel.app APPLY_THEME=<path to apply_theme.js> node build.js <screenshots dir> <output.pptx>
+//   PROD_URL=https://your-site.vercel.app APPLY_THEME=./apply_theme.js node build.js <screenshots dir> <output.pptx>
 // Without PROD_URL the deck shows a marked placeholder for the production link.
 const path = require("node:path");
 const pptxgen = require("pptxgenjs");
@@ -268,11 +268,11 @@ async function build() {
   // 6 — how it works
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "HOW IT WORKS");
-    s.addText("The model never does the math", { placeholder: "title" });
+    kicker(s, "HOW IT WORKS · OUR OWN AI");
+    s.addText("Our own model reads you. Code does the math", { placeholder: "title" });
     const flow = [
-      ["You", "Ask in plain English"],
-      ["The model", "Picks 1 of 4 functions"],
+      ["You", "Ask in plain English, or by voice"],
+      ["Covered model", "Ours. Picks 1 of 4 functions"],
       ["Tested code", "Computes every dollar"],
       ["You", "Confirm to save"],
     ];
@@ -286,9 +286,9 @@ async function build() {
       if (i < flow.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + fw + (gap - 0.3) / 2, y: TOP + 0.45, w: 0.3, h: 0.3, objectName: name("Arrow") });
     }
     const cards = [
-      [fi.FiDollarSign, "Amounts are checked", "A dollar figure in the model’s text that does not match a computed value is replaced before you see it."],
+      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Runs in our server: ~2 ms, $0. OpenAI only when it is unsure."],
+      [fi.FiDollarSign, "Amounts are checked", "A dollar figure in any model’s text that does not match a computed value is replaced before you see it."],
       [fi.FiEdit3, "Drafts, not writes", "The server stores nothing. A change applies only after Confirm, and only to the plan version it was drafted for."],
-      [fi.FiLock, "Private by default", "The CSV is parsed in the browser. The assistant is off until you agree, and account numbers and emails are removed."],
     ];
     const cw = (CW - 0.6) / 3;
     for (let i = 0; i < cards.length; i++) {
@@ -298,8 +298,8 @@ async function build() {
       text(s, cards[i][1], { x: x + 1.02, y: y + 0.3, w: cw - 1.3, h: 0.56, fontSize: 16, bold: true, color: C.text1, valign: "middle" });
       text(s, cards[i][2], { x: x + 0.3, y: y + 1.05, w: cw - 0.6, h: 1.25, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
     }
-    text(s, "If the model guesses between two similar bills or invents a due date, the server rejects the draft and the model asks instead.", { x: MX, y: 6.38, w: CW, h: 0.3, fontSize: 11, color: C.text2 });
-    s.addNotes("3:00. Why you can trust the numbers. The model only understands the sentence and chooses one of four server functions: plan summary, purchase check, bill change, new bill. The money is computed by code covered with tests. If the model writes a figure that does not match, it is replaced. If it guesses which bill you meant, the server refuses and it asks. Nothing is saved on the server; the CSV never leaves the browser.");
+    text(s, "Private by default: the CSV is parsed in the browser, the assistant is off until you agree, and account numbers and emails are removed. If a model guesses a bill or invents a date, the server rejects the draft and asks instead.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("3:00. Covered has its own AI. We trained a small model, covered-nlu-1, 254 thousand parameters, on 7,672 examples we generated ourselves. It runs inside our own server: about two milliseconds, zero cost, no data sent to anyone. It understands the request and picks one of four functions; it also recognises bill types, which is how 'rent' finds 'Oakwood Apartments' and how it spots subscriptions. When it is less than 50% sure, OpenAI answers instead, and the app says which model replied. In both cases the money is computed by tested code and nothing is saved until you press Confirm.");
   }
 
   // 7 — what we sell
@@ -397,10 +397,10 @@ async function build() {
     tag(s, "FACT", MX + 0.4, TOP + 0.35);
     text(s, "Verified", { x: MX + 0.4, y: TOP + 0.78, w: lw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
     text(s, [
-      { text: "152 automated unit tests: money math, CSV import, quotas, AI guards", options: { bullet: true, breakLine: true } },
-      { text: "Real model (gpt-6-luna), twice in a row: 25 of 25 assistant scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
-      { text: "Live: the release walkthrough passes on the production URL, desktop and phone sizes", options: { bullet: true, breakLine: true } },
-      { text: "Works without the AI: every action also has a form", options: { bullet: true } },
+      { text: "Our own model alone: 24 of 25 assistant scenarios, 77% on phrasings it never saw in training", options: { bullet: true, breakLine: true } },
+      { text: "With OpenAI (gpt-6-luna), twice in a row: 25 of 25 scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
+      { text: "152 automated unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
+      { text: "Live: release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
     ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
 
     const mx = MX + lw + 0.3;
@@ -416,7 +416,7 @@ async function build() {
 
     const px = mx + mw + 0.45;
     await shot(s, "mobile-overview.png", { x: px, y: TOP, h, radiusPx: 60, alt: "Covered on a phone: $300 available to spend" });
-    s.addNotes("4:20. What is proven is the engineering: tests on the money math, all 25 assistant scenarios on the real model including prompt injection, browser walkthroughs on desktop and phone on every change. What is not proven is demand and price. We say so plainly.");
+    s.addNotes("4:20. What is proven is the engineering: our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price. We say so plainly.");
   }
 
   // 10 — next steps
