@@ -5,7 +5,6 @@ import {
   emptyState,
   generateSampleCsv,
   money,
-  today,
   type AppState,
 } from "@/lib/client/model";
 import { loadState, saveState } from "@/lib/storage/local";
@@ -384,7 +383,7 @@ export function ClientApp() {
             <span>Covered. A little more peace of mind.</span>
             <span>
               {state.plan.confirmed
-                ? `${money(state.plan.balanceCents)} balance · ${dateLabel(today(), true)}`
+                ? `${money(state.plan.balanceCents)} balance as of ${dateLabel(state.plan.balanceDate, true)}`
                 : "Your money. Your decisions."}
             </span>
           </footer>

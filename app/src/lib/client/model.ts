@@ -120,6 +120,8 @@ export const AppStateSchema = z.object({
       excessCents: cents,
       /** True when this update started a new pay period. */
       newPeriod: z.boolean().optional(),
+      /** The period that ended, for its recap: its dates and what was paid from it in this update. */
+      endedPeriod: z.object({ start: day, end: day, paidCents: cents }).optional(),
     })
     .nullable(),
   /** Absent in plans saved before what-ifs existed. */
@@ -365,6 +367,11 @@ export function startNextPeriod(
       essentialsSpentCents: 0,
       excessCents: 0,
       newPeriod: true,
+      endedPeriod: {
+        start: state.plan.balanceDate,
+        end: state.plan.horizonEndDate,
+        paidCents: closed.reduce((n, b) => n + b.amountCents, 0),
+      },
     },
   };
   return { state: next, closed, remainderCents: computePlan(next).remainderCents };

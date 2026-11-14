@@ -250,10 +250,12 @@ export function Dashboard() {
           </div>
           <div className="balance-age" data-testid="balance-age">
             <Icon name="clock" size={13} />
-            Balance as of {dateLabel(p.balanceDate)}, {ageLabel}
-            <button className="text-button" onClick={() => navigate("/app/update")}>
-              Update
-            </button>
+            <span>
+              Balance as of {dateLabel(p.balanceDate)}, {ageLabel}{" "}
+              <button className="text-button" onClick={() => navigate("/app/update")}>
+                Update
+              </button>
+            </span>
           </div>
         </div>
         <Gauge percent={allocated} />
@@ -416,6 +418,7 @@ export function Dashboard() {
             </details>
           )}
           {!updateFirst && <WhatIfs />}
+          {!updateFirst && (
           <section className="spending-panel">
             <div className="section-heading">
               <div>
@@ -461,6 +464,7 @@ export function Dashboard() {
               ))}
             </div>
           </section>
+          )}
           <section className="activity-panel">
             <div className="section-heading">
               <h2>Recent transactions</h2>
@@ -620,16 +624,19 @@ export function Dashboard() {
               <Icon name="up" size={19} />
             </button>
           </section>
-          {state.lastUpdate && (
+          {state.lastUpdate && !updateFirst && (
             <section className="last-update">
               <div className="section-heading">
                 <h3>Since last update</h3>
                 <PlusTag />
               </div>
               {state.lastUpdate.newPeriod && (
-                <p>
-                  A new period started {dateLabel(state.lastUpdate.date)}: {money(state.lastUpdate.previousBalanceCents)} →{" "}
-                  {money(state.lastUpdate.newBalanceCents)}. Your bills, reserve and settings carried over.
+                <p data-testid="period-recap">
+                  {state.lastUpdate.endedPeriod
+                    ? `Your last period, ${dateLabel(state.lastUpdate.endedPeriod.start)} – ${dateLabel(state.lastUpdate.endedPeriod.end)}: ${money(state.lastUpdate.endedPeriod.paidCents)} of bills paid. `
+                    : ""}
+                  A new period started {dateLabel(state.lastUpdate.date)} with {money(state.lastUpdate.newBalanceCents)}
+                  {" "}(was {money(state.lastUpdate.previousBalanceCents)}). Your bills, reserve and settings carried over.
                 </p>
               )}
               <p>

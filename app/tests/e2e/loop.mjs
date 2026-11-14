@@ -81,6 +81,10 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   await expect(page.getByTestId("update-first")).toContainText("8 days ago");
   await expect(page.getByTestId("plan-remainder")).toHaveCount(0);
   await expect(page.getByTestId("whatifs")).toHaveCount(0);
+  // Nothing else on the page is computed from the old balance either.
+  await expect(page.locator(".spending-panel")).toHaveCount(0);
+  await expect(page.locator(".purchase-panel")).toHaveCount(0);
+  await expect(page.getByText("Since last update", { exact: true })).toHaveCount(0);
   await shot("update-first");
   await page.getByRole("button", { name: /plan anyway$/ }).click();
   await expect(page.getByTestId("plan-remainder")).toHaveText("$200");
@@ -101,7 +105,13 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   const payday = await page.getByLabel("Next payday").inputValue();
   assert.ok(payday > new Date().toISOString().slice(0, 10), "the suggested payday is in the future");
   await shot("next-period");
+  // Carrying the plan over is the paid job: a browser without Plus gets the offer first.
+  await page.evaluate(() => localStorage.removeItem("covered:plus"));
+  await page.evaluate(() => window.dispatchEvent(new Event("covered:plus-change")));
   await page.getByRole("button", { name: "Start next period", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Carry your plan from paycheck to paycheck");
+  assert.equal((await stored()).plan.horizonEndDate, before.plan.horizonEndDate, "nothing moves before the offer is answered");
+  await page.getByRole("dialog").getByRole("button", { name: "Get Plus free", exact: true }).click();
   await expect(page.getByTestId("balance-age")).toContainText("today");
   const after = await stored();
   assert.equal(after.plan.horizonEndDate, payday);
@@ -116,6 +126,7 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   for (const name of paidNames) assert.ok(after.bills.some((b) => b.name === name && b.status === "confirmed"), `${name} repeats`);
   assert.equal(after.transactions.length, before.transactions.length);
   await expect(page.getByText("Since last update", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("period-recap")).toContainText("of bills paid");
   await expect(page.getByRole("button", { name: "Remove what-if: Sneakers, $400" })).toBeVisible();
   await page.getByRole("button", { name: "Remove what-if: Sneakers, $400" }).click();
   await expect(rows).toHaveCount(2);
@@ -125,6 +136,6 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   return {
     viewport: `${width}×${height}`,
     loop: "passed",
-    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "next period carries bills, reserve, settings and what-ifs", "no overflow", "no browser exceptions"],
+    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap", "no overflow", "no browser exceptions"],
   };
 }

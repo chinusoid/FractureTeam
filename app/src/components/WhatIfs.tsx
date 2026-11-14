@@ -161,7 +161,7 @@ export function WhatIfs() {
           </label>
           <label>
             Due
-            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            <input type="date" value={due} min={state.plan.balanceDate} onChange={(e) => setDue(e.target.value)} />
           </label>
           <Button type="submit" kind="secondary">
             Save as a what-if

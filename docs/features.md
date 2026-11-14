@@ -34,4 +34,4 @@ The [README](../README.md) has the short version. This is every feature in the l
 
 ## Not included in this version
 
-Bank connections, login and sync across devices, credit-card interest, payments, investment features, and restoring a JSON export. The plan lives in one browser until accounts arrive in the pilot.
+Bank connections, login and sync across devices, credit-card interest, payments, investment features, and restoring a JSON export. The plan lives in one browser until sign-in arrives.

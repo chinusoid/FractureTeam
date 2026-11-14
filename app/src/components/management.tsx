@@ -22,6 +22,7 @@ import { billIcon, Icon } from "./Icon";
 import { clearState } from "@/lib/storage/local";
 import { aiWhere, onAiWhereChange, setAiWhere, type AiWhere } from "@/lib/client/onDevice";
 import { guideDueLine, lowerBillGuide } from "@/lib/client/lowerBill";
+import { PlusOffer, PlusTag, usePlus } from "./Plus";
 
 /** What to try and what to say to lower a bill or cancel a subscription. Built on the device. */
 function LowerBillDialog({
@@ -517,7 +518,10 @@ export function UpdateScreen() {
   const [paycheck, setPaycheck] = useState(false);
   const next = expired || paycheck;
   const cadence = useMemo(() => buildSetupSuggestion(state.transactions).payCadence, [state.transactions]);
-  const [payday, setPayday] = useState(() => nextPayday(state.plan.horizonEndDate, cadence)),
+  // Paid early: the next payday is the one after the payday this plan runs to.
+  const [payday, setPayday] = useState(() =>
+      nextPayday(state.plan.horizonEndDate, cadence, state.plan.horizonEndDate > today() ? state.plan.horizonEndDate : today()),
+    ),
     [everyday, setEveryday] = useState(() => String(everydayForNextPeriod(state) / 100));
   const cents = parseMoney(balance),
     everydayCents = parseMoney(everyday);
@@ -535,6 +539,15 @@ export function UpdateScreen() {
     }
   }
   const nextPlan = nextPreview ? computePlan(nextPreview.state) : null;
+  // Carrying the plan to the next paycheck is the paid job: with Plus off, the offer comes first.
+  const [plus, turnOnPlus] = usePlus();
+  const [offer, setOffer] = useState(false),
+    [busy, setBusy] = useState(false);
+  function startNext() {
+    if (!nextPreview) return;
+    change(() => nextPreview.state);
+    navigate("/app");
+  }
   return (
     <>
       <PageHeading
@@ -575,7 +588,9 @@ export function UpdateScreen() {
           ) : (
             <label className="checkbox-row">
               <input type="checkbox" checked={paycheck} onChange={(e) => setPaycheck(e.target.checked)} />
-              <span>My paycheck is in this balance: start the next period</span>
+              <span>
+                My paycheck is in this balance: start the next period <PlusTag />
+              </span>
             </label>
           )}
           {next && (
@@ -746,8 +761,8 @@ export function UpdateScreen() {
                     setError(nextError || "Enter a valid balance.");
                     return;
                   }
-                  change(() => nextPreview.state);
-                  navigate("/app");
+                  if (plus) startNext();
+                  else setOffer(true);
                 }}
               >
                 Start next period
@@ -770,6 +785,27 @@ export function UpdateScreen() {
           </div>
         </section>
       </div>
+      {offer && (
+        <Modal title="Carrying your plan over is part of Covered Plus" close={() => setOffer(false)}>
+          <PlusOffer
+            title="Keep your plan going with Covered Plus"
+            lead="Building a plan is free, as often as you like. Plus carries this one to your next paycheck: bills, reserve, settings and what-ifs stay, and nothing is imported again."
+            busy={busy}
+            onAccept={() => {
+              setBusy(true);
+              void turnOnPlus().then(() => {
+                setBusy(false);
+                setOffer(false);
+                startNext();
+              });
+            }}
+          >
+            <Button kind="ghost" onClick={() => setOffer(false)}>
+              Not now
+            </Button>
+          </PlusOffer>
+        </Modal>
+      )}
     </>
   );
 }
@@ -826,6 +862,8 @@ export function SettingsScreen() {
                   ...s.plan,
                   horizonEndDate: end,
                   essentialsCents: ec,
+                  // A new end date means a new period was planned: later periods start from this amount.
+                  everydayPerPeriodCents: changedDate ? ec : s.plan.everydayPerPeriodCents,
                   reserveCents: rc,
                 },
               }));
@@ -891,13 +929,20 @@ export function SettingsScreen() {
             <div>
               <h3>A new paycheck, a new period.</h3>
               <p className="small muted">
-                Review your next bills and set a fresh balance.
+                Enter your new balance and next payday. Your bills, reserve and
+                settings carry over.
               </p>
             </div>
-            <Button kind="secondary" onClick={() => setNewPeriod(true)}>
-              Start new period
+            <Button kind="secondary" onClick={() => navigate("/app/update")}>
+              Start next period
             </Button>
           </div>
+          <p className="small muted start-over">
+            Rather review every bill again?{" "}
+            <button className="text-button" onClick={() => setNewPeriod(true)}>
+              Start over with a fresh plan
+            </button>
+          </p>
         </section>
         <div className="settings-right">
           <section className="panel">
@@ -1024,7 +1069,7 @@ export function SettingsScreen() {
       )}
       {newPeriod && (
         <Modal
-          title="Start a fresh planning period?"
+          title="Start over with a fresh plan?"
           close={() => setNewPeriod(false)}
         >
           <p className="dialog-copy">

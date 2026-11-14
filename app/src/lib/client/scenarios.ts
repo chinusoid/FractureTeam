@@ -72,8 +72,9 @@ export function evaluateScenario(state: AppState, s: Scenario, now?: string): Sc
       `${bills ? `${bills} bill${bills === 1 ? "" : "s"} (${money(late.gapBillsCents)})` : "No bills"} land before the money, plus ${money(late.extraEverydayCents)} of everyday spending.`,
     );
   }
-  // A bill due after this period ends does not change this period.
-  const inPeriod = s.kind === "purchase" || s.dueDate <= state.plan.horizonEndDate;
+  // A bill counts when it is due in this period: not after it ends, and not before it started.
+  const past = s.kind === "new_bill" && s.dueDate < state.plan.balanceDate;
+  const inPeriod = s.kind === "purchase" || (!past && s.dueDate <= state.plan.horizonEndDate);
   const cost = inPeriod ? s.amountCents : 0;
   return outcome(
     state,
@@ -83,7 +84,9 @@ export function evaluateScenario(state: AppState, s: Scenario, now?: string): Sc
     s.kind === "new_bill"
       ? inPeriod
         ? `Due ${dateLabel(s.dueDate)}, before your next payday.`
-        : `Due ${dateLabel(s.dueDate)}, after this period ends: this period is unchanged.`
+        : past
+          ? `Was due ${dateLabel(s.dueDate)}, before this period started: it no longer counts.`
+          : `Due ${dateLabel(s.dueDate)}, after this period ends: this period is unchanged.`
       : null,
   );
 }

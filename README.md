@@ -9,7 +9,7 @@ You have $2,200 in your account and payday is ten days away. Rent, insurance and
 
 Covered's answer: yes, but it puts you $100 below your $250 reserve. Rent, insurance and internet stay covered.
 
-Covered shows working adults in the US how much they can spend until their next paycheck, with the money for bills and a chosen reserve set aside ($300 here), without connecting a bank account. You set it up once, from a bank CSV, five questions or your own numbers. Then you come back on payday: enter your balance, tick what was paid, and see the new number.
+Covered shows working adults in the US how much they can spend until their next paycheck ($300 here), with the money for bills and a chosen reserve set aside, without connecting a bank account. You set it up once, from a bank CSV, five questions or your own numbers. Then you come back on payday: enter your balance, tick what was paid, and see the new number.
 
 ![Covered overview: $300 available to spend after $1,300 of bills, $350 of everyday spending and a $250 reserve](docs/overview.png)
 
@@ -35,9 +35,9 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 | Judging question | Short answer | Proof |
 | --- | --- | --- |
 | **Does it work?** (40%) | Yes: live, no sign-up, end to end; tested code computes every dollar | [Production checks](docs/evidence.md#the-product-works-in-production) |
-| **What do we sell?** (20%) | The first plan is free. Covered Plus keeps it going paycheck to paycheck; $10 a month is the price we are testing | [What Plus adds](docs/evidence.md#what-we-sell) |
-| **Who do we sell to?** (15%) | Working adults paid every two weeks, with bills between paychecks, who do not want to connect their bank to one more app | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
-| **Why does it make money?** (15%) | We keep $9.38 of $10; $100M ARR is 834,000 subscribers, 0.9% of the segment | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
+| **What do we sell?** (20%) | The first plan is free. Covered Plus keeps the number right after every paycheck; $10 a month is the price we are testing | [What Plus adds](docs/evidence.md#what-we-sell) |
+| **Who do we sell to?** (15%) | Working adults, 25–45, paid every two weeks, with bills between paychecks, who do not want to connect their bank to one more app | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
+| **Why does it make money?** (15%) | We keep $9.38 of $10; $100M ARR is 834,000 subscribers, 0.9% of US adults aged 25–44 | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
 | **Is it new?** (10%) | It names what a purchase breaks, asks for no bank login, and runs our own model on your device | [Only in Covered](docs/features.md#only-in-covered) |
 
 ### Does it work? (40%)
@@ -49,24 +49,25 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 
 ### What do we sell? (20%)
 
-We sell the recurring job, not the number of AI questions.
+We sell keeping the number right after every paycheck, not a number of AI questions.
 
-| Free: get your number | Covered Plus: keep it true |
+| Free: get your number | Covered Plus: keep it right |
 | --- | --- |
 | Build the first plan | Carry the plan from paycheck to paycheck |
 | See what you can spend until payday | See what changed since last time, and why |
-| Check a single purchase | Save and compare what-ifs: a purchase, a new bill, a late paycheck |
-| Get the math explained by the assistant on your device | A payday reminder and a recap of the period |
+| Check a purchase before you make it | Save and compare what-ifs: a purchase, a new bill, a late paycheck |
+| Update your balance until payday | A payday reminder and a recap of the period |
+| Get the math explained by the assistant on your device | |
 
-- **$10 a month is a price we are testing, not a proven one.** Plus features are marked in the product and free during early access. Saving the first what-if shows the offer; turning Plus on is counted (`app/src/app/api/plus/route.ts`). A click is interest. Willingness to pay is proven only by a real purchase in a paid pilot, and if the free purchase check turns out to be enough for people, the subscription model has to change.
-- **Coming back takes a few fields, not a new import.** Open the reminder, enter your balance, tick what was paid, see the new number. Bills, the reserve and settings carry over to the next pay period (`startNextPeriod` in `app/src/lib/client/model.ts`); a CSV is for setup and for reconciling, never the way back in. Our target is about 30 seconds; it is not measured yet.
-- **An old balance is not shown as today's answer.** The overview always says how old the balance is. After a week, or once payday has passed, it asks for the update first (`app/src/components/Dashboard.tsx`).
+- **$10 a month is a price we are testing, not a proven one.** Plus features are marked in the product and free during early access. Carrying the plan to the next paycheck, or saving the first what-if, shows the offer; turning Plus on is counted (`app/src/app/api/plus/route.ts`). A click is interest. Willingness to pay is proven only by a real purchase in a paid pilot, and if the free purchase check turns out to be enough for people, the subscription model has to change.
+- **Coming back takes a few fields, not a new import.** Open the reminder, enter your balance, tick what was paid, see the new number. Bills, the reserve and settings carry over to the next pay period (`startNextPeriod` in `app/src/lib/client/model.ts`), and the overview then shows a recap of the period that ended. You import once; coming back never needs a file. Our target is about 30 seconds; it is not measured yet.
+- **An old balance is not shown as today's answer.** The overview always says how old the balance is. After a week, or once payday has passed, the overview holds back every figure computed from it and asks for the update first (`app/src/components/Dashboard.tsx`).
 - **What-ifs stay true.** A saved what-if is re-evaluated against the plan every time it changes (`app/src/lib/client/scenarios.ts`).
 - The cloud assistant answers 5 questions a day on the free plan and 60 on Plus; the assistant on your device has no limit. Payment is not connected yet.
 
 ### Who do we sell to? (15%)
 
-- **Starting segment:** working adults in the US paid every two weeks, with bills due between paychecks, who do not want to connect their bank to one more app.
+- **Starting segment:** working adults in the US, 25–45, paid every two weeks, with bills due between paychecks, who do not want to connect their bank to one more app.
 - **Every two weeks is the most common pay schedule:** 43% of US private establishments pay that way (BLS, February 2023).
 - **Bank logins are a real barrier:** 24% of consumers are slightly or not at all comfortable sharing bank credentials with third-party apps (PYMNTS and MX, 2021).
 - **The pain is measured:** 63% of Americans live paycheck to paycheck; 37% could not cover a surprise $400 expense with cash; card issuers charged $14.5B in late fees in one year.

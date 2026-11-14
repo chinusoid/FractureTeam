@@ -29,7 +29,7 @@ export async function runScenario(page, baseURL, width, height, directory) {
   };
   await shot("landing");
   await expect(
-    page.getByRole("heading", { name: /\$10 a month to keep it true/ }),
+    page.getByRole("heading", { name: /\$10 a month to keep it right/ }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Try sample data", exact: true })

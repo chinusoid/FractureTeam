@@ -182,7 +182,7 @@ async function build() {
     text(s, "The segment, in public data", { x: x + 0.4 + 0.72 + 0.15, y: TOP + 0.28, w: w - 1.7, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
     const facts = [
       ["63%", "of Americans live paycheck to paycheck; 90% of them have under $500 left each month", "CNBC | SurveyMonkey Quarterly Money Survey, July 2026"],
-      ["43%", "of US private employers pay every two weeks: the most common pay schedule", "BLS, Length of pay periods in the Current Employment Statistics survey, February 2023"],
+      ["43%", "of US private establishments pay every two weeks: the most common pay schedule", "BLS, Length of pay periods in the Current Employment Statistics survey, February 2023"],
       ["24%", "of consumers are uncomfortable sharing bank credentials with third-party apps", "PYMNTS and MX, Convenience Versus Security, 2021 (2,368 consumers)"],
     ];
     facts.forEach((f, i) => {
@@ -192,7 +192,7 @@ async function build() {
       text(s, f[1], { x: x + 2.15, y, w: w - 2.5, h: 0.56, fontSize: 12.5, color: C.text1, lineSpacingMultiple: 1.08 });
       text(s, f[2], { x: x + 2.15, y: y + 0.6, w: w - 2.5, h: 0.4, fontSize: FOOT, color: C.text2 });
     });
-    s.addNotes("0:20. The person: paid every two weeks, with rent, insurance, internet and a phone bill landing between paychecks. The balance looks fine, but part of it is already promised. Three public numbers: 63% of Americans live paycheck to paycheck; every two weeks is the most common pay schedule, 43% of private employers; and a quarter of consumers are uncomfortable handing their bank login to an app. So we start with people paid every two weeks who do not want to connect a bank. We have not interviewed this segment yet; that is the first step after today.");
+    s.addNotes("0:20. The person: paid every two weeks, with rent, insurance, internet and a phone bill landing between paychecks. The balance looks fine, but part of it is already promised. Three public numbers: 63% of Americans live paycheck to paycheck; every two weeks is the most common pay schedule, 43% of private establishments; and a quarter of consumers are uncomfortable handing their bank login to an app. So we start with people paid every two weeks who do not want to connect a bank. We have not interviewed this segment yet; that is the first step after today.");
   }
 
   // 3 — product
@@ -352,12 +352,12 @@ async function build() {
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "WHAT DO WE SELL?");
-    s.addText("Free to get your number. $10 a month to keep it true", { placeholder: "title" });
+    s.addText("Free to get your number. $10 a month to keep it right", { placeholder: "title" });
     // Two tiers, split by the user's job rather than by the number of AI questions.
     const tw = 2.85, th = 3.3;
     const tiers = [
-      { x: MX, dark: false, label: "FREE", title: "Get your number", sub: "No card, no sign-up", items: ["Build the first plan", "See what you can spend until payday", "Check a single purchase", "The math explained, on your device"] },
-      { x: MX + tw + 0.2, dark: true, label: "COVERED PLUS", title: "Keep it true", sub: "$10 a month, being tested", items: ["Carry the plan from paycheck to paycheck", "See what changed, and why", "Save and compare what-ifs", "A payday reminder and recap"] },
+      { x: MX, dark: false, label: "FREE", title: "Get your number", sub: "No card, no sign-up", items: ["Build the first plan", "See what you can spend until payday", "Check a purchase before you make it", "Update your balance until payday"] },
+      { x: MX + tw + 0.2, dark: true, label: "COVERED PLUS", title: "Keep it right", sub: "$10 a month, being tested", items: ["Carry the plan from paycheck to paycheck", "See what changed, and why", "Save and compare what-ifs", "A payday reminder and recap"] },
     ];
     for (const t of tiers) {
       box(s, { x: t.x, y: TOP, w: tw, h: th, fill: { color: t.dark ? C.text1 : C.background2 }, line: { color: t.dark ? C.text1 : C.background2, width: 0 } });
@@ -386,9 +386,9 @@ async function build() {
     text(s, [
       { text: "Bills, reserve and settings carry over; nothing is imported again. Target: 30 seconds, not measured yet. " },
       { text: "How we test the price. ", options: { bold: true, color: C.text1 } },
-      { text: "Saving the first what-if shows the Plus offer, and we count who takes it. A click is interest; the proof is a real purchase in a paid pilot. Payment is not connected yet." },
+      { text: "Carrying the plan over, or saving a what-if, shows the Plus offer, and we count who takes it. A click is interest; the proof is a real purchase in a paid pilot. Payment is not connected yet." },
     ], { x: MX, y: ly + lh + 0.14, w: CW, h: 0.5, fontSize: 11.5, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it true: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import; our target is thirty seconds and we have not measured it yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
+    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import; our target is thirty seconds and we have not measured it yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
   }
 
   // 9 — business potential

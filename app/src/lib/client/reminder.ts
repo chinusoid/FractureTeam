@@ -68,7 +68,7 @@ export function buildReminderIcs({ date, url, cadence, now = new Date() }: Remin
     `DTEND;VALUE=DATE:${compact(addDays(date, 1))}`,
     ...(repeat ? [`RRULE:${repeat}`] : []),
     `SUMMARY:${escapeText("Update your Covered plan")}`,
-    `DESCRIPTION:${escapeText(`Enter your new balance and tick the bills you paid. It takes about two minutes.\n${url}`)}`,
+    `DESCRIPTION:${escapeText(`Enter your new balance and tick the bills you paid. Your bills, reserve and settings are kept.\n${url}`)}`,
     `URL:${url}`,
     "TRANSP:TRANSPARENT",
     "BEGIN:VALARM",

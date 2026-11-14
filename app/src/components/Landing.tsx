@@ -264,7 +264,7 @@ export function Landing() {
           <h2 id="pricing-title">
             Free to get your number.
             <br />
-            $10 a month to keep it true.
+            $10 a month to keep it right.
           </h2>
           <p>
             The first plan is free. Plus is for coming back, paycheck after
@@ -272,13 +272,13 @@ export function Landing() {
             free during early access, with no card and no sign-up.
           </p>
           <p className="small muted pricing-note">
-            The cloud assistant answers 5 questions a day on Starter and 60 on
+            The cloud assistant answers 5 questions a day on Free and 60 on
             Plus. The assistant on your device has no limit.
           </p>
         </div>
         <div className="pricing-grid">
           <article className="price-card">
-            <h3>Starter</h3>
+            <h3>Free</h3>
             <p className="price">
               <strong>$0</strong>
             </p>
@@ -287,6 +287,7 @@ export function Landing() {
                 "Build your first plan from a CSV, five questions or by hand",
                 "See what you can spend until your next paycheck",
                 "Check a purchase before you make it",
+                "Update your balance until payday",
                 "Get the math explained by the assistant on your device",
               ].map((line) => (
                 <li key={line}>
@@ -308,7 +309,7 @@ export function Landing() {
             </p>
             <ul>
               {[
-                "Everything in Starter",
+                "Everything in Free",
                 ...PLUS_FEATURES,
               ].map((line) => (
                 <li key={line}>

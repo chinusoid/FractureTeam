@@ -4271,16 +4271,17 @@ details p {
 }
 .balance-age {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  align-items: center;
+  align-items: flex-start;
   font-size: 13px;
   color: var(--ink);
   margin-top: 8px;
 }
+.balance-age svg {
+  margin-top: 4px;
+}
 .balance-age .text-button {
   font-size: 13px;
-  margin-left: 4px;
 }
 .plus-tag {
   display: inline-flex;
@@ -4490,4 +4491,7 @@ details p {
 }
 .whatifs-now td {
   white-space: nowrap;
+}
+.start-over {
+  margin-top: 12px;
 }

@@ -54,6 +54,10 @@ describe("saved what-ifs", () => {
     const after = evaluateScenario(state, { id: "b", kind: "new_bill", label: "Vet", amountCents: 12000, dueDate: "2026-11-27" }, NOW);
     expect(after).toMatchObject({ remainderCents: 30000, changeCents: 0 });
     expect(after.detail).toContain("after this period ends");
+    // Left over from an earlier period: it no longer counts, and says so.
+    const stale = evaluateScenario(state, { id: "c", kind: "new_bill", label: "Vet", amountCents: 12000, dueDate: "2026-11-10" }, NOW);
+    expect(stale).toMatchObject({ remainderCents: 30000, changeCents: 0 });
+    expect(stale.detail).toContain("no longer counts");
   });
 
   it("a late paycheck adds the bills that land first and the extra days of everyday spending", () => {
@@ -101,6 +105,8 @@ describe("the next pay period", () => {
     // None of them is due before Dec 9, so the new period is balance − everyday − reserve.
     expect(remainderCents).toBe(290000 - 35000 - 25000);
     expect(state.lastUpdate).toMatchObject({ newPeriod: true, closedBills: ["Rent", "Insurance", "Internet"] });
+    // The recap of the period that ended: its dates and what was paid from it.
+    expect(state.lastUpdate?.endedPeriod).toEqual({ start: NOW, end: "2026-11-25", paidCents: 130000 });
     expect(state.stateVersion).toBe(spent.stateVersion + 1);
   });
 
