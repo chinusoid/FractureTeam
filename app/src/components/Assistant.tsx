@@ -11,10 +11,21 @@ import {
 } from "@/lib/client/model";
 import {
   activatePlus,
+  buildAssistantRequest,
+  describeShared,
   PlusRequiredError,
   requestAssistant,
+  ServerUnreachableError,
   type AssistantResponse,
 } from "@/lib/client/assistant";
+import {
+  aiWhere,
+  answerOnDevice,
+  onAiWhereChange,
+  setAiWhere,
+  type AiWhere,
+  type DeviceReason,
+} from "@/lib/client/onDevice";
 import { useApp } from "./context";
 import { Button, Modal, Notice } from "./UI";
 import { Icon } from "./Icon";
@@ -32,7 +43,17 @@ export function Assistant({
   const { state, change, navigate, toast } = useApp();
   const [message, setMessage] = useState(""),
     [messages, setMessages] = useState<
-      { question: string; response?: AssistantResponse; error?: string; plusOffer?: boolean; preview?: ReturnType<typeof previewProposal> }[]
+      {
+        question: string;
+        response?: AssistantResponse;
+        error?: string;
+        plusOffer?: boolean;
+        preview?: ReturnType<typeof previewProposal>;
+        /** Set when the Covered model answered in this browser, and why. */
+        device?: DeviceReason;
+        /** What this request shared with the server (cloud answers only). */
+        shared?: ReturnType<typeof describeShared>;
+      }[]
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
@@ -43,6 +64,17 @@ export function Assistant({
     [listening, setListening] = useState(false);
   const recognition = useRef<{ stop: () => void } | null>(null);
   const silence = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Cloud (our server) or private mode (the Covered model in this browser). Read after mount: no storage on the server render.
+  const [where, setWhere] = useState<AiWhere>("cloud");
+  useEffect(() => {
+    setWhere(aiWhere());
+    return onAiWhereChange(setWhere);
+  }, []);
+  const canAsk = state.aiConsent || where === "device";
+  function choose(next: AiWhere) {
+    setAiWhere(next);
+    setWhere(next);
+  }
   useEffect(() => {
     const w = window as unknown as Record<string, unknown>;
     setVoice(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
@@ -93,26 +125,45 @@ export function Assistant({
     stopAfterSilence();
   }
 
-  async function send(text: string) {
-    if (!text.trim() || busy || !state.aiConsent) return;
+  async function send(text: string, forceWhere?: AiWhere) {
+    const runOn = forceWhere ?? where;
+    if (!text.trim() || busy || !(state.aiConsent || runOn === "device")) return;
     setMessage("");
     setBusy(true);
     setMessages((m) => [...m, { question: text }]);
     try {
-      const history = messages.flatMap((m) => [
+      // Turns answered in private mode stay on this device: they are never sent to the cloud as history.
+      const history = messages
+        .filter((m) => runOn === "device" || !m.device)
+        .flatMap((m) => [
         { role: "user" as const, text: m.question },
         ...(m.response
           ? [{ role: "assistant" as const, text: m.response.message }]
           : []),
       ]);
-      const response = await requestAssistant(
-        state,
-        text,
-        setup ? "setup" : "plan",
-        history,
-      );
+      const mode = setup ? "setup" : "plan";
+      let response: AssistantResponse,
+        device: DeviceReason | undefined,
+        shared: ReturnType<typeof describeShared> | undefined;
+      if (runOn === "device") {
+        response = await answerOnDevice(state, text, mode, history);
+        device = "chosen";
+      } else {
+        try {
+          response = await requestAssistant(state, text, mode, history);
+          shared = describeShared(
+            buildAssistantRequest(state, text, mode, history),
+            state.transactions.length,
+          );
+        } catch (e) {
+          // No network or no assistant server: the Covered model still answers, on this device.
+          if (!(e instanceof ServerUnreachableError)) throw e;
+          response = await answerOnDevice(state, text, mode, history);
+          device = "offline";
+        }
+      }
       const preview = response.proposal ? previewProposal(state, response.proposal) : null;
-      setMessages((m) => [...m.slice(0, -1), { question: text, response, preview }]);
+      setMessages((m) => [...m.slice(0, -1), { question: text, response, preview, device, shared }]);
     } catch (e) {
       setMessages((m) => [
         ...m.slice(0, -1),
@@ -127,7 +178,7 @@ export function Assistant({
   return (
     <Modal title="A little help with your plan" close={close} drawer>
       <div className="assistant-content">
-        {!state.aiConsent ? (
+        {!canAsk ? (
           <div className="consent">
             <span className="assistant-symbol">
               <Icon name="spark" size={32} />
@@ -168,6 +219,20 @@ export function Assistant({
             >
               I agree, enable assistant
             </Button>
+            <div className="private-option">
+              <h3>
+                <Icon name="shield" size={16} />
+                Or keep everything on this device
+              </h3>
+              <p>
+                Our own Covered model can answer right here in your browser.
+                Nothing is sent, it works offline, and it’s free with no daily
+                limit. It understands fewer kinds of questions than the cloud.
+              </p>
+              <Button kind="secondary" onClick={() => choose("device")}>
+                Use private mode
+              </Button>
+            </div>
             <Button kind="ghost" onClick={close}>
               Continue without assistant
             </Button>
@@ -183,6 +248,33 @@ export function Assistant({
                 {byHand
                   ? "Type a name, an amount and a due date. You confirm each bill before it is added."
                   : "Check a purchase, talk through a bill, or understand your plan."}
+              </p>
+              <div className="where-toggle" role="group" aria-label="Where the assistant runs">
+                <button
+                  type="button"
+                  aria-pressed={where === "cloud"}
+                  className={where === "cloud" ? "active" : ""}
+                  onClick={() => choose("cloud")}
+                  disabled={busy}
+                >
+                  <Icon name="spark" size={13} />
+                  Cloud
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={where === "device"}
+                  className={where === "device" ? "active" : ""}
+                  onClick={() => choose("device")}
+                  disabled={busy}
+                >
+                  <Icon name="shield" size={13} />
+                  Private, on this device
+                </button>
+              </div>
+              <p className="where-note" data-testid="where-note">
+                {where === "device"
+                  ? "The Covered model runs in this browser. Nothing leaves your device, and it works offline."
+                  : "Our server answers and can pass harder questions to a larger model. Under each answer you can see exactly what was shared."}
               </p>
             </div>
             <div className="suggestions">
@@ -221,6 +313,7 @@ export function Assistant({
                         <ul>
                           <li>Up to 60 assistant questions a day</li>
                           <li>Planned price: $10 a month. No card and no sign-up today.</li>
+                          <li>Private mode stays free with no limit: it runs on your device.</li>
                         </ul>
                         <Button
                           disabled={busy}
@@ -234,6 +327,17 @@ export function Assistant({
                           }}
                         >
                           Get Plus free
+                        </Button>
+                        <Button
+                          kind="secondary"
+                          disabled={busy}
+                          onClick={() => {
+                            choose("device");
+                            setMessages((m) => m.filter((x) => x !== item));
+                            void send(item.question, "device");
+                          }}
+                        >
+                          Ask on this device instead
                         </Button>
                         <Button
                           kind="ghost"
@@ -270,7 +374,14 @@ export function Assistant({
                         <Icon name="spark" size={15} />
                       </span>
                       <p>{item.response.message}</p>
-                      {item.response.servedBy && (
+                      {item.response.servedBy === "device" ? (
+                        <span className="served-by on-device" data-testid="served-on-device">
+                          <Icon name="shield" size={12} />
+                          {item.device === "offline"
+                            ? "Our server is out of reach, so the Covered model answered on this device. Nothing was sent."
+                            : "Answered on this device by the Covered model. Nothing was sent."}
+                        </span>
+                      ) : item.response.servedBy && (
                         <span className="served-by">
                           {item.response.servedBy === "own"
                             ? "Answered by the Covered model, trained by our team and running on our server"
@@ -280,6 +391,25 @@ export function Assistant({
                                 ? "Answered by the test model"
                                 : "Answered by OpenAI"}
                         </span>
+                      )}
+                      {item.shared && (
+                        <details className="shared-details">
+                          <summary>What was shared</summary>
+                          <div>
+                            <strong>Sent for this answer</strong>
+                            <ul>
+                              {item.shared.sent.map((line) => (
+                                <li key={line}>{line}</li>
+                              ))}
+                            </ul>
+                            <strong>Stayed on this device</strong>
+                            <ul>
+                              {item.shared.kept.map((line) => (
+                                <li key={line}>{line}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </details>
                       )}
                       {item.response.setupReview?.items.map((review) => (
                         <div className="setup-review" key={review.candidateId}>
@@ -404,7 +534,7 @@ export function Assistant({
                   <span />
                   <span />
                   <span />
-                  Looking at your plan…
+                  {where === "device" ? "Thinking on your device…" : "Looking at your plan…"}
                 </div>
               )}
             </div>
@@ -457,6 +587,14 @@ export function Assistant({
             <p className="assistant-disclaimer">
               Suggestions need your confirmation. Check important details.
             </p>
+            {!state.aiConsent && where === "device" && (
+              <p className="assistant-disclaimer">
+                Want the cloud too?{" "}
+                <button className="text-button" onClick={() => choose("cloud")}>
+                  Review what it shares
+                </button>
+              </p>
+            )}
           </>
         )}
       </div>

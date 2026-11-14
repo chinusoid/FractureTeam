@@ -1,4 +1,4 @@
-// Builds the Covered pitch deck (10 slides, 16:9).
+// Builds the Covered pitch deck (11 slides, 16:9).
 //   npm install pptxgenjs sharp react react-dom react-icons      (in the folder you run this from)
 //   PROD_URL=https://your-site.vercel.app APPLY_THEME=./apply_theme.js node build.js <screenshots dir> <output.pptx>
 // Without PROD_URL the deck shows a marked placeholder for the production link.
@@ -265,7 +265,33 @@ async function build() {
     s.addNotes("1:40, still live. Ask: can I afford $400 this weekend? The answer is precise: $100 below the reserve, bills still covered. Then: my car insurance went up by $30. A draft with before and after appears; press Confirm, the plan moves from $300 to $270. Then update the balance to $950 and tick rent as paid: still $270, nothing counted twice. Backup: recorded video.");
   }
 
-  // 6 — how it works
+  // 6 — only in Covered
+  {
+    const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
+    kicker(s, "ONLY IN COVERED");
+    s.addText("Private AI, a late-payday test, bills you lower", { placeholder: "title" });
+    const cols = [
+      ["only-private.png", "AI that stays on your device", "Private mode runs our own model in the browser. Nothing is sent, it works offline, no daily limit.", "Private mode: the assistant answers on the device; caption says nothing was sent"],
+      ["only-latepay.png", "What if payday is late?", "Which bills land before a late paycheck, and how many days the plan holds.", "Stress test card: a week late, gym and phone bills land first, $27.74 of the reserve is used"],
+      ["only-lower.png", "Lower a bill yourself", "A script with your own numbers, and a due date moved past payday.", "Lower Brightwave Internet: what to try, what to say, a copy button"],
+    ];
+    const cw = (CW - 0.6) / 3, imgH = 2.6;
+    for (let i = 0; i < cols.length; i++) {
+      const x = MX + i * (cw + 0.3);
+      box(s, { x, y: TOP, w: cw, h: 4.05, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
+      const meta = await sharp(path.join(SHOTS, cols[i][0])).metadata();
+      const iw = imgH * (meta.width / meta.height);
+      await shot(s, cols[i][0], { x: x + (cw - iw) / 2, y: TOP + 0.25, h: imgH, radiusPx: 22, alt: cols[i][3] });
+      text(s, cols[i][1], { x: x + 0.3, y: TOP + 3.0, w: cw - 0.6, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
+      text(s, cols[i][2], { x: x + 0.3, y: TOP + 3.38, w: cw - 0.6, h: 0.6, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.1 });
+    }
+    tag(s, "FACT", MX, 6.24);
+    text(s, "Rocket Money keeps 35–60% of the first year’s savings when it negotiates a bill. With Covered you keep all of it.", { x: MX + 0.85, y: 6.2, w: CW - 0.85, h: 0.36, fontSize: 13, bold: true, color: C.accent1, valign: "middle" });
+    text(s, "Source: Rocket Money help center, “Bill Negotiation savings process”, November 2026.", { x: MX, y: 6.6, w: CW, h: 0.25, fontSize: 10, color: C.text2 });
+    s.addNotes("2:30, still live. Three things only Covered does. One: private mode. Switch it on, turn off Wi-Fi, ask again: our own model answers inside the browser and the app says nothing was sent. Two: what if payday is late. A week late, the gym and the phone bill land first and you would use $28 of your reserve; the card says how many days the plan holds. Three: Lower it. A script with your own numbers and a due date moved past payday. Rocket Money keeps 35 to 60% of the first year's savings for that; here you keep all of it.");
+  }
+
+  // 7 — how it works
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
     kicker(s, "HOW IT WORKS · OUR OWN AI");
@@ -302,11 +328,11 @@ async function build() {
       { text: "Who answers. ", options: { bold: true, color: C.text1 } },
       { text: "Our model takes clear requests: a purchase check, a bill change, explaining the plan. OpenAI takes vague or unusual wording (our model under 50% sure) and the five-question setup. Every answer in the app names the model that gave it." },
     ], { x: MX, y: 5.82, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
-    text(s, "Private by default: the CSV is parsed in the browser, the assistant is off until you agree, and account numbers and emails are removed. If a model guesses a bill or invents a date, the server rejects the draft and asks instead.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "Private by default: the CSV is parsed in the browser and the assistant is off until you agree. Private mode runs our model on your device and sends nothing. A draft with a guessed bill or an invented date is rejected.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     s.addNotes("3:00. Covered has its own AI. We trained a small model, covered-nlu-1, 254 thousand parameters, on 7,672 examples we generated ourselves. It runs inside our own server: about two milliseconds, zero cost, no data sent to anyone. It understands the request and picks one of four functions; it also recognises bill types, which is how 'rent' finds 'Oakwood Apartments' and how it spots subscriptions. When it is less than 50% sure, OpenAI answers instead, and the app says which model replied. In both cases the money is computed by tested code and nothing is saved until you press Confirm.");
   }
 
-  // 7 — what we sell
+  // 8 — what we sell
   pres.addSection({ title: "Business" });
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
@@ -341,7 +367,7 @@ async function build() {
     s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month is a hypothesis, set below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
   }
 
-  // 8 — business potential
+  // 9 — business potential
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "BUSINESS POTENTIAL");
@@ -391,7 +417,7 @@ async function build() {
     s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. That is arithmetic. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay: a year gives $113, which pays back if a subscriber costs under $38 to acquire. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month. That is why the product is built around payday, the moment people have a reason to return. Months retained and CAC are assumptions; the pilot measures both.");
   }
 
-  // 9 — evidence
+  // 10 — evidence
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "EVIDENCE");
@@ -403,7 +429,7 @@ async function build() {
     text(s, [
       { text: "Our own model alone: 24 of 25 assistant scenarios, 77% on phrasings it never saw in training", options: { bullet: true, breakLine: true } },
       { text: "With OpenAI (gpt-6-luna), twice in a row: 25 of 25 scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
-      { text: "154 automated unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
+      { text: "171 unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
       { text: "Live: release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
     ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
 
@@ -423,7 +449,7 @@ async function build() {
     s.addNotes("4:20. What is proven is the engineering: our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price. We say so plainly.");
   }
 
-  // 10 — next steps
+  // 11 — next steps
   {
     const s = pres.addSlide({ masterName: "CONTENT_DARK", sectionTitle: "Business" });
     kicker(s, "NEXT STEP", C.accent3);

@@ -58,6 +58,13 @@ Open the URL printed by Next.js (normally `http://localhost:3000`). For producti
 - Settings, new-period review, optional assistant consent, JSON export, confirmed data clearing, and versioned/validated local storage with corruption backup and visible failures.
 - Responsive navigation, keyboard-accessible dialogs with focus trapping, reduced-motion support, and mobile layout at 390 px.
 
+### Only in Covered
+
+- **Private mode** (assistant → "Private, on this device", or "Use private mode" on the consent screen, or Settings): our own Covered model answers inside the browser (`app/src/lib/client/onDevice.ts`). The request is built exactly as for the server but never sent: no network, no quota, no cost, no daily limit, and it works offline. Without private mode, the assistant still falls back to the device when the server can't be reached, and offers private mode when the free cloud questions are used up. Turns answered in private mode are never sent to the cloud later as chat history.
+- **What was shared**: under every cloud answer, a list of exactly what that request sent and what stayed on the device, built from the request body itself (`describeShared`).
+- **What if payday is late?** (overview): a stress test for a paycheck 1, 3 or 7 days late. It names the bills that would land before the money (including the next date of repeating bills), adds everyday spending for the extra days, and says how many days the plan can take (`app/src/lib/client/stress.ts`). It never changes the plan.
+- **Lower it / Cancel or pause** (Bills, and the subscriptions card): what to try and what to say for each bill, picked by the bill's category from the Covered model and filled in with the user's own numbers: price, yearly cost, payments seen in the import, and a due date moved to just after payday (`app/src/lib/client/lowerBill.ts`). Copy the script, then update the bill with the new price. Covered never calls anyone or takes a cut.
+
 ## Financial behavior
 
 All money is stored as integer cents. Calendar dates use `YYYY-MM-DD`, displayed in en-US without timezone shifts.
@@ -119,7 +126,7 @@ Tests: `npm run e2e` checks the UI with the assistant request intercepted inside
 
 ## Data and privacy
 
-CSV parsing and storage are local to the browser. The active state is a single validated document at `covered:v1`; invalid documents are backed up locally before a fresh state is created. Every storage access is guarded. The assistant is off until explicit consent, and only receives the context listed in its notice. Raw CSVs are never sent. Clearing data removes Covered's local documents, backups, and client identifier.
+CSV parsing and storage are local to the browser. The active state is a single validated document at `covered:v1`; invalid documents are backed up locally before a fresh state is created. Every storage access is guarded. The assistant is off until explicit consent, and only receives the context listed in its notice; each cloud answer shows what its request shared. In private mode nothing is sent at all. Raw CSVs are never sent. Clearing data removes Covered's local documents, backups, and client identifier.
 
 ## Verification
 
@@ -130,7 +137,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 154 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
+There are 171 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
