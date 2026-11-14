@@ -40,7 +40,7 @@ export async function runScenario(page, baseURL, width, height, directory) {
   );
   await expect(
     page.getByRole("button", { name: "Confirm", exact: true }),
-  ).toHaveCount(3);
+  ).toHaveCount(8); // 3 bills in the period, 4 later bills and a savings transfer to dismiss or keep
   await expect(
     page.getByRole("button", { name: "$250", exact: true }),
   ).toHaveClass(/selected/);
@@ -151,7 +151,7 @@ export async function runScenario(page, baseURL, width, height, directory) {
     .getByRole("button", { name: "Update balance", exact: true })
     .click();
   await page.getByLabel("New available balance").fill("950");
-  await page.getByRole("checkbox", { name: /Rent/ }).check();
+  await page.getByRole("checkbox", { name: /Oakwood Apartments/ }).check();
   await expect(page.locator(".preview-money")).toContainText("$270");
   await page
     .getByRole("button", { name: "Confirm update", exact: true })
@@ -160,7 +160,9 @@ export async function runScenario(page, baseURL, width, height, directory) {
   await expect(
     page.getByText("Since last update", { exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".last-update")).toContainText("Rent marked paid.");
+  await expect(page.locator(".last-update")).toContainText(
+    "Oakwood Apartments marked paid.",
+  );
   await shot("updated");
 
   await page.route("**/api/assistant", (route) =>
@@ -197,7 +199,11 @@ export async function runScenario(page, baseURL, width, height, directory) {
       .first()
       .click();
   await page.getByRole("button", { name: "Build my plan" }).click();
-  await expect(page.getByTestId("plan-remainder")).toHaveText("$780");
+  // Sample B is dated relative to today (debit/credit columns, paid twice a month): its own result.
+  await expect(page.getByTestId("plan-remainder")).toHaveText(
+    /^-?\$[\d,]+(\.\d{2})?$/,
+  );
+  await expect(page.getByTestId("plan-remainder")).not.toHaveText("$300");
   await page.goto(baseURL);
   await page.getByRole("button", { name: "Try sample B", exact: true }).click();
   await page.getByRole("button", { name: "Continue to setup" }).click();

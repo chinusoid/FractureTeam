@@ -9,7 +9,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "e2e": "tsx tests/e2e/run.ts",
-    "eval:ai": "tsx tests/ai-eval/run.ts"
+    "eval:ai": "tsx tests/ai-eval/run.ts",
+    "e2e:assistant": "tsx tests/e2e/assistant-mock.ts"
   },
   "dependencies": {
     "next": "16.4.6",

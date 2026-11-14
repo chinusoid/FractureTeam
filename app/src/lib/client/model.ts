@@ -1,8 +1,16 @@
-// Standalone client adapter. Replace with covered-base's finance/import exports
-// when the shared package is supplied; no server or shared module is shadowed.
+// Browser model for the UI. CSV import, recurring-bill detection and sample data come from the shared
+// modules (src/lib/import, src/lib/demo); plan math mirrors src/lib/finance used by the server.
 import { z } from "zod";
 import { validatePayload } from "../finance/proposals";
 import { ChangeProposalSchema } from "../schemas/assistant";
+import { parseCsv as sharedParseCsv } from "../import/csv";
+import {
+  detectDateFormats as sharedDetectDateFormats,
+  guessMapping,
+  normalizeRows as sharedNormalizeRows,
+} from "../import/normalize";
+import { buildSetupSuggestion as sharedSetupSuggestion } from "../import/prefill";
+import { generateSampleCsvA, generateSampleCsvB } from "../demo/sample";
 
 export const STALE_AFTER_DAYS = 7;
 export const RESERVE_OPTIONS_CENTS = [0, 10000, 25000, 50000];
@@ -341,81 +349,66 @@ export function applyConfirmedProposal(
   };
 }
 
-export type Mapping = { date: number; description: number; amount: number };
+// CSV import and setup suggestions delegate to the shared modules in src/lib/import and src/lib/demo
+// (the same code the tests and the assistant server use), adapted to this UI's types.
+export type Mapping = {
+  date: number;
+  description: number;
+  /** One signed amount column. -1 when the file uses separate debit/credit columns. */
+  amount: number;
+  debit: number;
+  credit: number;
+};
 export type DateFormat = "" | "ISO" | "MDY" | "DMY";
+const toIndex = (n: number | null) => (n === null ? -1 : n);
+const toCol = (n: number) => (n >= 0 ? n : null);
 export function parseCsv(text: string) {
   if (new TextEncoder().encode(text).length > 2 * 1024 * 1024)
-    throw new Error(
-      "This file is larger than 2 MB. Export a smaller date range.",
-    );
-  const delimiter = text.split(/\r?\n/)[0]?.includes(";") ? ";" : ",";
-  const rows: string[][] = [];
-  let row: string[] = [],
-    cell = "",
-    quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') {
-      if (quoted && text[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else quoted = !quoted;
-    } else if (c === delimiter && !quoted) {
-      row.push(cell.trim());
-      cell = "";
-    } else if ((c === "\n" || c === "\r") && !quoted) {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell.trim());
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += c;
+    throw new Error("This file is larger than 2 MB. Export a smaller date range.");
+  let parsed;
+  try {
+    parsed = sharedParseCsv(text);
+  } catch (e) {
+    const message = (e as Error).message;
+    if (/unclosed quote/i.test(message))
+      throw new Error("A quoted field is not closed. Check your CSV and try again.");
+    if (/header row/i.test(message) || /empty/i.test(message))
+      throw new Error(
+        "Include a header and at least one transaction, with date, description, and amount columns.",
+      );
+    throw new Error(message);
   }
-  if (quoted)
-    throw new Error(
-      "A quoted field is not closed. Check your CSV and try again.",
-    );
-  row.push(cell.trim());
-  if (row.some(Boolean)) rows.push(row);
-  if (rows.length < 2 || rows[0].length < 3)
+  if (parsed.headers.length < 3)
     throw new Error(
       "Include a header and at least one transaction, with date, description, and amount columns.",
     );
-  if (rows.length > 5001)
-    throw new Error(
-      "This file has more than 5,000 transactions. Export a smaller date range.",
-    );
-  const headers = rows.shift()!.map((h) => h.replace(/^\uFEFF/, ""));
-  const guess = (pattern: RegExp) => headers.findIndex((h) => pattern.test(h));
+  const guess = guessMapping(parsed.headers);
   return {
-    headers,
-    rows,
+    headers: parsed.headers,
+    rows: parsed.rows,
     mapping: {
-      date: guess(/date/i),
-      description: guess(/description|merchant|memo|name/i),
-      amount: guess(/amount|total|value/i),
-    },
+      date: toIndex(guess.date),
+      description: toIndex(guess.description),
+      amount: toIndex(guess.amount),
+      debit: toIndex(guess.debit),
+      credit: toIndex(guess.credit),
+    } satisfies Mapping,
   };
 }
+const DATE_LIKE = /^\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}/;
+/** "" means the user has to choose (ambiguous, or nothing recognizable). */
 export function detectDateFormats(values: string[]): DateFormat {
-  if (values.every((v) => /^\d{4}-\d{2}-\d{2}$/.test(v))) return "ISO";
-  if (values.some((v) => Number(v.split(/[/.\-]/)[0]) > 12)) return "DMY";
-  if (values.some((v) => Number(v.split(/[/.\-]/)[1]) > 12)) return "MDY";
+  const dateLike = values.map((v) => (v ?? "").trim()).filter((v) => DATE_LIKE.test(v));
+  if (!dateLike.length) return "";
+  const { fits, ambiguous } = sharedDetectDateFormats(dateLike);
+  if (fits.includes("YMD")) return "ISO";
+  if (ambiguous) return "";
+  if (fits.includes("MDY")) return "MDY";
+  if (fits.includes("DMY")) return "DMY";
   return "";
 }
-function parseDate(value: string, format: DateFormat) {
-  if (format === "ISO") return day.safeParse(value).success ? value : null;
-  if (!format) return null;
-  const parts = value.split(/[/.\-]/);
-  if (
-    parts.length !== 3 ||
-    !parts.every((p) => /^\d+$/.test(p)) ||
-    parts[2].length !== 4
-  )
-    return null;
-  const [a, b, y] = parts;
-  const result = `${y}-${(format === "MDY" ? a : b).padStart(2, "0")}-${(format === "MDY" ? b : a).padStart(2, "0")}`;
-  return day.safeParse(result).success ? result : null;
+export function usesDebitCredit(mapping: Mapping) {
+  return mapping.amount < 0 && mapping.debit >= 0 && mapping.credit >= 0;
 }
 export function normalizeRows(
   rows: string[][],
@@ -424,41 +417,43 @@ export function normalizeRows(
   invert: boolean,
 ) {
   const transactions: Transaction[] = [],
-    errors: string[] = [],
-    seen = new Set<string>();
-  if (
-    Object.values(mapping).some((n) => n < 0) ||
-    new Set(Object.values(mapping)).size !== 3
-  )
+    errors: string[] = [];
+  const used = [mapping.date, mapping.description, ...(usesDebitCredit(mapping) ? [mapping.debit, mapping.credit] : [mapping.amount])];
+  if (used.some((n) => n < 0) || new Set(used).size !== used.length)
     return {
       transactions,
       errors: [
-        "Choose three different columns for date, description, and amount.",
+        usesDebitCredit(mapping) || mapping.amount < 0
+          ? "Choose different columns for date, description, and either an amount or both debit and credit."
+          : "Choose three different columns for date, description, and amount.",
       ],
     };
-  rows.forEach((row, i) => {
-    const date = parseDate(row[mapping.date] ?? "", format),
-      description = (row[mapping.description] ?? "").slice(0, 500),
-      parsed = parseMoney(row[mapping.amount] ?? "");
-    if (!date || !description || parsed === null) {
-      errors.push(
-        `Row ${i + 2}: ${!date ? "invalid or unknown date" : !description ? "missing description" : "invalid amount"}.`,
-      );
-      return;
-    }
-    const amountCents = parsed * (invert ? -1 : 1),
-      key = `${date}|${description.toLowerCase()}|${amountCents}`;
+  if (!format) return { transactions, errors };
+  const result = sharedNormalizeRows(rows, {
+    mapping: {
+      date: toCol(mapping.date),
+      description: toCol(mapping.description),
+      amount: usesDebitCredit(mapping) ? null : toCol(mapping.amount),
+      debit: usesDebitCredit(mapping) ? toCol(mapping.debit) : null,
+      credit: usesDebitCredit(mapping) ? toCol(mapping.credit) : null,
+    },
+    dateFormat: format === "ISO" ? "YMD" : format,
+    sign: invert ? "positive_is_out" : "negative_is_out",
+  });
+  for (const e of result.errors) {
+    const message = e.message.replace(/"/g, "“").replace(/“([^“]*)“/, "“$1”");
+    errors.push(`Row ${e.row}: ${message.charAt(0).toLowerCase()}${message.slice(1)}.`);
+  }
+  for (const t of result.transactions)
     transactions.push({
       id: newId(),
-      date,
-      description,
-      amountCents,
-      row: i + 2,
-      duplicate: seen.has(key),
-      transfer: /transfer|venmo|zelle|internal|savings/i.test(description),
+      date: t.postedDate,
+      description: t.description,
+      amountCents: t.amountCents,
+      row: t.row,
+      duplicate: t.reviewStatus === "possible_duplicate",
+      transfer: t.possibleTransfer,
     });
-    seen.add(key);
-  });
   return { transactions, errors };
 }
 export async function fileHash(text: string) {
@@ -470,121 +465,66 @@ export async function fileHash(text: string) {
     b.toString(16).padStart(2, "0"),
   ).join("");
 }
+const FREQUENCY: Record<string, Bill["frequency"]> = {
+  monthly: "Monthly",
+  biweekly: "Biweekly",
+  weekly: "Weekly",
+};
+const PAY_LABEL: Record<string, string> = {
+  weekly: "weekly",
+  biweekly: "every two weeks",
+  semimonthly: "twice a month",
+  monthly: "monthly",
+};
 export function buildSetupSuggestion(
   transactions: Transaction[],
   now = today(),
 ) {
-  const groups = new Map<string, Transaction[]>();
-  for (const t of transactions.filter(
-    (t) => !t.transfer && !t.duplicate && t.date <= now,
-  )) {
-    const key = t.description.toLowerCase().replace(/\d/g, "").trim();
-    groups.set(key, [...(groups.get(key) ?? []), t]);
-  }
-  const bills: Bill[] = [];
-  let horizon = addDays(now, 13),
-    horizonSource = "A two-week planning period";
-  for (const group of groups.values()) {
-    group.sort((a, b) => a.date.localeCompare(b.date));
-    if (group.length < 2) continue;
-    const last = group.at(-1)!,
-      previous = group.at(-2)!,
-      interval = daysBetween(previous.date, last.date);
-    if (
-      interval < 6 ||
-      interval > 35 ||
-      Math.abs(last.amountCents - previous.amountCents) >
-        Math.abs(last.amountCents) * 0.1
-    )
-      continue;
-    let next = addDays(last.date, interval);
-    while (next < now) next = addDays(next, interval);
-    if (
-      last.amountCents > 0 &&
-      /salary|payroll|paycheck|direct deposit/i.test(last.description)
-    ) {
-      horizon = next;
-      horizonSource = `Expected paycheck, based on ${group.length} deposits`;
-    }
-    if (last.amountCents < 0)
-      bills.push({
-        id: newId(),
-        name: last.description,
-        amountCents: -last.amountCents,
-        dueDate: next,
-        frequency:
-          interval <= 8 ? "Weekly" : interval <= 16 ? "Biweekly" : "Monthly",
-        status: "candidate",
-        evidence: group.map((t) => t.id),
-        note: "Estimated from similar recurring transactions. Confirm the amount and next date.",
-      });
-  }
+  const shared = transactions.map((t) => ({
+    id: t.id,
+    importBatchId: "import",
+    postedDate: t.date,
+    description: t.description,
+    amountCents: t.amountCents,
+    reviewStatus: "ok" as const,
+    possibleTransfer: t.transfer,
+  }));
+  const s = sharedSetupSuggestion(shared, now);
+  const bills: Bill[] = s.candidates.map((c) => ({
+    id: newId(),
+    name: c.displayName,
+    amountCents: c.amountCents,
+    dueDate: c.nextDueDate,
+    frequency: FREQUENCY[c.cadence] ?? "Monthly",
+    status: "candidate",
+    evidence: c.sourceTransactionIds,
+    note: [
+      `Seen ${c.occurrences} times${c.occurrences >= 3 && c.minCents === c.maxCents ? " with the same amount" : ""}. Confirm the amount and next date.`,
+      ...c.notes.filter((n) => !n.startsWith("Seen only")),
+    ].join(" "),
+  }));
   const evidenceIds = new Set(bills.flatMap((b) => b.evidence));
+  const windowDays = s.essentials?.windowDays ?? 0;
+  const lastDate = transactions.reduce((m, t) => (t.date > m ? t.date : m), "");
+  const windowStart = lastDate ? addDays(lastDate, -(Math.max(windowDays, 1) - 1)) : now;
   const largePurchases = transactions.filter(
     (t) =>
-      t.date >= addDays(now, -13) &&
-      t.date <= now &&
-      t.amountCents <= -20000 &&
+      t.date >= windowStart &&
+      t.amountCents <= -40000 &&
       !evidenceIds.has(t.id) &&
       !t.transfer,
   );
-  const everyday = transactions.filter(
-    (t) =>
-      t.date >= addDays(now, -13) &&
-      t.date <= now &&
-      t.amountCents < 0 &&
-      t.amountCents > -20000 &&
-      !t.transfer &&
-      !evidenceIds.has(t.id),
-  );
-  const essentialsCents = Math.round(
-    (everyday.reduce((n, t) => n - t.amountCents, 0) / 14) *
-      (daysBetween(now, horizon) + 1),
-  );
   return {
     bills,
-    horizon,
-    horizonSource,
-    essentialsCents,
-    basisDays: 14,
+    horizon: s.endDate,
+    horizonSource: s.income
+      ? `Your next expected deposit from ${s.income.displayName} (paid ${PAY_LABEL[s.income.cadence]}, ${s.income.occurrences} deposits found)`
+      : "A two-week planning period",
+    essentialsCents: s.essentials?.cents ?? 0,
+    basisDays: windowDays,
     largePurchases,
   };
 }
 export function generateSampleCsv(variant: "A" | "B", now = today()) {
-  const rows: (string | number)[][] = [["Date", "Description", "Amount"]];
-  const names =
-    variant === "A"
-      ? ([
-          ["Rent", 1100, 2],
-          ["Car insurance", 120, 5],
-          ["Internet", 80, 9],
-        ] as const)
-      : ([
-          ["Rent", 1350, 2],
-          ["Car insurance", 160, 5],
-          ["Internet", 95, 9],
-        ] as const);
-  for (const [name, amount, offset] of names)
-    for (const ago of [60, 30])
-      rows.push([addDays(now, offset - ago), name, -amount]);
-  rows.push(
-    [addDays(now, -15), "Payroll", 2500],
-    [addDays(now, -1), "Payroll", 2500],
-  );
-  const spending =
-    variant === "A" ? [85, 60, 45, 90, 70] : [110, 80, 65, 120, 90];
-  spending.forEach((amount, i) =>
-    rows.push([
-      addDays(now, -12 + i * 2),
-      [
-        "Whole Foods",
-        "Trader Joe's",
-        "Transit",
-        "Groceries",
-        "Everyday essentials",
-      ][i],
-      -amount,
-    ]),
-  );
-  return rows.map((row) => row.join(",")).join("\n");
+  return variant === "A" ? generateSampleCsvA(now) : generateSampleCsvB(now);
 }

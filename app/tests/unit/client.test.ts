@@ -19,7 +19,8 @@ import {
 const NOW = "2026-11-14";
 function sample(variant: "A" | "B" = "A"): AppState {
   const csv = parseCsv(generateSampleCsv(variant, NOW)),
-    { transactions } = normalizeRows(csv.rows, csv.mapping, "ISO", false),
+    format = detectDateFormats(csv.rows.map((r) => r[csv.mapping.date])),
+    { transactions } = normalizeRows(csv.rows, csv.mapping, format, false),
     suggestion = buildSetupSuggestion(transactions, NOW);
   return {
     ...emptyState(),
@@ -37,9 +38,10 @@ function sample(variant: "A" | "B" = "A"): AppState {
   };
 }
 describe("independent financial examples", () => {
-  it("reconstructs sample A from actual CSV: 3 bills, $350 essentials, $300 remaining", () => {
+  it("reconstructs sample A from actual CSV: 3 bills in the period, $350 essentials, $300 remaining", () => {
     const s = sample();
-    expect(s.bills).toHaveLength(3);
+    expect(computePlan(s).bills).toHaveLength(3);
+    expect(s.bills.some((b) => /transfer/i.test(b.note))).toBe(true);
     expect(s.plan.essentialsCents).toBe(35000);
     expect(computePlan(s).billsCents).toBe(130000);
     expect(computePlan(s).remainderCents).toBe(30000);
@@ -99,11 +101,11 @@ describe("independent financial examples", () => {
   });
   it("raising insurance by $30 leaves $270", () => {
     const s = sample(),
-      insurance = s.bills.find((b) => b.name === "Car insurance")!;
+      insurance = s.bills.find((b) => /insurance/i.test(b.name))!;
     const result = applyConfirmedProposal(s, {
       id: "p1",
       stateVersion: 0,
-      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: 15000 } },
+      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: insurance.amountCents + 3000 } },
     });
     expect(result.status).toBe("applied");
     expect(computePlan(result.state).remainderCents).toBe(27000);
@@ -144,14 +146,14 @@ describe("independent financial examples", () => {
   });
   it("closes an already-deducted bill without reducing the balance again", () => {
     const s = sample(),
-      rent = s.bills.find((b) => b.name === "Rent")!;
+      rent = s.bills.find((b) => /apartments|rent/i.test(b.name))!;
     const next = markBillPaid(s, rent.id, true);
     expect(next.plan.balanceCents).toBe(220000);
     expect(computePlan(next).billsCents).toBe(20000);
   });
   it("deducts a newly paid bill only once", () => {
     const s = sample(),
-      id = s.bills[0].id;
+      id = s.bills.find((b) => /apartments|rent/i.test(b.name))!.id;
     const next = markBillPaid(s, id, false);
     expect(next.plan.balanceCents).toBe(110000);
     expect(markBillPaid(next, id, false)).toBe(next);
@@ -159,23 +161,23 @@ describe("independent financial examples", () => {
   });
   it("$950 after rent and $150 everyday spending preserves the $270 remainder", () => {
     const s = sample(),
-      insurance = s.bills.find((b) => b.name === "Car insurance")!,
-      rent = s.bills.find((b) => b.name === "Rent")!;
+      insurance = s.bills.find((b) => /insurance/i.test(b.name))!,
+      rent = s.bills.find((b) => /apartments|rent/i.test(b.name))!;
     const changed = applyConfirmedProposal(s, {
       id: "p4",
       stateVersion: 0,
-      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: 15000 } },
+      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: insurance.amountCents + 3000 } },
     }).state;
     const next = previewBalanceUpdate(changed, 95000, [rent.id], true);
     expect(next.unexplainedCents).toBe(15000);
     expect(next.state.plan.essentialsCents).toBe(20000);
     expect(computePlan(next.state).billsCents).toBe(23000);
     expect(next.remainderCents).toBe(27000);
-    expect(next.state.lastUpdate?.closedBills).toEqual(["Rent"]);
+    expect(next.state.lastUpdate?.closedBills).toEqual([rent.name]);
   });
   it("caps everyday allocation and surfaces overspending separately", () => {
     const s = sample(),
-      rent = s.bills.find((b) => b.name === "Rent")!;
+      rent = s.bills.find((b) => /apartments|rent/i.test(b.name))!;
     const next = previewBalanceUpdate(s, 50000, [rent.id], true);
     expect(next.essentialsSpentCents).toBe(35000);
     expect(next.excessCents).toBe(25000);
@@ -191,7 +193,9 @@ describe("independent financial examples", () => {
     );
   });
   it("produces a different result for sample B", () => {
-    expect(computePlan(sample("B")).remainderCents).toBe(78000);
+    const b = computePlan(sample("B")).remainderCents;
+    expect(b).toBe(280001);
+    expect(b === computePlan(sample("A")).remainderCents).toBe(false);
   });
 });
 describe("CSV input and persisted state", () => {

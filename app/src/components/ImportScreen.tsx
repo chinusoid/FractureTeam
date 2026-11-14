@@ -7,6 +7,7 @@ import {
   normalizeRows,
   parseCsv,
   today,
+  usesDebitCredit,
   type DateFormat,
   type Mapping,
 } from "@/lib/client/model";
@@ -29,9 +30,15 @@ export function ImportScreen({
   const [mapping, setMapping] = useState<Mapping>(() =>
     initialText
       ? parseCsv(initialText).mapping
-      : { date: -1, description: -1, amount: -1 },
+      : { date: -1, description: -1, amount: -1, debit: -1, credit: -1 },
   );
-  const [format, setFormat] = useState<DateFormat>(initialText ? "ISO" : ""),
+  const [format, setFormat] = useState<DateFormat>(() => {
+    if (!initialText) return "";
+    const p = parseCsv(initialText);
+    return p.mapping.date >= 0
+      ? detectDateFormats(p.rows.map((r) => r[p.mapping.date] ?? ""))
+      : "";
+  }),
     [invert, setInvert] = useState(false),
     [excludeDuplicates, setExcludeDuplicates] = useState(false),
     [excluded, setExcluded] = useState<number[]>([]),
@@ -176,14 +183,62 @@ export function ImportScreen({
                   {parsed.rows.length} rows found
                 </span>
               </div>
+              <div className="segmented" role="group" aria-label="Amount columns">
+                <button
+                  type="button"
+                  className={!usesDebitCredit(mapping) ? "active" : ""}
+                  aria-pressed={!usesDebitCredit(mapping)}
+                  onClick={() =>
+                    setMapping((m) => ({
+                      ...m,
+                      amount:
+                        m.amount >= 0
+                          ? m.amount
+                          : parsed.headers.findIndex((h) => /amount/i.test(h)),
+                      debit: -1,
+                      credit: -1,
+                    }))
+                  }
+                >
+                  One amount column
+                </button>
+                <button
+                  type="button"
+                  className={usesDebitCredit(mapping) ? "active" : ""}
+                  aria-pressed={usesDebitCredit(mapping)}
+                  onClick={() =>
+                    setMapping((m) => ({
+                      ...m,
+                      amount: -1,
+                      debit:
+                        m.debit >= 0
+                          ? m.debit
+                          : Math.max(0, parsed.headers.findIndex((h) => /debit|withdraw|money out/i.test(h))),
+                      credit:
+                        m.credit >= 0
+                          ? m.credit
+                          : Math.max(0, parsed.headers.findIndex((h) => /credit|deposit|money in/i.test(h))),
+                    }))
+                  }
+                >
+                  Separate debit and credit
+                </button>
+              </div>
               <div className="form-grid three">
-                {(["date", "description", "amount"] as const).map((key) => (
+                {(usesDebitCredit(mapping)
+                  ? (["date", "description", "debit", "credit"] as const)
+                  : (["date", "description", "amount"] as const)
+                ).map((key) => (
                   <label key={key}>
                     {key === "date"
                       ? "Date"
                       : key === "description"
                         ? "Description"
-                        : "Amount"}
+                        : key === "debit"
+                          ? "Debit (money out)"
+                          : key === "credit"
+                            ? "Credit (money in)"
+                            : "Amount"}
                     <select
                       value={mapping[key]}
                       onChange={(e) => {
@@ -220,6 +275,7 @@ export function ImportScreen({
                     <option value="DMY">DD/MM/YYYY</option>
                   </select>
                 </label>
+                {!usesDebitCredit(mapping) && (
                 <label>
                   Amount sign
                   <select
@@ -230,6 +286,7 @@ export function ImportScreen({
                     <option value="invert">Spending is positive</option>
                   </select>
                 </label>
+                )}
               </div>
               {!format && (
                 <Notice error>
@@ -348,8 +405,9 @@ export function ImportScreen({
           <div className="thin-line" />
           <h3>What do I need?</h3>
           <p>
-            A CSV with a date, description, and amount column. A month or two of
-            history helps spot recurring bills.
+            A CSV export from your bank with a date, a description, and either
+            one amount column or separate debit and credit columns. Two or
+            three months of history helps spot recurring bills.
           </p>
           <h3>Want a quick look first?</h3>
           <p>Use a synthetic sample. No bank connection or account needed.</p>
