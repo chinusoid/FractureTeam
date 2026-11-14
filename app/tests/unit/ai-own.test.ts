@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixtures from "./fixtures/own-model-parity.json";
 import { features } from "../../src/lib/ai/own/features";
 import { predictCategory, predictIntent } from "../../src/lib/ai/own/model";
-import { matchBills, ownProvider, parseDate } from "../../src/lib/ai/own/provider";
+import { amountsIn, matchBills, ownProvider, parseDate } from "../../src/lib/ai/own/provider";
 import { createProvider } from "../../src/lib/ai/providers";
 import { readEnv } from "../../src/lib/ai/env";
 import { handleAssistant } from "../../src/lib/ai/handler";
@@ -64,6 +64,11 @@ describe("Covered model runtime", () => {
     expect(matchBills("rent went up by $50", bills).map((b) => b.id)).toEqual(["bill_rent"]);
     expect(matchBills("my car insurance changed", bills).map((b) => b.id)).toEqual(["bill_insurance"]);
     expect(matchBills("my gym is cheaper", bills)).toEqual([]);
+  });
+  it("reads amounts followed by punctuation", () => {
+    expect(amountsIn("Add my phone bill, $65, due Nov 24")).toEqual([65]);
+    expect(amountsIn("Add rent, $1,100, due Nov 20")).toEqual([1100]);
+    expect(amountsIn("is 120 dollars ok?")).toEqual([120]);
   });
   it("reads dates", () => {
     expect(parseDate("on Nov 22", "2026-11-14")).toBe("2026-11-22");
