@@ -85,7 +85,7 @@ test("env: memory quotas only outside production, mock never in production", () 
   assert.equal(readEnv({ NODE_ENV: "development" }).quotaMode, "memory");
   assert.equal(readEnv({ NODE_ENV: "production", UPSTASH_REDIS_REST_URL: "https://x", UPSTASH_REDIS_REST_TOKEN: "t" }).quotaMode, "upstash");
   assert.equal(readEnv({ OPENAI_REASONING_EFFORT: "none" }).reasoningEffort, null);
-  assert.equal(readEnv({}).model, "gpt-6.1-sol");
+  assert.equal(readEnv({}).model, "gpt-6-luna");
   assert.equal(readEnv({ AI_ENABLED: "false" }).aiEnabled, false);
 });
 
@@ -414,7 +414,7 @@ test("timeout -> 504 and the budget reservation is kept", async () => {
 test("real provider request shape", async () => {
   let sent: Record<string, unknown> = {};
   let url = "";
-  const env = readEnv({ NODE_ENV: "development", OPENAI_API_KEY: "sk-test", OPENAI_MODEL: "gpt-6.1-sol" });
+  const env = readEnv({ NODE_ENV: "development", OPENAI_API_KEY: "sk-test", OPENAI_MODEL: "gpt-6-luna" });
   const fetchImpl = async (u: string, init?: RequestInit) => {
     url = u;
     sent = JSON.parse(String(init!.body));
@@ -423,7 +423,7 @@ test("real provider request shape", async () => {
   const r = await call(body("hello"), env, { provider: openAIProvider(env, fetchImpl), store: new MemoryStore() });
   assert.equal(r.res.status, 200);
   assert.equal(url, "https://api.openai.com/v1/responses");
-  assert.equal(sent.model, "gpt-6.1-sol");
+  assert.equal(sent.model, "gpt-6-luna");
   assert.equal(sent.store, false);
   assert.deepEqual(sent.reasoning, { effort: "low" });
   assert.deepEqual(sent.include, ["reasoning.encrypted_content"]);

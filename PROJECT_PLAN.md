@@ -248,14 +248,14 @@ flowchart TD
 | Схемы данных | Zod | Общая проверка ручного ввода, импорта, API и предложений ИИ | MVP |
 | Локальные данные | `localStorage`, один документ с `schemaVersion` и проверкой Zod при чтении | Операции и план сохраняются в браузере; объёма до 5 000 операций достаточно | MVP хакатона; IndexedDB и `idb` — при росте данных |
 | AI-интеграция | Официальный OpenAI SDK, Responses API | Запросы к модели, function calling, структурированные ответы | MVP |
-| Начальная модель | `gpt-6.1-sol`, параметр `OPENAI_MODEL` | Кандидат для разбора запросов и работы с инструментами; доступ и качество проверяются первым действием | MVP; запасная модель с проверенным доступом назначается вручную |
+| Модель | `gpt-6-luna`, параметр `OPENAI_MODEL` | Разбор запросов и работа с инструментами; на 25 оценочных сценариях проходит 25 из 25 в двух прогонах подряд (14.11.2026) | MVP; другая модель назначается вручную и заново проходит сценарии |
 | Лимиты запросов | Upstash Redis + `@upstash/ratelimit` | Глобальный дневной бюджет и мягкий лимит на клиента, общие между экземплярами приложения | До публичной ссылки с включённым ИИ |
 | Проверка логики | Vitest | Контроль финансовых правил, импорта и применения предложений | MVP |
 | Проверка сценария | Playwright | Проверка в браузере на компьютере и телефоне | После хакатона; до сдачи — ручной чек-лист раздела 16 |
 | Публикация | Vercel | Размещение Next.js и серверного AI-обработчика | MVP |
 | Облачные данные | Supabase PostgreSQL + Auth + RLS | Аккаунты, синхронизация и разграничение доступа | Пилот после MVP |
 
-**[Ф]** `gpt-6.1-sol` поддерживает вызов инструментов через Responses API; модель описана в [официальной документации OpenAI](https://developers.openai.com/api/docs/models/gpt-6.1-sol). **[Р]** Начальная настройка — `reasoning.effort: low`; модель оценивается на подготовленных сценариях, а доступность не предполагается автоматически для любого аккаунта. Автоматической подмены на другую модель нет.
+**[Ф]** `gpt-6-luna` поддерживает вызов инструментов через Responses API и параметр `reasoning.effort`; модель описана в [официальной документации OpenAI](https://developers.openai.com/api/docs/models/gpt-6-luna). **[Р]** Начальная настройка — `reasoning.effort: low`; модель оценивается на подготовленных сценариях, а доступность не предполагается автоматически для любого аккаунта. Автоматической подмены на другую модель нет.
 
 **[Р]** Доступ к модели и работа инструментов проверяются тестовым вызовом до начала ИИ-части. Если модель недоступна, нестабильна на подготовленных сценариях или слишком медленна для демо, `OPENAI_MODEL` вручную переключается на запасную модель с проверенным доступом, и оценочные сценарии повторяются на ней до записи видео.
 
@@ -648,7 +648,7 @@ app/
 - [Papa Parse о чтении CSV](https://www.papaparse.com/docs).
 - [OpenAI о function calling](https://developers.openai.com/api/docs/guides/function-calling).
 - [OpenAI о Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses).
-- [OpenAI о GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol).
+- [OpenAI о GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).
 - [Upstash о серверных лимитах запросов](https://upstash.com/docs/redis/sdks/ratelimit-ts/overview).
 - [Supabase о Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security).
 - [Vitest](https://vitest.dev/guide/) и [Playwright](https://playwright.dev/docs/intro).
