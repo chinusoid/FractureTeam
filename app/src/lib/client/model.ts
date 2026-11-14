@@ -1,6 +1,8 @@
 // Standalone client adapter. Replace with covered-base's finance/import exports
 // when the shared package is supplied; no server or shared module is shadowed.
 import { z } from "zod";
+import { validatePayload } from "../finance/proposals";
+import { ChangeProposalSchema } from "../schemas/assistant";
 
 export const STALE_AFTER_DAYS = 7;
 export const RESERVE_OPTIONS_CENTS = [0, 10000, 25000, 50000];
@@ -274,30 +276,44 @@ export function previewBalanceUpdate(
     remainderCents: computePlan(next).remainderCents,
   };
 }
-export type Proposal = {
-  id: string;
-  stateVersion: number;
-  billId: string;
-  amountCents: number;
-};
+export const ProposalSchema = ChangeProposalSchema.pick({ id: true, payload: true }).extend({
+  stateVersion: z.number().int().min(0),
+});
+export type Proposal = z.infer<typeof ProposalSchema>;
 export function previewProposal(state: AppState, proposal: Proposal) {
-  if (
-    !Number.isSafeInteger(proposal.amountCents) ||
-    proposal.amountCents <= 0 ||
-    proposal.amountCents > 1e12 ||
-    !state.bills.some(
-      (b) => b.id === proposal.billId && b.status === "confirmed",
-    )
-  )
-    return null;
-  return computePlan({
-    ...state,
-    bills: state.bills.map((b) =>
-      b.id === proposal.billId
-        ? { ...b, amountCents: proposal.amountCents }
-        : b,
-    ),
-  });
+  const parsed = ProposalSchema.safeParse(proposal);
+  if (!parsed.success) return null;
+  const payload = parsed.data.payload;
+  const obligations = state.bills.map((b) => ({
+    ...b,
+    paymentStatus: b.status === "paid" ? "paid" as const : "unpaid" as const,
+    confirmationStatus: b.status === "candidate" ? "suggested" as const : "confirmed" as const,
+  }));
+  if (validatePayload({ obligations }, payload).length) return null;
+  const target = payload.type === "update_obligation"
+    ? state.bills.find((b) => b.id === payload.targetId && b.status === "confirmed")
+    : null;
+  if (payload.type === "update_obligation" && !target) return null;
+  if (payload.type === "add_obligation" && state.bills.length >= 500) return null;
+  const updated: Bill = payload.type === "update_obligation"
+    ? {
+        ...target!,
+        ...payload.changes,
+        name: payload.changes.name?.trim() ?? target!.name,
+      }
+    : {
+        id: "__preview__",
+        ...payload.obligation,
+        name: payload.obligation.name.trim(),
+        frequency: "One-time",
+        status: "confirmed",
+        evidence: [],
+        note: "Added after confirming an assistant suggestion.",
+      };
+  const bills = target
+    ? state.bills.map((b) => b.id === target.id ? updated : b)
+    : [...state.bills, updated];
+  return { before: computePlan(state), after: computePlan({ ...state, bills }), target: target ?? null, updated };
 }
 export function applyConfirmedProposal(
   state: AppState,
@@ -310,18 +326,17 @@ export function applyConfirmedProposal(
     return { status: "already_applied", state };
   if (proposal.stateVersion !== state.stateVersion)
     return { status: "stale", state };
-  if (!previewProposal(state, proposal)) return { status: "invalid", state };
+  const preview = previewProposal(state, proposal);
+  if (!preview) return { status: "invalid", state };
   return {
     status: "applied",
     state: {
       ...state,
       stateVersion: state.stateVersion + 1,
       appliedProposalIds: [...state.appliedProposalIds, proposal.id],
-      bills: state.bills.map((b) =>
-        b.id === proposal.billId
-          ? { ...b, amountCents: proposal.amountCents }
-          : b,
-      ),
+      bills: preview.target
+        ? state.bills.map((b) => b.id === preview.target!.id ? preview.updated : b)
+        : [...state.bills, { ...preview.updated, id: newId() }],
     },
   };
 }

@@ -130,14 +130,29 @@ describe("shared contract adapter", () => {
     expect(sim.simulation).toEqual({ amountCents: 40000, purchaseDate: "2026-12-05" });
     vi.stubGlobal("fetch", ok({ ...contractBase, kind: "change_proposal", requiresConfirmation: true, message: "Review it", proposal: { id: "proposal_1", baseVersion: 7, factRefs: [], payload: { type: "update_obligation", targetId: "bill_insurance", changes: { amountCents: 18000 } } } }));
     const p = await requestAssistant(planState(), "Insurance +30", "plan");
-    expect(p.proposal).toEqual({ id: "proposal_1", stateVersion: 7, billId: "bill_insurance", amountCents: 18000 });
+    expect(p.proposal).toEqual({ id: "proposal_1", stateVersion: 7, payload: { type: "update_obligation", targetId: "bill_insurance", changes: { amountCents: 18000 } } });
   });
-  it("turns proposals the UI cannot preview into a pointer to the Bills form", async () => {
+  it("maps a new bill to a confirmable UI proposal", async () => {
     vi.stubGlobal("fetch", ok({ ...contractBase, kind: "change_proposal", requiresConfirmation: true, message: "Add it?", proposal: { id: "proposal_2", baseVersion: 7, factRefs: [], payload: { type: "add_obligation", obligation: { name: "Dentist", amountCents: 9000, dueDate: "2026-11-20" } } } }));
     const r = await requestAssistant(planState(), "Add dentist", "plan");
-    expect(r.kind).toBe("answer");
-    expect(r.proposal).toBe(undefined);
-    expect(r.message).toContain("Bills");
+    expect(r.kind).toBe("change_proposal");
+    expect(r.proposal).toEqual({ id: "proposal_2", stateVersion: 7, payload: { type: "add_obligation", obligation: { name: "Dentist", amountCents: 9000, dueDate: "2026-11-20" } } });
+    expect(r.message).toBe("Add it?");
+  });
+  it("preserves date, name and amount changes together", async () => {
+    const payload = { type: "update_obligation", targetId: "bill_insurance", changes: { name: "Auto insurance", dueDate: "2026-12-01", amountCents: 18000 } };
+    vi.stubGlobal("fetch", ok({ ...contractBase, kind: "change_proposal", requiresConfirmation: true, message: "Review it", proposal: { id: "proposal_3", baseVersion: 7, factRefs: [], payload } }));
+    expect((await requestAssistant(planState(), "Move insurance", "plan")).proposal?.payload).toEqual(payload);
+  });
+  it.each([
+    ["ai_disabled", "turned off"],
+    ["rate_limited", "Wait a minute"],
+    ["budget_exhausted", "budget has been reached"],
+    ["quota_unavailable", "limit service is unavailable"],
+    ["timeout", "took too long"],
+  ])("explains %s and provides a manual fallback", async (code, message) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code, message: "x" } }, { status: 503 })));
+    await expect(requestAssistant(planState(), "Explain", "plan")).rejects.toThrow(message);
   });
   it("maps contract error codes to actionable messages", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code: "budget_exhausted", message: "x" } }, { status: 429 })));

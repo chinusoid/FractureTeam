@@ -103,8 +103,7 @@ describe("independent financial examples", () => {
     const result = applyConfirmedProposal(s, {
       id: "p1",
       stateVersion: 0,
-      billId: insurance.id,
-      amountCents: 15000,
+      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: 15000 } },
     });
     expect(result.status).toBe("applied");
     expect(computePlan(result.state).remainderCents).toBe(27000);
@@ -114,8 +113,7 @@ describe("independent financial examples", () => {
       p = {
         id: "p2",
         stateVersion: 0,
-        billId: s.bills[1].id,
-        amountCents: 15000,
+        payload: { type: "update_obligation" as const, targetId: s.bills[1].id, changes: { amountCents: 15000 } },
       };
     const first = applyConfirmedProposal(s, p);
     const second = applyConfirmedProposal(first.state, p);
@@ -127,12 +125,11 @@ describe("independent financial examples", () => {
       p = {
         id: "p3",
         stateVersion: 3,
-        billId: s.bills[1].id,
-        amountCents: 15000,
+        payload: { type: "update_obligation" as const, targetId: s.bills[1].id, changes: { amountCents: 15000 } },
       };
     expect(applyConfirmedProposal(s, p)).toEqual({ status: "stale", state: s });
     expect(
-      applyConfirmedProposal(s, { ...p, stateVersion: 0, amountCents: -1 })
+      applyConfirmedProposal(s, { ...p, stateVersion: 0, payload: { ...p.payload, changes: { amountCents: -1 } } })
         .status,
     ).toBe("invalid");
   });
@@ -167,8 +164,7 @@ describe("independent financial examples", () => {
     const changed = applyConfirmedProposal(s, {
       id: "p4",
       stateVersion: 0,
-      billId: insurance.id,
-      amountCents: 15000,
+      payload: { type: "update_obligation", targetId: insurance.id, changes: { amountCents: 15000 } },
     }).state;
     const next = previewBalanceUpdate(changed, 95000, [rent.id], true);
     expect(next.unexplainedCents).toBe(15000);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   applyConfirmedProposal,
   computePlan,
+  dateLabel,
   money,
   previewProposal,
   simulatePurchase,
@@ -24,7 +25,7 @@ export function Assistant({
   const { state, change, navigate, toast } = useApp();
   const [message, setMessage] = useState(""),
     [messages, setMessages] = useState<
-      { question: string; response?: AssistantResponse; error?: string }[]
+      { question: string; response?: AssistantResponse; error?: string; preview?: ReturnType<typeof previewProposal> }[]
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
@@ -46,7 +47,8 @@ export function Assistant({
         setup ? "setup" : "plan",
         history,
       );
-      setMessages((m) => [...m.slice(0, -1), { question: text, response }]);
+      const preview = response.proposal ? previewProposal(state, response.proposal) : null;
+      setMessages((m) => [...m.slice(0, -1), { question: text, response, preview }]);
     } catch (e) {
       setMessages((m) => [
         ...m.slice(0, -1),
@@ -140,6 +142,9 @@ export function Assistant({
                   {item.error && (
                     <div className="assistant-message">
                       <Notice error>{item.error}</Notice>
+                      <Button kind="ghost" disabled={busy} onClick={() => void send(item.question)}>
+                        Try again
+                      </Button>
                       <Button
                         kind="secondary"
                         onClick={() => {
@@ -201,7 +206,7 @@ export function Assistant({
                       {item.response.proposal &&
                         (() => {
                           const proposal = item.response.proposal,
-                            preview = previewProposal(state, proposal),
+                            preview = item.preview,
                             applied = state.appliedProposalIds.includes(
                               proposal.id,
                             ),
@@ -210,44 +215,35 @@ export function Assistant({
                           return (
                             <div className="proposal-card">
                               <h3>
-                                {state.bills.find(
-                                  (b) => b.id === proposal.billId,
-                                )?.name ?? "Bill change"}
+                                {preview?.updated.name ?? "Bill change"}
                               </h3>
                               {preview && (
                                 <>
-                                  <p>
-                                    Bill amount
-                                    <strong>
-                                      {money(proposal.amountCents)}
-                                    </strong>
-                                  </p>
-                                  <p>
-                                    Available before
-                                    <strong>
-                                      {money(computePlan(state).remainderCents)}
-                                    </strong>
-                                  </p>
-                                  <p>
-                                    Available after
-                                    <strong>
-                                      {money(preview.remainderCents)}
-                                    </strong>
-                                  </p>
+                                  <table className="proposal-comparison" aria-label="Bill change preview">
+                                    <thead><tr><th scope="col">Bill</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                                    <tbody>
+                                      <tr><th scope="row">Name</th><td>{preview.target?.name ?? "No bill yet"}</td><td>{preview.updated.name}</td></tr>
+                                      <tr><th scope="row">Amount</th><td>{preview.target ? money(preview.target.amountCents) : "—"}</td><td>{money(preview.updated.amountCents)}</td></tr>
+                                      <tr><th scope="row">Due date</th><td>{preview.target ? dateLabel(preview.target.dueDate, true) : "—"}</td><td>{dateLabel(preview.updated.dueDate, true)}</td></tr>
+                                      <tr><th scope="row">Available</th><td>{money(preview.before.remainderCents)}</td><td>{money(preview.after.remainderCents)}</td></tr>
+                                    </tbody>
+                                  </table>
+                                  <p className="small muted">{preview.target ? "Review the change before saving." : "This adds one confirmed bill. You can set it to repeat in Bills."}</p>
                                 </>
                               )}
                               {!preview && (
-                                <Notice error>
-                                  This suggestion is invalid. Use the bill form
-                                  instead.
-                                </Notice>
+                                <>
+                                  <Notice error>This suggestion is invalid. Use the bill form instead.</Notice>
+                                  <Button kind="secondary" onClick={() => { navigate("/app/bills"); close(); }}>Open Bills</Button>
+                                </>
                               )}
                               {stale && !applied && (
-                                <Notice error>
-                                  Your plan has changed since this suggestion.
-                                  Ask for a fresh proposal.
-                                </Notice>
+                                <>
+                                  <Notice error>Your plan has changed since this suggestion. Ask for a fresh proposal.</Notice>
+                                  <Button kind="secondary" disabled={busy} onClick={() => void send(item.question)}>Refresh suggestion</Button>
+                                </>
                               )}
+                              {applied && <Notice>Saved to your plan.</Notice>}
                               <Button
                                 disabled={
                                   !preview ||
@@ -305,7 +301,7 @@ export function Assistant({
               </label>
               <textarea
                 id="assistant-message"
-                maxLength={2000}
+                maxLength={500}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Ask about your plan…"

@@ -2191,6 +2191,31 @@ details p {
   width: 100%;
   margin-top: 12px;
 }
+.proposal-comparison {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.proposal-comparison th,
+.proposal-comparison td {
+  padding: 9px 5px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.proposal-comparison th:first-child {
+  width: 25%;
+}
+.proposal-comparison thead th {
+  color: var(--muted);
+  font-weight: 500;
+}
+.proposal-comparison td:last-child {
+  font-weight: 600;
+}
 .setup-review {
   padding: 12px;
   background: var(--cream);
