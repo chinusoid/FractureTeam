@@ -545,6 +545,9 @@ export function buildSetupSuggestion(
     essentialsCents: s.essentials?.cents ?? 0,
     basisDays: windowDays,
     largePurchases,
+    /** How often the detected paycheck arrives, and whether the suggested period ends on the next one. */
+    payCadence: s.income?.cadence ?? null,
+    endsOnPayday: s.endDateSource === "payday",
   };
 }
 export function generateSampleCsv(variant: "A" | "B", now = today()) {

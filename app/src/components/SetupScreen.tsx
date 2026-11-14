@@ -14,6 +14,10 @@ import { Button, Notice, PageHeading } from "./UI";
 import { billIcon, Icon } from "./Icon";
 import { BillDialog } from "./management";
 
+/** Suggestions with one of these notes need the user's own decision and are never confirmed in bulk. */
+const NEEDS_A_LOOK =
+  /transfer|varies|latest amount|assumed paid|after your file ends|only if it is a bill/i;
+
 export function SetupScreen() {
   const { state, change, navigate, openAssistant } = useApp();
   const suggestion = useMemo(
@@ -34,6 +38,12 @@ export function SetupScreen() {
     [error, setError] = useState(""),
     [editor, setEditor] = useState<Bill | "new" | null>(null);
   const bills = state.bills.filter((b) => b.status !== "dismissed");
+  const clear = bills.filter(
+    (b) => b.status === "candidate" && !NEEDS_A_LOOK.test(b.note),
+  );
+  const flagged = bills.filter(
+    (b) => b.status === "candidate" && NEEDS_A_LOOK.test(b.note),
+  );
   function save() {
     const balanceCents = parseMoney(balance),
       essentialsCents = parseMoney(essentials);
@@ -229,6 +239,32 @@ export function SetupScreen() {
               <p>Add any upcoming payments you want your plan to cover.</p>
             </div>
           )}
+          {clear.length > 1 && (
+            <div className="confirm-all">
+              <Button
+                kind="secondary"
+                icon="check"
+                onClick={() =>
+                  change((s) => ({
+                    ...s,
+                    stateVersion: s.stateVersion + 1,
+                    bills: s.bills.map((x) =>
+                      x.status === "candidate" && !NEEDS_A_LOOK.test(x.note)
+                        ? { ...x, status: "confirmed" }
+                        : x,
+                    ),
+                  }))
+                }
+              >
+                Confirm {clear.length} bills
+              </Button>
+              <span className="small muted">
+                {flagged.length
+                  ? `${flagged.length} with a note ${flagged.length === 1 ? "stays" : "stay"} for you to decide.`
+                  : "You can still edit or dismiss each one."}
+              </span>
+            </div>
+          )}
           <div className="candidate-list">
             {bills.map((b) => (
               <article className="candidate" key={b.id}>
@@ -248,11 +284,7 @@ export function SetupScreen() {
                 {(() => {
                   const flags = b.note
                     .split(/(?<=\.)\s+/)
-                    .filter((s) =>
-                      /transfer|varies|latest amount|assumed paid|after your file ends|only if it is a bill/i.test(
-                        s,
-                      ),
-                    );
+                    .filter((s) => NEEDS_A_LOOK.test(s));
                   return (
                     flags.length > 0 && (
                       <p className="candidate-flag">

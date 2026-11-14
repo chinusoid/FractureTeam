@@ -28,6 +28,9 @@ export async function runScenario(page, baseURL, width, height, directory) {
     });
   };
   await shot("landing");
+  await expect(
+    page.getByRole("heading", { name: /\$10 a month to stay clear/ }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Try sample data", exact: true })
     .click();
@@ -49,6 +52,13 @@ export async function runScenario(page, baseURL, width, height, directory) {
     "Confirm or dismiss",
   );
   await shot("setup");
+  // One click confirms the clear suggestions; the flagged savings transfer waits for its own decision.
+  await page
+    .getByRole("button", { name: "Confirm 7 bills", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Confirm", exact: true }),
+  ).toHaveCount(1);
   while (
     await page.getByRole("button", { name: "Confirm", exact: true }).count()
   )
@@ -58,6 +68,16 @@ export async function runScenario(page, baseURL, width, height, directory) {
       .click();
   await page.getByRole("button", { name: "Build my plan" }).click();
   await expect(page.getByTestId("plan-remainder")).toHaveText("$300");
+  // The payday reminder is a calendar file built in the browser.
+  const [reminder] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: /^Remind me on / }).click(),
+  ]);
+  assert.equal(reminder.suggestedFilename(), "covered-reminder.ics");
+  await expect(page.locator(".toast")).toContainText("repeating every two weeks");
+  await page
+    .getByRole("button", { name: "Dismiss notification", exact: true })
+    .click();
   await page.getByLabel("Purchase amount").fill("400");
   await page
     .getByRole("button", { name: "Check a purchase", exact: true })

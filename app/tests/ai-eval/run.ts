@@ -1,7 +1,7 @@
 /**
  * Assistant evaluation runner.
  *   Mock model:  npx tsx tests/ai-eval/run.ts --mock
- *   Real model:  OPENAI_API_KEY=... OPENAI_MODEL=gpt-6.1-sol npx tsx tests/ai-eval/run.ts
+ *   Real model:  OPENAI_API_KEY=... OPENAI_MODEL=gpt-6-luna npx tsx tests/ai-eval/run.ts
  * Options: --only <id> (repeatable), --repeat <n> (run each scenario n times, real mode stability check).
  * Uses in-memory quotas and never needs Upstash. Prints a pass/fail table, tokens and estimated cost per task.
  */

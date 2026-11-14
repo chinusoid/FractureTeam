@@ -8,7 +8,7 @@ export function Logo() {
         <Icon name="check" size={17} />
       </span>
       {BRAND.name}
-      <span className="brand-dot">®</span>
+      <span className="brand-dot">™</span>
     </span>
   );
 }

@@ -2,6 +2,11 @@
 
 export type QuotaMode = "upstash" | "memory" | "missing";
 
+/** The model the assistant was evaluated on, and its list price in USD per 1M tokens (OpenAI model page, 14 Nov 2026). */
+export const DEFAULT_MODEL = "gpt-6-luna";
+export const DEFAULT_INPUT_PRICE_PER_MTOK = 0.1;
+export const DEFAULT_OUTPUT_PRICE_PER_MTOK = 0.5;
+
 export interface ServerEnv {
   nodeEnv: string;
   /** AI_ENABLED=false switches the assistant off; manual features keep working. */
@@ -46,8 +51,9 @@ function str(src: Source, key: string): string | null {
 export function readEnv(src: Source = process.env as Source): ServerEnv {
   const nodeEnv = src.NODE_ENV ?? "development";
   const production = nodeEnv === "production";
-  const upstashUrl = str(src, "UPSTASH_REDIS_REST_URL");
-  const upstashToken = str(src, "UPSTASH_REDIS_REST_TOKEN");
+  // Vercel's Upstash integration injects the same two values under KV_REST_API_* names.
+  const upstashUrl = str(src, "UPSTASH_REDIS_REST_URL") ?? str(src, "KV_REST_API_URL");
+  const upstashToken = str(src, "UPSTASH_REDIS_REST_TOKEN") ?? str(src, "KV_REST_API_TOKEN");
   let quotaMode: QuotaMode;
   if (upstashUrl && upstashToken && src.QUOTA_MODE !== "memory") quotaMode = "upstash";
   else if (!production && (src.QUOTA_MODE === "memory" || !(upstashUrl && upstashToken))) quotaMode = "memory";
@@ -63,7 +69,7 @@ export function readEnv(src: Source = process.env as Source): ServerEnv {
     aiMockRequested: ["1", "true", "yes"].includes((src.AI_MOCK ?? "").trim().toLowerCase()),
     openaiApiKey: str(src, "OPENAI_API_KEY"),
     openaiBaseUrl: (str(src, "OPENAI_BASE_URL") ?? "https://api.openai.com/v1").replace(/\/+$/, ""),
-    model: str(src, "OPENAI_MODEL") ?? "gpt-6.1-sol",
+    model: str(src, "OPENAI_MODEL") ?? DEFAULT_MODEL,
     modelExplicit: Boolean(str(src, "OPENAI_MODEL")),
     reasoningEffort,
     maxOutputTokens: Math.round(num(src, "AI_MAX_OUTPUT_TOKENS", 1200, 100)),
@@ -77,8 +83,8 @@ export function readEnv(src: Source = process.env as Source): ServerEnv {
     upstashToken,
     dailyBudgetUsd: num(src, "AI_DAILY_BUDGET_USD", 5),
     maxCostPerRequestUsd: num(src, "AI_MAX_COST_PER_REQUEST_USD", 0.05),
-    inputPricePerMTok: num(src, "AI_INPUT_PRICE_PER_MTOK", 5),
-    outputPricePerMTok: num(src, "AI_OUTPUT_PRICE_PER_MTOK", 40),
+    inputPricePerMTok: num(src, "AI_INPUT_PRICE_PER_MTOK", DEFAULT_INPUT_PRICE_PER_MTOK),
+    outputPricePerMTok: num(src, "AI_OUTPUT_PRICE_PER_MTOK", DEFAULT_OUTPUT_PRICE_PER_MTOK),
     ipPerMinute: Math.round(num(src, "AI_IP_PER_MINUTE", 30, 1)),
     clientPerDay: Math.round(num(src, "AI_CLIENT_PER_DAY", 60, 1)),
   };
