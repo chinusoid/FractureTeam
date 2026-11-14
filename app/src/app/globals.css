@@ -195,7 +195,7 @@ details p {
   background: white;
   padding: 12px;
 }
-.skip-link:focus {
+.skip-link:focus-visible {
   top: 10px;
 }
 .muted {
@@ -3217,5 +3217,52 @@ details p {
     scroll-behavior: auto !important;
     animation: none !important;
     transition: none !important;
+  }
+}
+
+.import-panel .segmented {
+  margin: 2px 0 14px;
+  flex-wrap: wrap;
+}
+.import-panel .segmented button {
+  font-size: 12px;
+  min-height: 34px;
+}
+
+/* Polish: full bill names (two lines) instead of cutting them off. */
+.bill-card h3 {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  min-height: 2.5em;
+  line-height: 1.25;
+}
+.candidate-flag {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0 2px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #f8f6e9;
+  border: 1px solid #ebe6cf;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.candidate-flag svg {
+  flex: none;
+  margin-top: 1px;
+}
+/* Phones: the purchase check is the main action, so it comes right after the summary. */
+@media (max-width: 700px) {
+  .dashboard-aside {
+    display: contents;
+  }
+  .dashboard-aside .purchase-panel {
+    order: -1;
   }
 }
