@@ -2,7 +2,89 @@ import { useApp } from "./context";
 import { BRAND } from "./brand";
 import { Button, downloadText, Gauge } from "./UI";
 import { Icon } from "./Icon";
-import { generateSampleCsv } from "@/lib/client/model";
+import { useState } from "react";
+import { generateSampleCsv, money } from "@/lib/client/model";
+import { HERO_PRESETS, checkHeroPurchase, heroPlanSummary, parseHeroAmount } from "@/lib/demo/heroPlan";
+
+const PLAN = heroPlanSummary();
+
+/** "Can I afford it?" on the sample plan above: computed in the page, nothing stored or sent. */
+function HeroCheck({ tryOwn }: { tryOwn: () => void }) {
+  const [amountCents, setAmountCents] = useState<number | null>(HERO_PRESETS[1].amountCents),
+    [typed, setTyped] = useState("");
+  const result = checkHeroPurchase(amountCents);
+  return (
+    <div className="hero-check">
+      <div className="hero-check-head">
+        <strong id="hero-check-title">Can I afford it?</strong>
+        <span className="small muted">Ask the sample plan</span>
+      </div>
+      <div className="hero-check-presets" role="group" aria-labelledby="hero-check-title">
+        {HERO_PRESETS.map((p) => (
+          <button
+            type="button"
+            key={p.label}
+            className={`hero-chip ${!typed && amountCents === p.amountCents ? "active" : ""}`}
+            aria-pressed={!typed && amountCents === p.amountCents}
+            onClick={() => {
+              setTyped("");
+              setAmountCents(p.amountCents);
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+        <form
+          className="hero-check-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAmountCents(parseHeroAmount(typed));
+          }}
+        >
+          <label className="sr-only" htmlFor="hero-check-amount">
+            Another purchase amount in dollars
+          </label>
+          <div className="money-input">
+            <span>$</span>
+            <input
+              id="hero-check-amount"
+              inputMode="decimal"
+              autoComplete="off"
+              maxLength={14}
+              placeholder="Other"
+              value={typed}
+              onChange={(e) => {
+                setTyped(e.target.value);
+                setAmountCents(parseHeroAmount(e.target.value));
+              }}
+            />
+          </div>
+        </form>
+      </div>
+      <div
+        className={`hero-check-answer ${result.ok ? result.status : "invalid"}`}
+        role="status"
+        aria-live="polite"
+        data-testid="hero-check-answer"
+      >
+        {result.ok && (
+          <span className="pill">
+            <span className="status-dot" />
+            {result.label}
+          </span>
+        )}
+        <p>
+          {result.ok && <strong>{money(result.amountCents)}: </strong>}
+          {result.message}
+        </p>
+      </div>
+      <button type="button" className="text-button" onClick={tryOwn}>
+        Try it on your own numbers
+        <Icon name="arrow" size={13} />
+      </button>
+    </div>
+  );
+}
 
 export function Landing() {
   const { sample, navigate } = useApp();
@@ -42,6 +124,7 @@ export function Landing() {
             No sign-up. No bank connection. Just clarity.
           </span>
         </div>
+        <div className="hero-side">
         <div className="hero-preview">
           <div className="preview-top">
             <span>
@@ -53,14 +136,14 @@ export function Landing() {
           <div className="hero-preview-amount">
             <span>Available to spend</span>
             <strong>
-              $300<span>.00</span>
+              {money(PLAN.availableCents)}<span>.00</span>
             </strong>
             <p>After the things that matter.</p>
           </div>
           <div className="preview-gauge">
-            <Gauge percent={86} />
+            <Gauge percent={PLAN.allocatedPercent} />
             <div>
-              <strong>$2,200</strong>
+              <strong>{money(PLAN.balanceCents)}</strong>
               <span>Starting balance</span>
             </div>
           </div>
@@ -70,26 +153,24 @@ export function Landing() {
                 <Icon name="bill" size={15} />
                 Upcoming bills
               </span>
-              <strong>$1,300</strong>
+              <strong>{money(PLAN.billsCents)}</strong>
             </div>
             <div>
               <span>
                 <Icon name="bag" size={15} />
                 Everyday spending
               </span>
-              <strong>$350</strong>
+              <strong>{money(PLAN.everydayCents)}</strong>
             </div>
             <div>
               <span>
                 <Icon name="shield" size={15} />A little breathing room
               </span>
-              <strong>$250</strong>
+              <strong>{money(PLAN.reserveCents)}</strong>
             </div>
           </div>
-          <div className="preview-bottom">
-            <span>Every dollar has a place.</span>
-            <Icon name="check" size={17} />
-          </div>
+        </div>
+        <HeroCheck tryOwn={() => sample("A")} />
         </div>
       </section>
       <section className="landing-features">

@@ -3438,3 +3438,135 @@ details p {
   margin-top: 16px;
   margin-bottom: 6px;
 }
+
+/* Landing: the sample plan card with the "Can I afford it?" check under it. */
+.hero-side {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  min-width: 0;
+}
+.hero-check {
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 15px 17px 14px;
+  display: grid;
+  gap: 11px;
+  text-align: left;
+}
+.hero-check-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hero-check-head strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.hero-check-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hero-chip {
+  border: 1px solid #dedfd9;
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 11px;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.hero-chip:hover {
+  background: var(--cream);
+}
+.hero-chip.active {
+  background: #1f1f1c;
+  border-color: #1f1f1c;
+  color: #fff;
+}
+.hero-check-form .money-input {
+  min-height: 36px;
+}
+.hero-check-form .money-input input {
+  min-height: 34px;
+  width: 100%;
+  font-size: 12px;
+}
+.hero-check-answer {
+  border-radius: 8px;
+  background: var(--cream);
+  border: 1px solid #e5e8d8;
+  padding: 11px 12px;
+  display: grid;
+  gap: 7px;
+  justify-items: start;
+  min-height: 78px;
+  align-content: center;
+}
+.hero-check-answer .pill {
+  background: #fff;
+}
+.hero-check-answer p {
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+}
+.hero-check-answer.reserve_short,
+.hero-check-answer.essentials_short {
+  background: #fbf6ea;
+  border-color: #e7d8be;
+}
+.hero-check-answer.reserve_short .status-dot,
+.hero-check-answer.essentials_short .status-dot {
+  background: #b98a2f;
+}
+.hero-check-answer.bills_short {
+  background: #fbefec;
+  border-color: #ecc9c1;
+}
+.hero-check-answer.bills_short .status-dot {
+  background: #b4472f;
+}
+.hero-check-answer.invalid p {
+  color: var(--muted);
+}
+.hero-check .text-button {
+  justify-self: start;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .hero-check {
+    max-width: 365px;
+  }
+}
+/* The card's old footer line gave way to the check; keep its bottom spacing and let the answer sit on the first screen. */
+.hero-side .hero-preview {
+  padding-bottom: 14px;
+}
+.hero-side .hero-preview-amount {
+  margin-top: 18px;
+}
+.hero-check-presets {
+  align-items: center;
+}
+.hero-check-form {
+  flex: 1 1 96px;
+  min-width: 96px;
+  max-width: 150px;
+}
+.hero-check-form .money-input > span {
+  padding-left: 10px;
+  font-size: 12px;
+}
+/* Same file as the current plan: the way on sits right under the message. */
+.form-footer.duplicate-import {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
