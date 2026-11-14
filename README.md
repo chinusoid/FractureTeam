@@ -162,7 +162,7 @@ cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, bu
 | `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`) | Model access. No automatic fallback: switch the model manually if the key has no access. |
 | `OPENAI_REASONING_EFFORT` | `low` by default; `none` for models without reasoning |
 | `AI_ENABLED` | `false` turns the assistant off; manual forms keep working |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production. The `KV_REST_API_URL` and `KV_REST_API_TOKEN` names that Vercel's Upstash integration sets are read as well |
 | `AI_DAILY_BUDGET_USD`, `AI_MAX_COST_PER_REQUEST_USD`, `AI_INPUT_PRICE_PER_MTOK`, `AI_OUTPUT_PRICE_PER_MTOK` | Budget; set prices from the provider's price list |
 | `AI_IP_PER_MINUTE`, `AI_CLIENT_PER_DAY` | Soft limits (the venue network is shared) |
 | `AI_MOCK=1`, `QUOTA_MODE=memory` | Local development and tests only; refused in production |

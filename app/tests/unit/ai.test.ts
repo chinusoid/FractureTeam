@@ -84,6 +84,12 @@ test("env: memory quotas only outside production, mock never in production", () 
   assert.equal(readEnv({ NODE_ENV: "production", QUOTA_MODE: "memory" }).quotaMode, "missing");
   assert.equal(readEnv({ NODE_ENV: "development" }).quotaMode, "memory");
   assert.equal(readEnv({ NODE_ENV: "production", UPSTASH_REDIS_REST_URL: "https://x", UPSTASH_REDIS_REST_TOKEN: "t" }).quotaMode, "upstash");
+  // The names Vercel's Upstash integration sets.
+  const vercelKv = readEnv({ NODE_ENV: "production", KV_REST_API_URL: "https://kv", KV_REST_API_TOKEN: "kt" });
+  assert.equal(vercelKv.quotaMode, "upstash");
+  assert.equal(vercelKv.upstashUrl, "https://kv");
+  assert.equal(vercelKv.upstashToken, "kt");
+  assert.equal(readEnv({ NODE_ENV: "production", KV_REST_API_URL: "https://kv" }).quotaMode, "missing");
   assert.equal(readEnv({ OPENAI_REASONING_EFFORT: "none" }).reasoningEffort, null);
   assert.equal(readEnv({}).model, "gpt-6-luna");
   assert.equal(readEnv({ AI_ENABLED: "false" }).aiEnabled, false);

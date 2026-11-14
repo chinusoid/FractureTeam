@@ -51,8 +51,9 @@ function str(src: Source, key: string): string | null {
 export function readEnv(src: Source = process.env as Source): ServerEnv {
   const nodeEnv = src.NODE_ENV ?? "development";
   const production = nodeEnv === "production";
-  const upstashUrl = str(src, "UPSTASH_REDIS_REST_URL");
-  const upstashToken = str(src, "UPSTASH_REDIS_REST_TOKEN");
+  // Vercel's Upstash integration injects the same two values under KV_REST_API_* names.
+  const upstashUrl = str(src, "UPSTASH_REDIS_REST_URL") ?? str(src, "KV_REST_API_URL");
+  const upstashToken = str(src, "UPSTASH_REDIS_REST_TOKEN") ?? str(src, "KV_REST_API_TOKEN");
   let quotaMode: QuotaMode;
   if (upstashUrl && upstashToken && src.QUOTA_MODE !== "memory") quotaMode = "upstash";
   else if (!production && (src.QUOTA_MODE === "memory" || !(upstashUrl && upstashToken))) quotaMode = "memory";
