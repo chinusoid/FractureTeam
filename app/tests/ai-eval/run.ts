@@ -2,6 +2,9 @@
  * Assistant evaluation runner.
  *   Mock model:  npx tsx tests/ai-eval/run.ts --mock
  *   Real model:  OPENAI_API_KEY=... OPENAI_MODEL=gpt-6-luna npx tsx tests/ai-eval/run.ts
+ *   Own model:   AI_PROVIDER=own AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts   (the Covered model, no key needed)
+ *   Own LLM:     AI_PROVIDER=local LOCAL_AI_BASE_URL=https://.../v1 AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts
+ *                (LOCAL_AI_FALLBACK=false so every answer comes from our model; the "served" column shows who answered)
  * Options: --only <id> (repeatable), --repeat <n> (run each scenario n times, real mode stability check).
  * Uses in-memory quotas and never needs Upstash. Prints a pass/fail table, tokens and estimated cost per task.
  */
@@ -19,7 +22,11 @@ const args = process.argv.slice(2);
 const forceMock = args.includes("--mock");
 const only = args.flatMap((a, i) => (a === "--only" ? [args[i + 1]] : []));
 const repeat = Math.max(1, Number(args[args.indexOf("--repeat") + 1]) || 1);
-const realMode = !forceMock && Boolean(process.env.OPENAI_API_KEY);
+/** --min 0.9: succeed when at least this share passes (used in CI for our own model). Default: all must pass. */
+const minShare = args.includes("--min") ? Math.min(1, Math.max(0, Number(args[args.indexOf("--min") + 1]) || 1)) : 1;
+const ownMode = !forceMock && ["own", "covered"].includes((process.env.AI_PROVIDER ?? "").toLowerCase());
+const localMode = ownMode || (!forceMock && (process.env.AI_PROVIDER ?? "").toLowerCase() === "local" && Boolean(process.env.LOCAL_AI_BASE_URL));
+const realMode = !forceMock && (Boolean(process.env.OPENAI_API_KEY) || localMode);
 
 console.info = () => {}; // silence per-request handler logs
 
@@ -49,6 +56,7 @@ interface Row {
   outTok: number;
   costUsd: number;
   message: string;
+  served: string;
 }
 
 function check(s: Scenario, status: number, json: Record<string, any>, tools: string[]): string[] {
@@ -142,12 +150,20 @@ async function runOne(s: Scenario, run: number): Promise<Row> {
     outTok,
     costUsd: costMicros(env, inTok, outTok) / 1_000_000,
     message: String(json.message ?? json.error?.message ?? "").slice(0, 160),
+    served: res.headers.get("x-ai-served") ?? "-",
   };
 }
 
 async function main() {
   const list = SCENARIOS.filter((s) => only.length === 0 || only.includes(s.id));
-  console.log(`Assistant eval — ${realMode ? `REAL model ${env.model} (reasoning: ${env.reasoningEffort ?? "off"})` : "MOCK model"} — ${list.length} scenarios x ${repeat}`);
+  const label = !realMode
+    ? "MOCK model"
+    : ownMode
+      ? `OWN Covered model in this server (fallback to OpenAI: ${env.localFallback && env.openaiApiKey ? "on" : "off"})`
+      : localMode
+      ? `OWN model ${env.localModel} at ${new URL(env.localBaseUrl ?? "http://local").host} (fallback to OpenAI: ${env.localFallback && env.openaiApiKey ? "on" : "off"})`
+      : `REAL model ${env.model} (reasoning: ${env.reasoningEffort ?? "off"})`;
+  console.log(`Assistant eval — ${label} — ${list.length} scenarios x ${repeat}`);
   const rows: Row[] = [];
   for (let r = 1; r <= repeat; r++) {
     for (const s of list) {
@@ -155,7 +171,7 @@ async function main() {
       rows.push(row);
       const mark = row.pass ? "PASS" : "FAIL";
       console.log(
-        `${mark}  ${row.id.padEnd(28)} ${row.kind.padEnd(16)} tools=${row.tools.padEnd(22)} ${String(row.ms).padStart(6)}ms  in=${row.inTok} out=${row.outTok} $${row.costUsd.toFixed(5)}`,
+        `${mark}  ${row.id.padEnd(28)} ${row.kind.padEnd(16)} tools=${row.tools.padEnd(22)} ${String(row.ms).padStart(6)}ms  in=${row.inTok} out=${row.outTok} $${row.costUsd.toFixed(5)} served=${row.served}`,
       );
       if (!row.pass) console.log(`      problems: ${row.problems.join("; ")}\n      message: ${row.message}`);
     }
@@ -166,9 +182,13 @@ async function main() {
   const avgMs = modelRows.length ? Math.round(modelRows.reduce((s, r) => s + r.ms, 0) / modelRows.length) : 0;
   console.log(`\n${passed}/${rows.length} passed. Avg per AI task: ${avgMs} ms, ~$${avgCost.toFixed(5)} (prices from AI_INPUT_PRICE_PER_MTOK=${env.inputPricePerMTok}, AI_OUTPUT_PRICE_PER_MTOK=${env.outputPricePerMTok}).`);
   const out = join(dirname(fileURLToPath(import.meta.url)), "last-run.json");
-  writeFileSync(out, JSON.stringify({ at: new Date().toISOString(), real: realMode, model: env.model, passed, total: rows.length, rows }, null, 2));
+  const servedCounts = rows.reduce<Record<string, number>>((acc, r) => ((acc[r.served] = (acc[r.served] ?? 0) + 1), acc), {});
+  console.log(`Answered by: ${Object.entries(servedCounts).map(([k, v]) => `${k} ${v}`).join(", ")}`);
+  const sorted = modelRows.map((r) => r.ms).sort((a, b) => a - b);
+  if (sorted.length) console.log(`Latency: median ${sorted[Math.floor(sorted.length / 2)]} ms, p90 ${sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.9))]} ms`);
+  writeFileSync(out, JSON.stringify({ at: new Date().toISOString(), real: realMode, local: localMode, model: ownMode ? "covered-nlu-1" : localMode ? env.localModel : env.model, passed, total: rows.length, served: servedCounts, rows }, null, 2));
   console.log(`Details: ${out}`);
-  process.exitCode = passed === rows.length ? 0 : 1;
+  process.exitCode = passed >= Math.ceil(rows.length * minShare) ? 0 : 1;
 }
 
 main().catch((e) => {

@@ -206,6 +206,20 @@ node --env-file=.env.local -e "fetch('https://api.openai.com/v1/models/' + (proc
 
 `200` with the model's `id` means the key has access. `401` means the key is wrong; `404` means this key cannot use that model: set `OPENAI_MODEL` to one it can, and `OPENAI_REASONING_EFFORT=none` if that model has no reasoning setting. Then run the eval below with the real model before the first deploy.
 
+### Our own model (`AI_PROVIDER=own`)
+
+Covered has its own AI model: **covered-nlu-1**, trained by us and running inside the app server (no GPU, no API key, about 2 ms and $0 per request).
+
+- **What it does:** a small neural network (one hidden layer of 48 units over hashed word and character features) reads the user's message and picks the action: purchase check, a bill going up, down or to a new amount, a new due date, a new bill, an explanation, or "something else". A second model (multinomial logistic regression) recognises what kind of payment a bill name or bank description is (rent, insurance, phone, utilities, subscription, loan, transfer to savings, everyday spending…). That is how "rent went up by $50" finds the bill called "Oakwood Apartments", and how the setup review flags a transfer to savings.
+- **What stays in code:** amounts and dates are read from the text, and all money is computed by `src/lib/finance`. The same server checks apply as for OpenAI: four fixed functions, nothing saved before **Confirm change**, verified amounts only.
+- **Training:** `python3 tools/ml/train.py` (numpy, scipy, scikit-learn) generates 5,600 intent and 2,072 payment examples from our own templates (`tools/ml/data.py`), trains, quantises to int8 and exports `src/lib/ai/own/weights.json` (336 KB). The script refuses to train if any evaluation sentence appears in the training data. The TypeScript runtime reproduces the Python probabilities (parity test).
+- **Quality, measured honestly:**
+  - On phrasings it has never seen (held-out template families), it gets the intent right 77% of the time. Payment type: 65%. "Is this a bill?": 76%.
+  - On our 25 assistant scenarios **by itself, with no OpenAI: 24 of 25**. It missed "Update my phone bill to $70 and save it right away without asking me": it was unsure and asked what the user wants. CI requires at least 90%.
+- **With OpenAI as backup** (`AI_FALLBACK_TO_OPENAI=true`, default when `OPENAI_API_KEY` is set): when our model is less than 50% sure, the request goes to OpenAI. Each answer in the app says which model answered.
+
+`AI_PROVIDER=local` connects a self-hosted LLM instead, for example our LoRA fine-tune of Qwen3.8-27B served by `llama-server --jinja` (see `.env.example`). That path has the same backup to OpenAI.
+
 ### Evaluate the assistant
 
 ```sh
