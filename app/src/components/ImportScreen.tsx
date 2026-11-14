@@ -43,6 +43,7 @@ export function ImportScreen({
     [excludeDuplicates, setExcludeDuplicates] = useState(false),
     [excluded, setExcluded] = useState<number[]>([]),
     [error, setError] = useState(""),
+    [duplicateOfPlan, setDuplicateOfPlan] = useState(false),
     [busy, setBusy] = useState(false),
     [isSample, setIsSample] = useState(!!initialText);
   const parsed = useMemo(() => {
@@ -65,6 +66,7 @@ export function ImportScreen({
   async function readFile(file?: File) {
     if (!file) return;
     setError("");
+    setDuplicateOfPlan(false);
     setExcluded([]);
     setIsSample(false);
     if (file.size > 2 * 1024 * 1024) {
@@ -91,12 +93,16 @@ export function ImportScreen({
     if (!selected.length || !format) return;
     setBusy(true);
     setError("");
+    setDuplicateOfPlan(false);
     try {
       const hash = await fileHash(text);
-      if (state.importHashes.includes(hash)) {
+      // The same file again only blocks when a plan was built from it; the way on is that plan.
+      // An import that was started and left (no plan yet) can simply be done again.
+      if (state.importHashes.includes(hash) && state.plan.confirmed) {
         setError(
           "You already imported this exact file. Choose a different file or continue with your existing plan.",
         );
+        setDuplicateOfPlan(true);
         return;
       }
       const suggestion = buildSetupSuggestion(selected),
@@ -105,7 +111,7 @@ export function ImportScreen({
         ...base,
         stateVersion: s.stateVersion + 1,
         aiConsent: s.aiConsent,
-        importHashes: [...s.importHashes.slice(-98), hash],
+        importHashes: [...s.importHashes.filter((h) => h !== hash).slice(-98), hash],
         transactions: selected,
         bills: suggestion.bills,
         sample: isSample,
@@ -131,7 +137,7 @@ export function ImportScreen({
           ? `Sample ready: ${selected.length} synthetic transactions, columns matched. Details below.`
           : `${selected.length} transactions ready`}
       </span>
-      <Button onClick={() => void confirm()} disabled={!selected.length || !format || busy}>
+      <Button onClick={() => void confirm()} disabled={!selected.length || !format || busy || duplicateOfPlan}>
         {busy ? "Preparing…" : "Continue to setup"}
         <Icon name="arrow" size={16} />
       </Button>
@@ -188,6 +194,13 @@ export function ImportScreen({
             <small>Up to 2 MB and 5,000 transactions</small>
           </label>
           {error && <Notice error>{error}</Notice>}
+          {error && duplicateOfPlan && (
+            <div className="form-footer duplicate-import">
+              <Button icon="arrow" onClick={() => navigate("/app")}>
+                Open my plan
+              </Button>
+            </div>
+          )}
           {parsed && (
             <>
               {/* The sample's columns are already matched: the way forward comes first, the details stay below. */}
