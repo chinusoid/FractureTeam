@@ -83,8 +83,9 @@ export async function runScenario(page, baseURL, width, height, directory) {
   await page
     .getByRole("button", { name: "Explain my plan", exact: true })
     .click();
+  // Without OPENAI_API_KEY (and without AI_MOCK=1) the server answers "ai_disabled".
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
-    "isn’t connected yet",
+    /isn’t connected yet|turned off/,
   );
   await shot("assistant-unavailable");
   await page.getByRole("button", { name: "Close dialog" }).click();
@@ -94,7 +95,8 @@ export async function runScenario(page, baseURL, width, height, directory) {
   await page.route("**/api/assistant", async (route) => {
     const payload = route.request().postDataJSON();
     assert.ok(route.request().headers()["x-client-id"]);
-    const insurance = payload.context.bills.find((b) =>
+    // Shared contract: src/lib/schemas/assistant.ts
+    const insurance = payload.context.obligations.find((b) =>
       /insurance/i.test(b.name),
     );
     await route.fulfill({
@@ -102,12 +104,19 @@ export async function runScenario(page, baseURL, width, height, directory) {
       contentType: "application/json",
       body: JSON.stringify({
         kind: "change_proposal",
+        baseVersion: payload.baseVersion,
         message: "Review the insurance change before applying it.",
+        factRefs: [insurance.id],
+        requiresConfirmation: true,
         proposal: {
           id: `insurance-${width}`,
-          stateVersion: payload.stateVersion,
-          billId: insurance.id,
-          amountCents: insurance.amountCents + 3000,
+          baseVersion: payload.baseVersion,
+          factRefs: [insurance.id],
+          payload: {
+            type: "update_obligation",
+            targetId: insurance.id,
+            changes: { amountCents: insurance.amountCents + 3000 },
+          },
         },
       }),
     });

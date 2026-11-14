@@ -5,6 +5,7 @@
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build",
     "test": "npm --prefix app test",
-    "e2e": "npm --prefix app run e2e"
+    "e2e": "npm --prefix app run e2e",
+    "eval:ai": "npm --prefix app run eval:ai"
   }
 }

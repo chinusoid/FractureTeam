@@ -34,10 +34,17 @@ export function Assistant({
     setBusy(true);
     setMessages((m) => [...m, { question: text }]);
     try {
+      const history = messages.flatMap((m) => [
+        { role: "user" as const, text: m.question },
+        ...(m.response
+          ? [{ role: "assistant" as const, text: m.response.message }]
+          : []),
+      ]);
       const response = await requestAssistant(
         state,
         text,
         setup ? "setup" : "plan",
+        history,
       );
       setMessages((m) => [...m.slice(0, -1), { question: text, response }]);
     } catch (e) {
