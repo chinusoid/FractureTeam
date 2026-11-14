@@ -117,6 +117,7 @@ export function ClientApp() {
         <Logo />
         <span className="loading-line" />
         <p>Finding a little clarity…</p>
+        <a href="" className="text-button">Taking too long? Reload Covered</a>
       </div>
     );
   return (
