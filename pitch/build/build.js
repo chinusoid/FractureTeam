@@ -1,4 +1,4 @@
-// Builds the Covered pitch deck (11 slides, 16:9).
+// Builds the Covered pitch deck (10 slides, 16:9).
 //   npm install pptxgenjs sharp react react-dom react-icons      (in the folder you run this from)
 //   PROD_URL=https://your-site.vercel.app APPLY_THEME=./apply_theme.js node build.js <screenshots dir> <output.pptx>
 // Without PROD_URL the deck shows a marked placeholder for the production link.
@@ -417,59 +417,51 @@ async function build() {
     s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. That is arithmetic. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay: a year gives $113, which pays back if a subscriber costs under $38 to acquire. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month. That is why the product is built around payday, the moment people have a reason to return. Months retained and CAC are assumptions; the pilot measures both.");
   }
 
-  // 10 — evidence
+  // 10 — evidence and next steps (the case allows ten slides)
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
-    kicker(s, "EVIDENCE");
-    s.addText("Verified today, and still a bet", { placeholder: "title" });
-    const h = 4.45, lw = 4.95, mw = 4.4;
-    box(s, { x: MX, y: TOP, w: lw, h, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
-    tag(s, "FACT", MX + 0.4, TOP + 0.35);
-    text(s, "Verified", { x: MX + 0.4, y: TOP + 0.78, w: lw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
-    text(s, [
-      { text: "Our own model alone: 24 of 25 assistant scenarios, 77% on phrasings it never saw in training", options: { bullet: true, breakLine: true } },
-      { text: "With OpenAI (gpt-6-luna), twice in a row: 25 of 25 scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
-      { text: "171 unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
-      { text: "Live: release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
-    ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
-
-    const mx = MX + lw + 0.3;
-    box(s, { x: mx, y: TOP, w: mw, h, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
-    tag(s, "HYPOTHESIS", mx + 0.4, TOP + 0.35);
-    text(s, "Still a bet", { x: mx + 0.4, y: TOP + 0.78, w: mw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
-    text(s, [
-      { text: "How common this pain is in our US segment", options: { bullet: true, breakLine: true } },
-      { text: "Willingness to pay $10 a month", options: { bullet: true, breakLine: true } },
-      { text: "Weekly return, and 2 minutes to keep the plan current", options: { bullet: true, breakLine: true } },
-      { text: "CSV export as the first step; a bank connection may be needed sooner", options: { bullet: true } },
-    ], { x: mx + 0.4, y: TOP + 1.35, w: mw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
-
-    const px = mx + mw + 0.45;
-    await shot(s, "mobile-overview.png", { x: px, y: TOP, h, radiusPx: 60, alt: "Covered on a phone: $300 available to spend" });
-    s.addNotes("4:20. What is proven is the engineering: our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price. We say so plainly.");
-  }
-
-  // 11 — next steps
-  {
-    const s = pres.addSlide({ masterName: "CONTENT_DARK", sectionTitle: "Business" });
-    kicker(s, "NEXT STEP", C.accent3);
-    s.addText("Next: prove the pain, then the price", { placeholder: "title" });
-    const steps = [
-      ["Weeks 1–2", "Talk and compare", "10–15 interviews in the US segment. The same task in Covered and in the alternatives: time, errors, preference."],
-      ["Weeks 3–6", "Pilot with payment", "Accounts and sync, four weeks of use, day-7 and day-30 retention, and a real $10 subscription offer."],
-      ["After the pilot", "Bank connection", "An official bank data API replaces the CSV step, the main manual effort at the start."],
+    kicker(s, "EVIDENCE · NEXT STEP");
+    s.addText("Verified today, still a bet, and what is next", { placeholder: "title" });
+    const h = 3.95, cw = (CW - 0.6) / 3;
+    const cols = [
+      {
+        tag: "FACT", title: "Verified", dark: false, fill: C.background1, line: C.accent3,
+        items: [
+          "Our own model alone: 24 of 25 assistant scenarios, 77% on unseen phrasings",
+          "With OpenAI (gpt-6-luna), twice: 25 of 25 scenarios, 34 of 34 interview answers",
+          "171 unit tests: money math, CSV import, quotas, AI guards",
+          "Live: release walkthrough passes on desktop and phone sizes",
+        ],
+      },
+      {
+        tag: "HYPOTHESIS", title: "Still a bet", dark: false, fill: C.background2, line: C.background2,
+        items: [
+          "How common this pain is in our US segment",
+          "Willingness to pay $10 a month",
+          "Weekly return, and 2 minutes to keep the plan current",
+          "CSV export as the first step; a bank connection may be needed sooner",
+        ],
+      },
+      {
+        tag: null, title: "Next", dark: true, fill: C.text1, line: C.text1,
+        items: [
+          "Weeks 1–2: 10–15 interviews in the US segment; the same task in Covered and in the alternatives",
+          "Weeks 3–6: a pilot with accounts and sync, day-7 and day-30 retention, a real $10 offer",
+          "After the pilot: an official bank data API replaces the CSV step",
+        ],
+      },
     ];
-    const cw = (CW - 0.6) / 3;
-    steps.forEach((st, i) => {
+    cols.forEach((c, i) => {
       const x = MX + i * (cw + 0.3);
-      box(s, { x, y: TOP, w: cw, h: 2.85, fill: { color: C.background1, transparency: 92 }, line: { color: C.text2, width: 1 } });
-      text(s, st[0].toUpperCase(), { x: x + 0.35, y: TOP + 0.3, w: cw - 0.7, h: 0.28, fontSize: 11, bold: true, charSpacing: 1, color: C.accent3 });
-      text(s, st[1], { x: x + 0.35, y: TOP + 0.65, w: cw - 0.7, h: 0.4, fontSize: 20, bold: true, color: C.background1 });
-      text(s, st[2], { x: x + 0.35, y: TOP + 1.2, w: cw - 0.7, h: 1.45, fontSize: 14, color: C.accent3, lineSpacingMultiple: 1.15 });
+      box(s, { x, y: TOP, w: cw, h, fill: { color: c.fill }, line: { color: c.line, width: c.dark ? 0 : 1 } });
+      if (c.tag) tag(s, c.tag, x + 0.35, TOP + 0.3);
+      else text(s, "PROVE THE PAIN, THEN THE PRICE", { x: x + 0.35, y: TOP + 0.32, w: cw - 0.7, h: 0.28, fontSize: 10, bold: true, charSpacing: 1, color: C.accent3 });
+      text(s, c.title, { x: x + 0.35, y: TOP + 0.72, w: cw - 0.7, h: 0.4, fontSize: 20, bold: true, color: c.dark ? C.background1 : C.text1 });
+      text(s, c.items.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < c.items.length - 1 } })), { x: x + 0.35, y: TOP + 1.25, w: cw - 0.7, h: h - 1.45, fontSize: 12.5, color: c.dark ? C.background2 : C.text1, paraSpaceAfter: 7 });
     });
-    text(s, "Covered: know what’s covered before you spend.", { x: MX, y: 5.2, w: CW, h: 0.5, fontSize: 22, bold: true, color: C.background2, valign: "middle" });
-    prodLink(s, MX, 5.9, { color: C.background1, mutedColor: C.accent3, w: 7 });
-    s.addNotes("4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the alternatives. Then a four-week pilot with a real $10 offer. Then a bank connection instead of CSV. Covered: know what's covered before you spend.");
+    text(s, "Covered: know what’s covered before you spend.", { x: MX, y: TOP + h + 0.18, w: 6.6, h: 0.42, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
+    prodLink(s, MX + 6.9, TOP + h + 0.1, { color: C.text1, mutedColor: C.text2, w: CW - 6.9 });
+    s.addNotes("4:20. What is proven is the engineering: our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price. We say so plainly. 4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the alternatives. Then a four-week pilot with a real $10 offer. Then a bank connection instead of CSV. Covered: know what's covered before you spend.");
   }
 
   await pres.writeFile({ fileName: OUT });
