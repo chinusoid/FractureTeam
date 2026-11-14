@@ -8,10 +8,13 @@ export type QuotaDecision =
   | { ok: true; reservationMicros: number; budgetKey: string }
   | {
       ok: false;
-      code: "rate_limited" | "budget_exhausted" | "quota_unavailable";
+      code: "rate_limited" | "free_limit" | "budget_exhausted" | "quota_unavailable";
       message: string;
       retryAfterSeconds?: number;
     };
+
+/** "free" stops at AI_FREE_PER_DAY questions a day; "plus" (early access) only has the general daily limit. */
+export type AssistantPlan = "free" | "plus";
 
 export function storeForEnv(env: ServerEnv): CounterStore | null {
   if (env.quotaMode === "upstash" && env.upstashUrl && env.upstashToken) {
@@ -46,6 +49,7 @@ export async function checkAndReserve(
   ip: string,
   clientId: string,
   now: Date = new Date(),
+  plan: AssistantPlan = "plus",
 ): Promise<QuotaDecision> {
   if (!store) {
     return {
@@ -66,12 +70,23 @@ export async function checkAndReserve(
         retryAfterSeconds: 60 - now.getUTCSeconds(),
       };
     }
-    const clientCount = await store.incrBy(`ai:client:${clientId}:${day}`, 1, 2 * 86400);
+    const clientKey = `ai:client:${clientId}:${day}`;
+    const clientCount = await store.incrBy(clientKey, 1, 2 * 86400);
     if (clientCount > env.clientPerDay) {
       return {
         ok: false,
         code: "rate_limited",
         message: "You've reached today's assistant limit. Manual planning still works.",
+        retryAfterSeconds: secondsToUtcMidnight(now),
+      };
+    }
+    if (plan === "free" && clientCount > env.freePerDay) {
+      // The refused question is not counted, so it can be asked again right after switching to Plus.
+      await store.incrBy(clientKey, -1, 2 * 86400);
+      return {
+        ok: false,
+        code: "free_limit",
+        message: `You've used today's ${env.freePerDay} free assistant questions.`,
         retryAfterSeconds: secondsToUtcMidnight(now),
       };
     }

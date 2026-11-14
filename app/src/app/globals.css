@@ -3420,3 +3420,15 @@ details p {
     order: -1;
   }
 }
+
+/* Covered Plus offer inside the assistant, shown when the free plan's daily questions are used up. */
+.plus-offer .pill {
+  align-self: flex-start;
+}
+.plus-offer ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}

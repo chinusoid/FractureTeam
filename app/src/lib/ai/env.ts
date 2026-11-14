@@ -32,6 +32,8 @@ export interface ServerEnv {
   outputPricePerMTok: number;
   ipPerMinute: number;
   clientPerDay: number;
+  /** Assistant questions a day on the free plan; above it the app offers Covered Plus. */
+  freePerDay: number;
 }
 
 type Source = Record<string, string | undefined>;
@@ -87,6 +89,7 @@ export function readEnv(src: Source = process.env as Source): ServerEnv {
     outputPricePerMTok: num(src, "AI_OUTPUT_PRICE_PER_MTOK", DEFAULT_OUTPUT_PRICE_PER_MTOK),
     ipPerMinute: Math.round(num(src, "AI_IP_PER_MINUTE", 30, 1)),
     clientPerDay: Math.round(num(src, "AI_CLIENT_PER_DAY", 60, 1)),
+    freePerDay: Math.round(num(src, "AI_FREE_PER_DAY", 5, 1)),
   };
 }
 

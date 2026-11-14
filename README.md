@@ -22,7 +22,7 @@ Covered is a bill planner for working adults in the US. Import a bank CSV, confi
 | --- | --- |
 | Does it work end to end? | `app/tests/e2e/release.mjs` walks the main scenario against a deployment with the real model, at 1280 and 390 px |
 | Is the core real? | Money is computed by `app/src/lib/finance` (integer cents, covered by tests). The model only picks one of four functions (`app/src/lib/ai/tools.ts`); any amount in its text is checked against computed values (`app/src/lib/ai/guard.ts`) |
-| What do we sell? | The landing page: a free plan and Covered Plus at a planned $10 a month, free during early access |
+| What do we sell? | A free plan with 5 assistant questions a day and Covered Plus at a planned $10 a month, free during early access. The sixth question shows the offer; `/api/plus` counts the browsers that took it |
 | Why come back? | A payday calendar reminder, the “Since last update” recap after each balance update, and a notice when the plan is stale |
 | How is quality kept? | CI on every pull request: typecheck, unit tests, 25 assistant scenarios, build, browser walkthroughs on desktop and phone |
 
@@ -124,7 +124,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 123 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
+There are 127 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
@@ -152,6 +152,12 @@ Bank connections, login/sync, credit-card interest, payments, investment feature
 - Transaction descriptions and bill names are treated as data. Account numbers, card numbers, emails and phone numbers are removed before sending (`app/src/lib/ai/scrub.ts`).
 - Quotas (`app/src/lib/limits`): global daily budget, per-IP per-minute and per-browser daily limits in Upstash Redis (REST). In production without Upstash the model is never called.
 
+### Free plan and Covered Plus
+
+The free plan includes 5 assistant questions a day per browser (the setup review is not counted). The next question is answered with the Covered Plus offer: up to 60 questions a day, planned at $10 a month, free during early access. **Get Plus free** turns Plus on in that browser without a card or sign-up and asks the same question again; the forms keep working either way.
+
+Each browser that takes the offer is counted once (`POST /api/plus`, a counter in the quota store, no personal data). `GET /api/plus` returns the number, for example `{"interested": 12}`: how many people asked for the paid plan.
+
 ### Configure
 
 ```sh
@@ -167,6 +173,7 @@ cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, bu
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production. The `KV_REST_API_URL` and `KV_REST_API_TOKEN` names that Vercel's Upstash integration sets are read as well |
 | `AI_DAILY_BUDGET_USD`, `AI_MAX_COST_PER_REQUEST_USD`, `AI_INPUT_PRICE_PER_MTOK`, `AI_OUTPUT_PRICE_PER_MTOK` | Budget; set prices from the provider's price list |
 | `AI_IP_PER_MINUTE`, `AI_CLIENT_PER_DAY` | Soft limits (the venue network is shared) |
+| `AI_FREE_PER_DAY` (default 5) | Assistant questions a day on the free plan, see "Free plan and Covered Plus" |
 | `AI_MOCK=1`, `QUOTA_MODE=memory` | Local development and tests only; refused in production |
 
 ### Check the model

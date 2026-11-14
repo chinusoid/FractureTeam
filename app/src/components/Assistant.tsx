@@ -8,6 +8,8 @@ import {
   simulatePurchase,
 } from "@/lib/client/model";
 import {
+  activatePlus,
+  PlusRequiredError,
   requestAssistant,
   type AssistantResponse,
 } from "@/lib/client/assistant";
@@ -25,7 +27,7 @@ export function Assistant({
   const { state, change, navigate, toast } = useApp();
   const [message, setMessage] = useState(""),
     [messages, setMessages] = useState<
-      { question: string; response?: AssistantResponse; error?: string; preview?: ReturnType<typeof previewProposal> }[]
+      { question: string; response?: AssistantResponse; error?: string; plusOffer?: boolean; preview?: ReturnType<typeof previewProposal> }[]
     >([]),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState<string | null>(null);
@@ -52,7 +54,9 @@ export function Assistant({
     } catch (e) {
       setMessages((m) => [
         ...m.slice(0, -1),
-        { question: text, error: (e as Error).message },
+        e instanceof PlusRequiredError
+          ? { question: text, error: e.message, plusOffer: true }
+          : { question: text, error: (e as Error).message },
       ]);
     } finally {
       setBusy(false);
@@ -139,7 +143,42 @@ export function Assistant({
               {messages.map((item, i) => (
                 <div key={i}>
                   <div className="user-message">{item.question}</div>
-                  {item.error && (
+                  {item.error && item.plusOffer && (
+                    <div className="assistant-message">
+                      <div className="proposal-card plus-offer">
+                        <span className="pill">Free during early access</span>
+                        <h3>Keep asking with Covered Plus</h3>
+                        <p>{item.error}</p>
+                        <ul>
+                          <li>Up to 60 assistant questions a day</li>
+                          <li>Planned price: $10 a month. No card and no sign-up today.</li>
+                        </ul>
+                        <Button
+                          disabled={busy}
+                          onClick={() => {
+                            void activatePlus().then(() => {
+                              toast("Covered Plus is on for this browser.");
+                              // The offer is answered: drop it and ask the same question again.
+                              setMessages((m) => m.filter((x) => x !== item));
+                              void send(item.question);
+                            });
+                          }}
+                        >
+                          Get Plus free
+                        </Button>
+                        <Button
+                          kind="ghost"
+                          onClick={() => {
+                            navigate(setup ? "/setup/plan" : "/app/bills");
+                            close();
+                          }}
+                        >
+                          Not now, use the forms
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {item.error && !item.plusOffer && (
                     <div className="assistant-message">
                       <Notice error>{item.error}</Notice>
                       <Button kind="ghost" disabled={busy} onClick={() => void send(item.question)}>
