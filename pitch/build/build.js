@@ -150,7 +150,7 @@ async function build() {
     });
     prodLink(s, MX, 5.35, { color: C.background1, mutedColor: C.accent3, w: 5.9 });
     text(s, "Business Cup 2.0  ·  Track: Money  ·  FractureTeam", { x: MX, y: 6.78, w: 6, h: 0.3, fontSize: 11, color: C.accent3 });
-    await shot(s, "landing.png", { x: 6.75, y: 1.72, w: 5.98, alt: "Covered landing page: a sample plan with $300 available to spend", frame: HEX.dk2 });
+    await shot(s, "landing.png", { x: 6.75, y: 1.72, w: 5.98, alt: "Covered landing page: a sample plan with $300 available to spend and a purchase check that answers $400 is $100 below the reserve", frame: HEX.dk2 });
     s.addNotes("0:00. Covered answers one question for a working adult in the US: of the money in my account, how much is actually mine to spend? I will show the product live, then what we sell and what we have and have not proven.");
   }
 
@@ -397,7 +397,7 @@ async function build() {
     tag(s, "FACT", MX + 0.4, TOP + 0.35);
     text(s, "Verified", { x: MX + 0.4, y: TOP + 0.78, w: lw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
     text(s, [
-      { text: "127 automated unit tests: money math, CSV import, quotas, assistant guards", options: { bullet: true, breakLine: true } },
+      { text: "131 automated unit tests: money math, CSV import, quotas, assistant guards", options: { bullet: true, breakLine: true } },
       { text: "25 of 25 assistant scenarios pass on the real model (gpt-6-luna), twice in a row", options: { bullet: true, breakLine: true } },
       { text: "Live: the release walkthrough passes on the production URL with the real model, on desktop and phone sizes", options: { bullet: true, breakLine: true } },
       { text: "Works without the AI: every action also has a form", options: { bullet: true } },
