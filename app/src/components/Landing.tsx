@@ -146,6 +146,7 @@ export function Landing() {
                 "Import a bank CSV and confirm your bills",
                 "See what’s left after bills, everyday spending and your reserve",
                 "Check a purchase with the form",
+                "5 assistant questions a day",
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />
@@ -167,7 +168,7 @@ export function Landing() {
             <ul>
               {[
                 "Everything in Starter",
-                "Ask the assistant before you spend",
+                "Up to 60 assistant questions a day",
                 "Change a bill in one sentence, with a before and after",
                 "Payday reminders and a recap of what changed",
               ].map((line) => (

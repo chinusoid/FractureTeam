@@ -127,13 +127,13 @@ async function shot(slide, file, { crop, x, y, w, h, radiusPx = 36, alt, frame =
 function prodLink(slide, x, y, { color, mutedColor, w = 6 }) {
   text(slide, "Live", { x, y, w: 0.7, h: 0.32, fontSize: 13, color: mutedColor, valign: "middle" });
   if (PROD_URL) {
-    text(slide, PROD_URL, { x: x + 0.75, y, w: w - 0.75, h: 0.32, fontSize: 13, bold: true, color, valign: "middle" });
+    text(slide, [{ text: PROD_URL, options: { hyperlink: { url: "https://" + PROD_URL, tooltip: "Open the live product" }, color } }], { x: x + 0.75, y, w: w - 0.75, h: 0.32, fontSize: 13, bold: true, color, valign: "middle" });
   } else {
     slide.addShape(S.roundRect, { x: x + 0.75, y, w: 3.75, h: 0.32, rectRadius: 0.08, fill: { color: C.accent5 }, line: { color: C.accent6, width: 1, dashType: "dash" }, objectName: name("Production URL placeholder") });
     text(slide, "ADD PRODUCTION URL BEFORE SUBMITTING", { x: x + 0.75, y, w: 3.75, h: 0.32, fontSize: 10, bold: true, color: C.accent6, align: "center", valign: "middle" });
   }
   text(slide, "Code", { x, y: y + 0.42, w: 0.7, h: 0.32, fontSize: 13, color: mutedColor, valign: "middle" });
-  text(slide, REPO, { x: x + 0.75, y: y + 0.42, w: w - 0.75, h: 0.32, fontSize: 13, bold: true, color, valign: "middle" });
+  text(slide, [{ text: REPO, options: { hyperlink: { url: "https://" + REPO, tooltip: "Open the repository" }, color } }], { x: x + 0.75, y: y + 0.42, w: w - 0.75, h: 0.32, fontSize: 13, bold: true, color, valign: "middle" });
 }
 
 // ---------------------------------------------------------------- slides
@@ -315,9 +315,9 @@ async function build() {
       { text: "$10", options: { fontSize: 66, bold: true, color: C.background1 } },
       { text: "  a month", options: { fontSize: 18, color: C.accent3 } },
     ], { x: MX + 0.4, y: TOP + 0.8, w: pw - 0.8, h: 1.15, valign: "middle" });
-    text(s, "A subscription for the assistant and for keeping the plan current.", { x: MX + 0.4, y: TOP + 2.1, w: pw - 0.8, h: 0.75, fontSize: 15, color: C.background1, lineSpacingMultiple: 1.15 });
-    text(s, "Below YNAB ($14.99), Monarch ($14.99) and PocketGuard ($12.99) a month.", { x: MX + 0.4, y: TOP + 3.05, w: pw - 0.8, h: 0.6, fontSize: 13, color: C.accent3, lineSpacingMultiple: 1.15 });
-    text(s, "List prices reported in November 2026.", { x: MX + 0.4, y: TOP + 3.85, w: pw - 0.8, h: 0.3, fontSize: 10, color: C.accent3 });
+    text(s, "Covered Plus: the assistant and a plan that stays current.", { x: MX + 0.4, y: TOP + 2.1, w: pw - 0.8, h: 0.75, fontSize: 15, color: C.background1, lineSpacingMultiple: 1.15 });
+    text(s, "Free: 5 assistant questions a day. The next one shows the Plus offer, and we count who takes it. Live in the product today.", { x: MX + 0.4, y: TOP + 2.85, w: pw - 0.8, h: 0.85, fontSize: 13, color: C.accent3, lineSpacingMultiple: 1.15 });
+    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99); list prices, November 2026.", { x: MX + 0.4, y: TOP + 3.82, w: pw - 0.8, h: 0.4, fontSize: 10, color: C.accent3 });
 
     const rx = MX + pw + 0.55, rw = W - MX - rx;
     text(s, "Why they come back", { x: rx, y: TOP, w: rw, h: 0.4, fontSize: 18, bold: true, color: C.text1 });
@@ -334,7 +334,7 @@ async function build() {
     }
     const tw = tag(s, "TARGET", rx, 6.14);
     text(s, "First plan in 5 minutes, weekly update in 2. To be measured in walkthroughs.", { x: rx + tw + 0.15, y: 6.14, w: rw - tw - 0.15, h: 0.28, fontSize: 12, color: C.text2, valign: "middle" });
-    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month is a hypothesis, set below the main alternatives. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
+    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month is a hypothesis, set below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
   }
 
   // 8 — business potential
@@ -397,9 +397,9 @@ async function build() {
     tag(s, "FACT", MX + 0.4, TOP + 0.35);
     text(s, "Verified", { x: MX + 0.4, y: TOP + 0.78, w: lw - 0.8, h: 0.4, fontSize: 20, bold: true, color: C.text1 });
     text(s, [
-      { text: "123 automated unit tests: money math, CSV import, quotas, assistant guards", options: { bullet: true, breakLine: true } },
+      { text: "127 automated unit tests: money math, CSV import, quotas, assistant guards", options: { bullet: true, breakLine: true } },
       { text: "25 of 25 assistant scenarios pass on the real model (gpt-6-luna), twice in a row", options: { bullet: true, breakLine: true } },
-      { text: "Browser walkthroughs on desktop and phone sizes on every pull request", options: { bullet: true, breakLine: true } },
+      { text: "Live: the release walkthrough passes on the production URL with the real model, on desktop and phone sizes", options: { bullet: true, breakLine: true } },
       { text: "Works without the AI: every action also has a form", options: { bullet: true } },
     ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
 

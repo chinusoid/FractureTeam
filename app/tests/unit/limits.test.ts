@@ -2,6 +2,8 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { MemoryStore, UpstashStore } from "../../src/lib/limits/store";
 import { checkAndReserve, costMicros, settle } from "../../src/lib/limits/quota";
+import { handlePlus } from "../../src/lib/limits/plus";
+import { planOf } from "../../src/lib/ai/handler";
 import { readEnv } from "../../src/lib/ai/env";
 
 const NOW = new Date("2026-11-14T13:30:15Z");
@@ -88,4 +90,51 @@ test("upstash REST pipeline request and failures", async () => {
   assert.equal(e.ok, false);
   const unauthorized = new UpstashStore("https://example.upstash.io", "tok", async () => new Response("no", { status: 401 }));
   assert.equal((await checkAndReserve(unauthorized, env, "ip", "c", NOW)).ok, false);
+});
+
+test("free plan: the sixth question is refused with the Plus offer and is not counted", async () => {
+  const s = new MemoryStore(() => NOW.getTime());
+  const env = readEnv({ AI_FREE_PER_DAY: "5", AI_CLIENT_PER_DAY: "60" });
+  for (let i = 0; i < 5; i++) assert.equal((await checkAndReserve(s, env, "ip", "free", NOW, "free")).ok, true);
+  const sixth = await checkAndReserve(s, env, "ip", "free", NOW, "free");
+  assert.equal(sixth.ok, false);
+  if (!sixth.ok) {
+    assert.equal(sixth.code, "free_limit");
+    assert.match(sixth.message, /5 free assistant questions/);
+  }
+  // Refused attempts do not use up the day: after switching to Plus the same browser goes on from 5.
+  assert.equal((await checkAndReserve(s, env, "ip", "free", NOW, "free")).ok, false);
+  assert.equal((await checkAndReserve(s, env, "ip", "free", NOW, "plus")).ok, true);
+  assert.equal(await s.incrBy(`ai:client:free:${NOW.toISOString().slice(0, 10)}`, 0, 60), 6);
+});
+
+test("Plus still stops at the general daily limit", async () => {
+  const s = new MemoryStore(() => NOW.getTime());
+  const env = readEnv({ AI_FREE_PER_DAY: "1", AI_CLIENT_PER_DAY: "2" });
+  assert.equal((await checkAndReserve(s, env, "ip", "p", NOW, "plus")).ok, true);
+  assert.equal((await checkAndReserve(s, env, "ip", "p", NOW, "plus")).ok, true);
+  const third = await checkAndReserve(s, env, "ip", "p", NOW, "plus");
+  assert.equal(third.ok === false && third.code, "rate_limited");
+});
+
+test("setup review never counts as a free-plan question; chat does unless the browser is on Plus", () => {
+  const plain = new Request("http://localhost/api/assistant", { method: "POST" });
+  const plus = new Request("http://localhost/api/assistant", { method: "POST", headers: { "x-plan": "plus" } });
+  assert.equal(planOf(plain, "chat"), "free");
+  assert.equal(planOf(plain, "setup"), "plus");
+  assert.equal(planOf(plus, "chat"), "plus");
+});
+
+test("Plus interest: one browser is counted once, and the count can be read", async () => {
+  const s = new MemoryStore(() => NOW.getTime());
+  const env = readEnv({});
+  const post = (id: string) =>
+    handlePlus(new Request("http://localhost/api/plus", { method: "POST", headers: { "x-client-id": id } }), env, { store: s });
+  assert.equal((await post("browser-a")).status, 200);
+  assert.equal((await post("browser-a")).status, 200);
+  assert.equal((await post("browser-b")).status, 200);
+  const res = await handlePlus(new Request("http://localhost/api/plus"), env, { store: s });
+  assert.deepEqual(await res.json(), { interested: 2 });
+  const none = await handlePlus(new Request("http://localhost/api/plus", { method: "POST" }), env, { store: null });
+  assert.equal(none.status, 503);
 });

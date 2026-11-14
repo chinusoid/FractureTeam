@@ -7,6 +7,7 @@ const STATUS: Record<AssistantErrorCode, number> = {
   no_consent: 403,
   ai_disabled: 503,
   rate_limited: 429,
+  free_limit: 402,
   budget_exhausted: 429,
   quota_unavailable: 503,
   upstream_error: 502,

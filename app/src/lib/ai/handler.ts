@@ -39,6 +39,11 @@ export function clientIdOf(request: Request): string {
   return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : "anon";
 }
 
+/** Setup review is part of the free plan; chat questions count against it unless the browser is on Plus. */
+export function planOf(request: Request, mode: "setup" | "chat"): "free" | "plus" {
+  return mode === "setup" || request.headers.get("x-plan") === "plus" ? "plus" : "free";
+}
+
 export function originAllowed(request: Request, env: ServerEnv): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return !isProduction(env);
@@ -148,7 +153,7 @@ export async function handleAssistant(request: Request, env: ServerEnv = readEnv
 
   const store = "store" in deps ? deps.store ?? null : storeForEnv(env);
   const now = deps.now?.() ?? new Date();
-  const decision = await checkAndReserve(store, env, clientIp(request), clientIdOf(request), now);
+  const decision = await checkAndReserve(store, env, clientIp(request), clientIdOf(request), now, planOf(request, req.mode));
   if (!decision.ok) {
     done(decision.code, { mode: req.mode });
     return errorResponse(decision.code, decision.message, decision.retryAfterSeconds);

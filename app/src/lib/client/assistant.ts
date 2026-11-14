@@ -66,11 +66,40 @@ const CONTRACT_CODE: Record<string, string> = {
   no_consent: "CONSENT_REQUIRED",
   ai_disabled: "AI_DISABLED",
   rate_limited: "RATE_LIMITED",
+  free_limit: "QUOTA_EXCEEDED",
   budget_exhausted: "BUDGET_EXCEEDED",
   quota_unavailable: "QUOTA_UNAVAILABLE",
   upstream_error: "UPSTREAM_ERROR",
   timeout: "TIMEOUT",
 };
+
+/** The free plan's daily questions are used up; the UI answers with the Covered Plus offer. */
+export class PlusRequiredError extends Error {}
+
+const PLUS_KEY = "covered:plus";
+let memoryPlus = false;
+export function plusActive(): boolean {
+  try {
+    return localStorage.getItem(PLUS_KEY) === "early-access";
+  } catch {
+    return memoryPlus;
+  }
+}
+
+/** Turns Plus on for this browser (free during early access) and tells the server one more browser asked for it. */
+export async function activatePlus(): Promise<void> {
+  memoryPlus = true;
+  try {
+    localStorage.setItem(PLUS_KEY, "early-access");
+  } catch {
+    /* Storage is unavailable: Plus stays on until the page is closed. */
+  }
+  try {
+    await fetch("/api/plus", { method: "POST", headers: { "x-client-id": clientId() } });
+  } catch {
+    /* The counter is best effort; Plus is already on. */
+  }
+}
 
 export type HistoryItem = { role: "user" | "assistant"; text: string };
 
@@ -210,7 +239,7 @@ export async function requestAssistant(
   try {
     const response = await fetch("/api/assistant", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-client-id": clientId() },
+      headers: { "content-type": "application/json", "x-client-id": clientId(), ...(plusActive() ? { "x-plan": "plus" } : {}) },
       signal: controller.signal,
       body: JSON.stringify(buildAssistantRequest(state, message, mode, history)),
     });
@@ -226,12 +255,14 @@ export async function requestAssistant(
         const body = await response.json();
         const parsed = AssistantErrorSchema.safeParse(body);
         if (parsed.success) {
+          if (parsed.data.error.code === "free_limit") throw new PlusRequiredError(parsed.data.error.message);
           code = CONTRACT_CODE[parsed.data.error.code] ?? code;
           serverMessage = parsed.data.error.message;
         } else {
           code = body.error?.code ?? body.code ?? code;
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof PlusRequiredError) throw e;
         /* Non-JSON proxy response. */
       }
       const known = ERROR_MESSAGES[code];

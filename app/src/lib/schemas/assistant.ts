@@ -148,6 +148,7 @@ export const ERROR_CODES = [
   "no_consent",
   "ai_disabled",
   "rate_limited",
+  "free_limit",
   "budget_exhausted",
   "quota_unavailable",
   "upstream_error",
