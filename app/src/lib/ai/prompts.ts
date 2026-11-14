@@ -6,7 +6,7 @@ import { formatUSD } from "../finance/money";
 import type { AssistantRequest } from "../schemas/assistant";
 import { scrubDescription } from "./scrub";
 
-export const PROMPT_VERSION = "2026-11-14.1";
+export const PROMPT_VERSION = "2026-11-14.2";
 
 export const STATUS_MEANING = {
   ok: "Bills, everyday spending and the reserve are all covered.",
@@ -21,7 +21,7 @@ export const TOOL_DESCRIPTIONS = {
   simulate_purchase:
     "What-if check for a possible purchase in the current period. Returns verified numbers and a status. Records nothing. Use when the user asks if they can afford, buy, or spend something. Requires a price; ask if missing.",
   propose_bill_change:
-    "Drafts a change to ONE existing bill (amount, due date or name) and returns the before/after effect. Does NOT save: the user confirms in the app. 'Up by $30' means old amount + 30; 'up to $180' means 180. Only use when exactly one bill clearly matches.",
+    "Drafts a change to ONE existing bill (amount, due date or name) and returns the before/after effect. The user confirms in the app. Only use when exactly one bill clearly matches. For increases or decreases by a stated amount, use the bill's current amount in the plan to derive new_amount_usd: add the increase or subtract the decrease. For example, a $200 bill that went down by $30 has a new_amount_usd of 170. Use a stated final amount directly. Ask for the new amount only if it cannot be determined from the request and plan.",
   propose_new_bill:
     "Drafts a new bill with name, amount and due date and returns its effect. Does NOT save: the user confirms in the app. Ask the user first if the amount or due date is unknown.",
 } as const;
