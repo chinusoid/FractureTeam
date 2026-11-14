@@ -14,7 +14,16 @@ import { useApp } from "./context";
 import { Button, downloadText, Gauge, Notice, PageHeading } from "./UI";
 import { buildReminderIcs, REPEAT_LABEL } from "@/lib/client/reminder";
 import { billIcon, Icon } from "./Icon";
-import { parseMoney } from "@/lib/client/model";
+import { parseMoney, today as todayIso } from "@/lib/client/model";
+
+/** What is free per day from today through the end of the period (whole cents, rounded down). */
+function perDay(remainderCents: number, endDate: string): number | null {
+  const start = todayIso();
+  if (remainderCents <= 0 || endDate < start) return null;
+  const toDay = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000;
+  const days = toDay(endDate) - toDay(start) + 1;
+  return days >= 1 ? Math.floor(remainderCents / days) : null;
+}
 
 export function Dashboard() {
   const { state, navigate, openAssistant, toast } = useApp();
@@ -118,6 +127,12 @@ export function Dashboard() {
               <Icon name="up" size={19} />
             </span>
           </p>
+          {perDay(plan.remainderCents, p.horizonEndDate) !== null && (
+            <div className="per-day" data-testid="per-day">
+              ≈ {money(perDay(plan.remainderCents, p.horizonEndDate)!)} a day
+              until {dateLabel(p.horizonEndDate)}
+            </div>
+          )}
           <div className="period-label">
             <Icon name="calendar" size={13} />
             {dateLabel(p.balanceDate)} – {dateLabel(p.horizonEndDate)}
@@ -433,6 +448,13 @@ export function Dashboard() {
                     </strong>
                   </div>
                   <p>{result.message}</p>
+                  {perDay(result.remainderCents!, p.horizonEndDate) !== null && (
+                    <p className="per-day-after">
+                      After it: ≈{" "}
+                      {money(perDay(result.remainderCents!, p.horizonEndDate)!)} a
+                      day until {dateLabel(p.horizonEndDate)}.
+                    </p>
+                  )}
                   <small>A preview only. Your balance hasn’t changed.</small>
                 </div>
               ))}

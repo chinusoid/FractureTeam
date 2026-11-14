@@ -38,6 +38,12 @@ const paths: Record<string, React.ReactNode> = {
     </>
   ),
   arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </>
+  ),
   left: <path d="M20 12H4m6-6-6 6 6 6" />,
   up: <path d="M7 17 17 7M7 7h10v10" />,
   down: <path d="M7 7 17 17M7 17h10V7" />,
