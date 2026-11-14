@@ -6,6 +6,8 @@ Covered is a bill planner for working adults in the US. Import a bank CSV, confi
 
 ![Covered overview: $300 available to spend after bills, everyday spending and a reserve](docs/overview.png)
 
+**Live:** <https://covered-fracture.vercel.app> · **Pitch deck:** [pitch/covered-pitch.pdf](pitch/covered-pitch.pdf)
+
 ## Try it in a minute
 
 1. Press **Try sample data**: a synthetic three-month bank export is loaded.
