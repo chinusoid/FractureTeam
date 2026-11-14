@@ -1,4 +1,4 @@
-// Builds the Covered pitch deck (11 slides, 16:9).
+// Builds the Covered pitch deck (10 slides, 16:9).
 //   npm install pptxgenjs sharp react react-dom react-icons      (in the folder you run this from)
 //   PROD_URL=https://your-site.vercel.app APPLY_THEME=./apply_theme.js node build.js <screenshots dir> <output.pptx>
 // Without PROD_URL the deck shows a marked placeholder for the production link.
