@@ -245,6 +245,23 @@ export function SetupScreen() {
                   </div>
                   <strong>{money(b.amountCents)}</strong>
                 </div>
+                {(() => {
+                  const flags = b.note
+                    .split(/(?<=\.)\s+/)
+                    .filter((s) =>
+                      /transfer|varies|latest amount|assumed paid|after your file ends|only if it is a bill/i.test(
+                        s,
+                      ),
+                    );
+                  return (
+                    flags.length > 0 && (
+                      <p className="candidate-flag">
+                        <Icon name="info" size={14} />
+                        <span>{flags.join(" ")}</span>
+                      </p>
+                    )
+                  );
+                })()}
                 <details>
                   <summary>
                     {b.evidence.length

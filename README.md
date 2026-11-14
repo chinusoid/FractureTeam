@@ -45,7 +45,7 @@ Sample A, generated relative to the browser's current date:
 | Item                                               |                         Amount |
 | -------------------------------------------------- | -----------------------------: |
 | Entered balance                                    |                         $2,200 |
-| Rent / car insurance / internet                    |            $1,100 / $120 / $80 |
+| Rent / car insurance / internet                    |            $1,100 / $150 / $50 |
 | Everyday spending                                  |                           $350 |
 | Reserve                                            |                           $250 |
 | Available                                          |                       **$300** |
@@ -53,28 +53,38 @@ Sample A, generated relative to the browser's current date:
 | Insurance increased by $30                         |                       **$270** |
 | Balance $950 after rent and $150 everyday spending |                       **$270** |
 
-Sample B independently produces **$780** from a $3,100 balance, $1,605 bills, $465 everyday spending, and a $250 reserve.
+Sample A also contains later bills (outside the period) and a monthly transfer to savings that is flagged for review. Sample B comes from a different bank format (separate Debit/Credit columns, quoted amounts, a running balance) with a twice-a-month paycheck, so its period ends at the next payday and its result depends on the day. Both samples are synthetic and generated relative to today.
 
 ## CSV format
 
 ```csv
 Date,Description,Amount
-2026-11-01,Rent,-1100.00
-2026-11-05,Payroll,2500.00
-2026-11-06,Groceries,-65.40
+11/01/2026,OAKWOOD APARTMENTS ONLINE PMT,-1100.00
+11/05/2026,ACME LOGISTICS PAYROLL PPD,2100.00
+11/06/2026,GREENLEAF MARKET #0412,-65.40
 ```
 
-Comma or semicolon delimiters are supported. Dates can use ISO, US month/day/year, or day/month/year after an explicit selection. Quotes protect descriptions containing commas. Separate debit/credit columns must first be combined into one signed amount column. Possible duplicates are kept by default. Transfer rows are retained and flagged; they do not drive recurring-bill or everyday-spending estimates. The estimate uses a 14-day historical window and excludes nonrecurring purchases of $200 or more, showing the excluded items. Review all estimates before confirming.
+or, with separate columns:
+
+```csv
+"Posting Date","Description","Debit","Credit","Balance"
+11/05/2026,"RIVERBANK AUTO LOAN PMT","310.00",,"2,914.20"
+10/31/2026,"NORTHSTAR HEALTH DIR DEP",,"1,850.00","3,224.20"
+```
+
+- Delimiters: comma, semicolon, tab or pipe. Quotes protect commas; a UTF-8 BOM is ignored.
+- Columns are guessed from the header and can be changed: one signed amount column (you choose whether spending is negative or positive), or separate debit and credit columns.
+- Dates: `YYYY-MM-DD`, `MM/DD/YYYY`, `M/D/YY`, `DD/MM/YYYY`. If both month-first and day-first fit every row, you must choose.
+- Amounts: `-12.34`, `$1,234.56`, `(45.00)`, `45.00-`.
+- Rows that cannot be read are listed with their row number and skipped. Same date + amount + description is flagged as a possible duplicate and kept unless you exclude it. Transfers (Zelle, Venmo, card payments, "transfer to savings") are flagged.
+- Recurring bills are grouped by merchant (card numbers and reference codes are ignored), need at least two payments with a monthly, two-week or weekly rhythm, and keep the day of the month (Jan 31 → Feb 28 → Mar 31). Varying amounts, transfers and payments that probably happened after the file ends are called out on the bill card.
+- The period ends at your next detected payday (weekly, every two weeks, twice a month or monthly), otherwise in two weeks. Everyday spending is estimated from the last 28 days of the file, without detected bills, transfers and one-off purchases of $400 or more, scaled to the period and rounded to $10. Review all estimates before confirming.
 
 ## Assistant integration status
 
-**The shared `covered-base.zip` was not available and the repository was initially empty.** This implementation therefore keeps a standalone, tested client adapter in `app/src/lib/client/model.ts`. It creates no files in the other participant's `finance`, `import`, `demo`, `schemas`, `ai`, `limits`, or `app/api` directories. When the shared base arrives, map this adapter to its exports and reconcile its state schema before merging that package.
+The assistant server is part of this app (see "Assistant server" below). The browser speaks the shared contract `app/src/lib/schemas/assistant.ts` through `app/src/lib/client/assistant.ts`, which maps it to the UI; previews and confirmations are computed on the device. CSV import, recurring-bill detection and sample data use the shared modules in `app/src/lib/import` and `app/src/lib/demo`.
 
-**There is no AI server in this repository yet.** The assistant UI sends requests only after consent to `POST /api/assistant`, with `x-client-id`, validates the response with Zod, computes proposal previews locally, and rejects stale, duplicate, or invalid confirmations. An absent endpoint and quota/service failures have actionable fallbacks. All manual flows work without AI. No API key is needed for the client.
-
-The provisional request/response contract is in `app/src/lib/client/assistant.ts`. It must be reconciled with the shared `schemas/assistant.ts` by the backend participant. The request contains `mode`, `message`, `consent`, `stateVersion`, and `context` (`plan`, limited `bills`, and setup-only recurring evidence). Accepted response kinds: `answer`, `question`, `simulation`, `change_proposal`, `setup`. A change proposal contains `id`, `stateVersion`, `billId`, and `amountCents`. Server-side quota enforcement and the real model connection belong to that integration.
-
-The e2e suite intercepts the assistant request **inside its disposable browser context** to verify the insurance confirmation. This is a test fixture, not a deployed mock or a real AI integration.
+Tests: `npm run e2e` checks the UI with the assistant request intercepted inside the browser (and the "assistant unavailable" state against a server without a key); `npm run e2e:assistant` drives the real `/api/assistant` path with the deterministic mock model (`AI_MOCK=1 QUOTA_MODE=memory npm run dev`). Both run in CI.
 
 ## Data and privacy
 
