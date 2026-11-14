@@ -16,7 +16,7 @@ Each line names the claim as it appears in [the pitch deck](../pitch/covered-pit
 | Claim | Where it lives |
 | --- | --- |
 | Tested code computes every dollar | `app/src/lib/finance` (integer cents). Independent worked examples in `app/tests/unit/finance.test.ts` |
-| The sample goes through the real import | The landing page's **Try sample data** generates a synthetic three-month bank CSV (`app/src/lib/demo/sample.ts`) and feeds it to the same CSV reader and recurring-bill detector a user's file goes through (`app/src/lib/import`). Nothing on the overview is a fixed number |
+| The sample goes through the real import | The landing page's **Try sample data** generates a synthetic three-month bank CSV (`app/src/lib/demo/sample.ts`) and feeds it to the same CSV reader and recurring-bill detector a user's file goes through (`app/src/lib/import`). The sample's balance ($2,200) is filled in for you, as a user would type theirs, and the synthetic file is generated so its totals come out round; the bills, everyday spending and the plan are computed from it |
 | A dollar figure the model made up never reaches the user | `app/src/lib/ai/guard.ts` replaces any amount that does not match a computed value; tests in `app/tests/unit/ai-guards.test.ts` |
 | Nothing changes until you confirm | The model can only call four functions (`app/src/lib/ai/tools.ts`); a change is a draft that applies only to the plan version it was made for (`app/src/lib/finance/proposals.ts`). A draft with a guessed bill or an invented date is refused (`tools.ts`, tests "a bill change is refused when two bills fit…", "a new bill is refused until the user has given an amount and a due date") |
 | We store no financial data | The plan lives in the browser's local storage (`app/src/lib/storage/local.ts`). OpenAI calls are made with `store: false` (`app/src/lib/ai/openai.ts`). The server keeps only usage counters per IP address and per browser, and a count of browsers that took the Plus offer (`app/src/lib/limits`) |
@@ -49,6 +49,7 @@ The 25 scenarios (`app/tests/ai-eval/scenarios.ts`) include purchase phrasings, 
 | Claim | Where |
 | --- | --- |
 | 5 free cloud questions a day, then the Plus offer | `AI_FREE_PER_DAY` (default 5) in `app/src/lib/ai/env.ts`; the offer is in `app/src/components/Assistant.tsx` |
+| What Plus adds | Up to 60 cloud questions a day instead of 5 (`app/src/lib/ai/env.ts`), answered by our model with OpenAI behind it. Private mode stays free and unlimited but uses our model alone. Payday reminders are free. Bank sync is planned for the pilot, not built |
 | We count who takes the offer | `POST /api/plus` counts each browser once; `GET /api/plus` returns the count. Payment is not connected yet: the offer turns Plus on for free during early access |
 
 ## Market numbers in the deck
@@ -62,6 +63,8 @@ The 25 scenarios (`app/tests/ai-eval/scenarios.ts`) include purchase phrasings, 
 | 54–57% renew after month one | RevenueCat, State of Subscription Apps 2026 (Productivity and Utilities, monthly plans) |
 | About 89 million US adults aged 25–44 | US Census Bureau population estimates, 2024 |
 | $0.59 card fee on $10 | Stripe list price, 2.9% + 30¢ |
+| About 3¢ of AI a month | 100 questions × $0.0003, the measured OpenAI cost per task; $0 when our model answers. Worst case 60 a day, all on OpenAI: 1,800 × $0.0003 = $0.54 |
+| About 4 paid months in the base case | 1 + 0.55 ÷ (1 − 0.82) ≈ 4.1: 55% renew after month one (RevenueCat median), then an assumed 82% a month. LTV = 4 × $9.38 ≈ $38; CAC ceiling = LTV ÷ 3 ≈ $13 |
 | Competitor prices | PocketGuard's own pricing page; YNAB and Monarch list prices as reported in November 2026 |
 
 ## Not proven yet

@@ -97,7 +97,7 @@ BASE_URL=https://your-site.vercel.app node tests/e2e/release.mjs
 
 ## How the browser and the server are tested together
 
-The assistant server is part of this app (see "Assistant server" below). The browser speaks the shared contract `app/src/lib/schemas/assistant.ts` through `app/src/lib/client/assistant.ts`, which maps it to the UI; previews and confirmations are computed on the device. CSV import, recurring-bill detection and sample data use the shared modules in `app/src/lib/import` and `app/src/lib/demo`.
+The assistant server is part of this app (see "Assistant server" above). The browser speaks the shared contract `app/src/lib/schemas/assistant.ts` through `app/src/lib/client/assistant.ts`, which maps it to the UI; previews and confirmations are computed on the device. CSV import, recurring-bill detection and sample data use the shared modules in `app/src/lib/import` and `app/src/lib/demo`.
 
 Tests: `npm run e2e` checks the UI with the assistant request intercepted inside the browser (and the "assistant unavailable" state against a server without a key); `npm run e2e:assistant` drives the real `/api/assistant` path with the deterministic mock model (`AI_MOCK=1 QUOTA_MODE=memory npm run dev`). Both run in CI.
 

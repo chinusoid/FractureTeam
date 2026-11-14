@@ -361,10 +361,10 @@ async function build() {
       { text: "$10", options: { fontSize: 60, bold: true, color: C.background1 } },
       { text: "  a month", options: { fontSize: 18, color: C.accent3 } },
     ], { x: MX + 0.4, y: TOP + 0.62, w: pw - 0.8, h: 1.05, valign: "middle" });
-    const plus = ["The cloud assistant, up to 60 questions a day", "A bill changed in one sentence, with a before and after", "Payday reminders and a recap of what changed"];
+    const plus = ["The cloud assistant, 60 questions a day: our model with OpenAI behind it", "Next, with the pilot: bank sync, so the plan keeps itself current"];
     text(s, plus.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < plus.length - 1 } })), { x: MX + 0.4, y: TOP + 1.72, w: pw - 0.8, h: 1.65, fontSize: 12.5, color: C.background1, paraSpaceAfter: 4 });
-    text(s, "Free: the plan, the purchase check, private mode and 5 cloud questions a day.", { x: MX + 0.4, y: TOP + 3.3, w: pw - 0.8, h: 0.5, fontSize: 12, color: C.accent3, lineSpacingMultiple: 1.1 });
-    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99). List prices, November 2026.", { x: MX + 0.4, y: TOP + 3.88, w: pw - 0.8, h: 0.55, fontSize: FOOT, color: C.accent3 });
+    text(s, "Free: the plan, purchase checks, payday reminders, 5 cloud questions a day, private mode.", { x: MX + 0.4, y: TOP + 3.22, w: pw - 0.8, h: 0.6, fontSize: 12, color: C.accent3, lineSpacingMultiple: 1.1 });
+    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99). List prices, November 2026.", { x: MX + 0.4, y: TOP + 3.95, w: pw - 0.8, h: 0.5, fontSize: FOOT, color: C.accent3 });
 
     const ix = MX + pw + 0.35, iw = 3.05;
     const offer = await shot(s, "plus-offer.png", { x: ix, y: TOP, w: iw, radiusPx: 22, alt: "The Plus offer in the product: keep asking with Covered Plus, up to 60 questions a day, planned price $10 a month" });
@@ -386,7 +386,7 @@ async function build() {
       text(s, loop[i][1], { x: rx + 0.8, y: y - 0.03, w: rw - 0.8, h: 0.32, fontSize: 16, bold: true, color: C.text1 });
       text(s, loop[i][2], { x: rx + 0.8, y: y + 0.33, w: rw - 0.8, h: 0.8, fontSize: 13, color: C.text2, lineSpacingMultiple: 1.12 });
     }
-    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month sits below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. Payment itself is not connected yet; that is the pilot. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
+    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. Plus is the cloud assistant that understands any wording, and next the bank sync that keeps the plan current without a CSV. $10 a month sits below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. Payment itself is not connected yet; that is the pilot. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
   }
 
   // 9 — business potential
@@ -408,7 +408,7 @@ async function build() {
     const y1 = TOP + 1.0;
     const tw = tag(s, "ESTIMATE", MX, y1);
     text(s, "LTV per subscriber = $9.38 margin a month × months they keep paying. CAC ceiling = LTV ÷ 3.", { x: MX + tw + 0.15, y: y1, w: CW - tw - 0.15, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    const sc = [["6 months  ·  our base case", "$56", "$19"], ["12 months", "$113", "$38"], ["24 months", "$225", "$75"]];
+    const sc = [["4 months  ·  our base case", "$38", "$13"], ["6 months", "$56", "$19"], ["12 months", "$113", "$38"]];
     const cw = (CW - 0.6) / 3, y2 = y1 + 0.42, ch = 1.3;
     sc.forEach((c, i) => {
       const x = MX + i * (cw + 0.3), base = i === 0;
@@ -424,19 +424,19 @@ async function build() {
     });
 
     // facts behind the estimate
-    const y3 = y2 + ch + 0.2, h3 = 1.16, lw = (CW - 0.3) / 2;
+    const y3 = y2 + ch + 0.18, h3 = 1.26, lw = (CW - 0.3) / 2;
     box(s, { x: MX, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", MX + 0.3, y3 + 0.18);
-    text(s, "We keep $9.38 of $10: − $0.59 card fee − ≤$0.03 AI", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s, "Stripe list price 2.9% + 30¢. AI: $0 on our own model; at most $0.03 if all 100 tasks a month went to OpenAI ($0.0003 per task, measured on gpt-6-luna).", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.55, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "We keep ~$9.38 of $10: card fee $0.59, AI ~3¢", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s, "Stripe list price 2.9% + 30¢. AI: $0 when our model answers; $0.0003 per task on OpenAI (measured), so ~3¢ for 100 tasks a month and at most $0.54 at the 60-a-day cap.", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.65, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     const rx = MX + lw + 0.3;
     box(s, { x: rx, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", rx + 0.3, y3 + 0.18);
     text(s, "Retention decides: 54–57% renew after month one", { x: rx + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s, "Median first renewal of monthly plans, Productivity and Utilities apps. RevenueCat, State of Subscription Apps 2026.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.55, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "RevenueCat, State of Subscription Apps 2026. Base case: 55% renew, then 82% a month: 1 + 0.55 ÷ 0.18 ≈ 4 paid months.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.65, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
 
-    text(s, "Six months is our base case because of that renewal rate. CAC is not measured yet: the first channel is the free, no-sign-up purchase check, reached from search and personal-finance communities. The pilot measures both.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month, so our base case is six months: $56, which pays back if a subscriber costs under $19 to acquire. That is why the product is built around payday, the moment people have a reason to return, and why the first channel is the free purchase check. CAC and months retained are what the pilot measures.");
+    text(s, "A CAC under $13 rules out paid ads at first. The first channel is the free, no-sign-up purchase check, reached from search and personal-finance communities. The pilot measures CAC and months retained.", { x: MX, y: 6.36, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep about $9.38 a month; the AI is about three cents, measured. So LTV is decided by how long people stay, and the benchmark is hard: only 54 to 57% of monthly subscribers in comparable app categories renew after the first month. Our base case assumes 82% a month after that, about four paid months: LTV $38, so a subscriber must cost under $13 to acquire. That rules out paid ads at first, which is why the entry point is the free purchase check, with no sign-up. The pilot measures CAC and months retained.");
   }
 
   // 10 — evidence and next steps (the case allows ten slides)
@@ -468,7 +468,7 @@ async function build() {
         items: [
           "A pilot with accounts and sync",
           "A real $10 charge; the Plus offer is already counted in the product",
-          "Day-7 and day-30 return; the base case needs 6 paid months",
+          "Day-7 and day-30 return; the base case needs 4 paid months",
           "Then: an optional bank connection through an official data API",
         ],
       },
