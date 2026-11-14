@@ -205,7 +205,7 @@ async function build() {
     const rows = [
       ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account and no bank login: a plan from a CSV, in your browser"],
       ["PocketGuard", "$12.99 a month", "“Leftover” shows what remains after bills, goals and debt", "Not only the leftover: the answer names what a purchase would break"],
-      ["Monarch", "$14.99 a month", "AI assistant, explanations and a weekly review", "A sentence becomes a before/after draft you confirm"],
+      ["Monarch", "$14.99 a month", "AI assistant, explanations and a weekly review", "Every dollar is computed by tested code; a figure the model made up never reaches you"],
       ["Spreadsheet", "free", "Whatever the template allows", "Import, suggestions and recalculation in one flow"],
     ];
     rows.forEach((r, i) => {
@@ -286,7 +286,7 @@ async function build() {
       if (i < flow.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + fw + (gap - 0.3) / 2, y: TOP + 0.45, w: 0.3, h: 0.3, objectName: name("Arrow") });
     }
     const cards = [
-      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Runs in our server: ~2 ms, $0. OpenAI only when it is unsure."],
+      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Live today: ~2 ms, $0 per request. OpenAI only when it is unsure."],
       [fi.FiDollarSign, "Amounts are checked", "A dollar figure in any model’s text that does not match a computed value is replaced before you see it."],
       [fi.FiEdit3, "Drafts, not writes", "The server stores nothing. A change applies only after Confirm, and only to the plan version it was drafted for."],
     ];
@@ -375,8 +375,8 @@ async function build() {
     const y3 = y2 + ch + 0.2, h3 = 1.1, lw = (CW - 0.3) / 2;
     box(s, { x: MX, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", MX + 0.3, y3 + 0.18);
-    text(s, "We keep $9.38 of $10: − $0.59 card fee − $0.03 AI", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s, "Stripe list price 2.9% + 30¢. AI: $0.0003 per task measured on gpt-6-luna, at 100 tasks a month.", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "We keep $9.38 of $10: − $0.59 card fee − ≤$0.03 AI", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s, "Stripe list price 2.9% + 30¢. AI: $0 on our own model; at most $0.03 if all 100 tasks a month went to OpenAI ($0.0003 per task, measured on gpt-6-luna).", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     const rx = MX + lw + 0.3;
     box(s, { x: rx, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", rx + 0.3, y3 + 0.18);
@@ -399,7 +399,7 @@ async function build() {
     text(s, [
       { text: "Our own model alone: 24 of 25 assistant scenarios, 77% on phrasings it never saw in training", options: { bullet: true, breakLine: true } },
       { text: "With OpenAI (gpt-6-luna), twice in a row: 25 of 25 scenarios, 34 of 34 interview answers", options: { bullet: true, breakLine: true } },
-      { text: "152 automated unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
+      { text: "154 automated unit tests: money math, CSV import, quotas, AI guards, model parity", options: { bullet: true, breakLine: true } },
       { text: "Live: release walkthrough on desktop and phone sizes; every action also has a form", options: { bullet: true } },
     ], { x: MX + 0.4, y: TOP + 1.35, w: lw - 0.8, h: 2.9, fontSize: 14, color: C.text1, paraSpaceAfter: 9 });
 
