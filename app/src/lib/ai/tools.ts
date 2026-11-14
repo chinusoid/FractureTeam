@@ -81,7 +81,42 @@ export const TOOL_NAMES = new Set<string>(TOOL_DEFINITIONS.map((t) => t.name));
 export interface ToolContext {
   planInput: PlanInput;
   baseVersion: number;
+  /**
+   * What the user wrote (see userTextOf). When present, the bill tools refuse to guess what the user
+   * did not say: which of two similar bills, or the amount and due date of a new bill.
+   */
+  userText?: string;
 }
+
+const GENERIC_WORDS = new Set(["bill", "payment", "monthly", "weekly", "auto", "autopay", "pay", "plan", "the", "and", "for", "online", "pmt", "inc", "llc"]);
+
+function wordsOf(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
+}
+
+/** The unpaid bills whose names fit the user's words best. More than one means the user has to choose. */
+export function billsNamedBy<B extends { name: string; paymentStatus: string }>(userText: string, bills: readonly B[]): B[] {
+  const said = new Set(wordsOf(userText));
+  let best = 0;
+  let top: B[] = [];
+  for (const b of bills) {
+    if (b.paymentStatus === "paid") continue;
+    const score = new Set(wordsOf(b.name).filter((w) => w.length >= 3 && !GENERIC_WORDS.has(w) && said.has(w))).size;
+    if (score > best) {
+      best = score;
+      top = [b];
+    } else if (score === best && score > 0) top.push(b);
+  }
+  return top;
+}
+
+const SAYS_WHEN =
+  /\b(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(\/\d{2,4})?|(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)[a-z]*\.?|\d{1,2}(st|nd|rd|th)|(due|on)\s+(the\s+)?\d{1,2}|today|tonight|tomorrow|(mon|tues|wednes|thurs|fri|satur|sun)day|(next|this)\s+(week|month)|end\s+of\s+(the\s+)?(week|month)|in\s+\d+\s+(day|week)s?|payday)\b/i;
 
 export interface ToolEffects {
   simulation?: SimulationResult;
@@ -220,6 +255,15 @@ export function executeTool(name: string, rawArgs: string, ctx: ToolContext, eff
     if (Object.keys(changes).length === 0) {
       return fail("no_change", "The values are the same as the current bill. Ask the user what changed.");
     }
+    if (ctx.userText !== undefined) {
+      const named = billsNamedBy(ctx.userText, input.obligations);
+      if (named.length > 1) {
+        return fail(
+          "ambiguous_bill",
+          `The user's words fit more than one bill: ${named.map((b) => `${b.name} (${formatUSD(b.amountCents)}, due ${b.dueDate})`).join("; ")}. Do not pick one. Ask the user which bill they mean.`,
+        );
+      }
+    }
     return finishProposal({ type: "update_obligation", targetId: bill.id, changes }, ctx, effects, [bill.id]);
   }
 
@@ -230,6 +274,10 @@ export function executeTool(name: string, rawArgs: string, ctx: ToolContext, eff
     if (c === null) return fail("invalid_amount", "amount_usd must be a positive dollar amount. Ask the user.");
     if (!isISODate(args.due_date)) return fail("invalid_date", "due_date must be YYYY-MM-DD. Ask the user when it is due.");
     if (args.due_date < addDays(input.today, -31)) return fail("invalid_date", "due_date is too far in the past.");
+    if (ctx.userText !== undefined) {
+      if (!/\d/.test(ctx.userText)) return fail("missing_amount", "The user did not give an amount. Do not invent one. Ask the user how much the bill is.");
+      if (!SAYS_WHEN.test(ctx.userText)) return fail("missing_due_date", "The user did not say when this bill is due. Do not invent a date. Ask the user for the due date.");
+    }
     return finishProposal(
       { type: "add_obligation", obligation: { name: billName, amountCents: c, dueDate: args.due_date } },
       ctx,

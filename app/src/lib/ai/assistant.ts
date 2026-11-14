@@ -55,6 +55,18 @@ export function planInputOf(req: AssistantRequest): PlanInput | null {
   };
 }
 
+/**
+ * What the user said about the current request: this message, plus their previous one when the assistant
+ * had answered it with a question (the user is now replying to that question).
+ */
+export function userTextOf(req: AssistantRequest): string {
+  const history = req.context.history ?? [];
+  const last = history[history.length - 1];
+  const answering = last?.role === "assistant" && /\?\s*$/.test(last.text);
+  const previous = answering ? ([...history].reverse().find((h) => h.role === "user")?.text ?? "") : "";
+  return `${previous} ${req.message}`.trim();
+}
+
 /** Answers that need no model call (and therefore no quota). */
 export function deterministicResponse(req: AssistantRequest): AssistantResponse | null {
   if (req.mode === "chat" && !req.context.plan) {
@@ -93,6 +105,7 @@ async function runChat(req: AssistantRequest, env: ServerEnv, provider: ModelPro
   const planInput = planInputOf(req)!;
   const stats: RunStats = { inputTokens: 0, outputTokens: 0, modelCalls: 0, toolNames: [], guardReplaced: false };
   const effects: ToolEffects = emptyEffects();
+  const userText = userTextOf(req);
   const input: InputItem[] = [
     { role: "developer", content: buildChatContext(req) },
     ...(req.context.history ?? []).map((h) => ({ role: h.role, content: h.text }) as InputItem),
@@ -132,7 +145,7 @@ async function runChat(req: AssistantRequest, env: ServerEnv, provider: ModelPro
         output = JSON.stringify({ ok: false, error: "tool_limit", message: "No more tool calls for this request. Answer with what you have." });
       } else {
         toolCalls++;
-        output = executeTool(c.name, c.arguments ?? "{}", { planInput, baseVersion: req.baseVersion }, effects);
+        output = executeTool(c.name, c.arguments ?? "{}", { planInput, baseVersion: req.baseVersion, userText }, effects);
       }
       body.input.push({ type: "function_call_output", call_id: c.call_id, output });
     }
@@ -158,6 +171,10 @@ async function runChat(req: AssistantRequest, env: ServerEnv, provider: ModelPro
   }
   if (effects.proposal && /\b(saved|has been (updated|changed)|is (now )?updated|i('ve| have) (changed|updated|saved))\b/i.test(message)) {
     // Never let the text claim a change was saved: the user still has to confirm.
+    message = template!;
+  }
+  if (effects.proposal && /\?\s*$/.test(message)) {
+    // A draft is on screen: the text describes it instead of asking something the draft already answers.
     message = template!;
   }
 
