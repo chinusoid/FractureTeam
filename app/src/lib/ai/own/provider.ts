@@ -117,7 +117,9 @@ export function parseDate(text: string, today: string): string | null {
 
 export function amountsIn(text: string): number[] {
   const out: number[] = [];
-  for (const m of text.matchAll(/\$\s?(\d[\d,]*(?:\.\d{1,2})?)|\b(\d[\d,]*(?:\.\d{1,2})?)\s?(?:dollars|usd|bucks)\b/gi)) {
+  // "$1,100" and "$65," (a comma after the number is punctuation, not a thousands separator).
+  const num = String.raw`(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?`;
+  for (const m of text.matchAll(new RegExp(String.raw`\$\s?(${num})|\b(${num})\s?(?:dollars|usd|bucks)\b`, "gi"))) {
     const c = parseMoneyString(m[1] ?? m[2]);
     if (c !== null && c > 0) out.push(c / 100);
   }
