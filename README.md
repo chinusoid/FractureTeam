@@ -28,7 +28,7 @@ Covered is a bill planner for working adults in the US. Import a bank CSV, confi
 | Why come back? | A payday calendar reminder, the “Since last update” recap after each balance update, and a notice when the plan is stale |
 | How is quality kept? | CI on every pull request: typecheck, unit tests, 25 assistant scenarios, build, browser walkthroughs on desktop and phone |
 
-The design follows a quiet, monochrome workspace: white, pale cream `#f6f7ed`, thin borders, dark accents, a sidebar, and a radial allocation indicator.
+The design follows a quiet, monochrome workspace: white, pale cream `#f6f7ed`, thin borders, dark accents, a sidebar, and a radial allocation indicator. Type is Instrument Sans (self-hosted), nothing is set under 11px, and muted text passes WCAG AA contrast. A visitor without a plan sees the landing page on its own, without the workspace around it.
 
 ## Run
 

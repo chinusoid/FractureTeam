@@ -1,4 +1,4 @@
-// Builds the Covered pitch deck (10 slides, 16:9).
+// Builds the Covered pitch deck (10 slides, 16:9). Screenshots come from capture.mjs.
 //   npm install pptxgenjs sharp react react-dom react-icons      (in the folder you run this from)
 //   PROD_URL=https://your-site.vercel.app APPLY_THEME=./apply_theme.js node build.js <screenshots dir> <output.pptx>
 // Without PROD_URL the deck shows a marked placeholder for the production link.
@@ -77,9 +77,7 @@ const kicker = (slide, value, color = C.accent2) => text(slide, value, { x: MX, 
 
 const TAGS = {
   FACT: { fill: C.accent4, color: C.accent1, w: 0.72 },
-  HYPOTHESIS: { fill: C.accent5, color: C.accent6, w: 1.38 },
   ESTIMATE: { fill: C.accent5, color: C.accent6, w: 1.14 },
-  TARGET: { fill: C.accent5, color: C.accent6, w: 0.95 },
 };
 function tag(slide, kind, x, y) {
   const t = TAGS[kind];
@@ -103,10 +101,12 @@ function numberCircle(slide, value, x, y, { size = 0.56, fill = C.text1, color =
 }
 
 /** Screenshot (optionally cropped) with rounded corners, plus a thin frame behind it. */
-async function shot(slide, file, { crop, x, y, w, h, radiusPx = 36, alt, frame = HEX.accent3 }) {
+async function shot(slide, file, { crop, pad = 0, x, y, w, h, radiusPx = 36, alt, frame = HEX.accent3 }) {
   let img = sharp(path.join(SHOTS, file));
   if (crop) img = img.extract(crop);
-  const raw = await img.png().toBuffer();
+  let raw = await img.png().toBuffer();
+  // An element captured edge to edge gets a white margin, so its text does not touch the frame.
+  if (pad) raw = await sharp(raw).extend({ top: pad, bottom: pad, left: pad, right: pad, background: "#ffffff" }).png().toBuffer();
   const meta = await sharp(raw).metadata();
   const ratio = meta.width / meta.height;
   if (w === undefined) w = h * ratio;
@@ -138,19 +138,22 @@ function prodLink(slide, x, y, { color, mutedColor, w = 6 }) {
 
 // ---------------------------------------------------------------- slides
 async function build() {
+  const FOOT = 10.5; // nothing on a slide is set smaller than this
+
   // 1 — cover
   pres.addSection({ title: "Problem" });
   {
     const s = pres.addSlide({ masterName: "COVER", sectionTitle: "Problem" });
     s.addImage({ data: await icon(fi.FiCheckCircle, HEX.lt2), x: MX, y: 0.62, w: 0.36, h: 0.36, objectName: "Logo mark" });
     text(s, "Covered", { x: MX + 0.48, y: 0.6, w: 3, h: 0.4, fontSize: 20, bold: true, color: C.background2, valign: "middle" });
-    text(s, "Know what’s covered\nbefore you spend", { x: MX, y: 2.05, w: 5.9, h: 1.5, fontSize: 38, bold: true, color: C.background1, objectName: "Title" });
-    text(s, "A bill planner for working adults in the US. It shows what is already spoken for, what is left, and what a purchase would do to the plan.", {
-      x: MX, y: 3.75, w: 5.6, h: 1.15, fontSize: 16, color: C.accent3, lineSpacingMultiple: 1.15,
+    text(s, "Know what’s covered\nbefore you spend", { x: MX, y: 1.75, w: 6.9, h: 1.55, fontSize: 40, bold: true, color: C.background1, objectName: "Title" });
+    text(s, "A bill planner for working adults in the US. It turns a bank balance into one number, what is left after bills, everyday spending and a reserve, and answers “can I afford this?” against it.", {
+      x: MX, y: 3.55, w: 6.3, h: 1.4, fontSize: 16, color: C.accent3, lineSpacingMultiple: 1.15,
     });
-    prodLink(s, MX, 5.35, { color: C.background1, mutedColor: C.accent3, w: 5.9 });
+    prodLink(s, MX, 5.2, { color: C.background1, mutedColor: C.accent3, w: 5.9 });
+    text(s, "Open the link and press “Try sample data”: one minute, no sign-up.", { x: MX, y: 6.08, w: 6.3, h: 0.3, fontSize: 12, color: C.accent3 });
     text(s, "Business Cup 2.0  ·  Track: Money  ·  FractureTeam", { x: MX, y: 6.78, w: 6, h: 0.3, fontSize: 11, color: C.accent3 });
-    await shot(s, "landing.png", { x: 6.75, y: 1.72, w: 5.98, alt: "Covered landing page: a sample plan with $300 available to spend and a purchase check that answers $400 is $100 below the reserve", frame: HEX.dk2 });
+    await shot(s, "cover.png", { x: 8.25, y: 0.62, h: 6.26, alt: "Covered: a sample plan with $300 available to spend, and a purchase check that answers $400 is $100 below the $250 reserve while bills and everyday spending stay covered", frame: HEX.dk2 });
     s.addNotes("0:00. Covered answers one question for a working adult in the US: of the money in my account, how much is actually mine to spend? I will show the product live, then what we sell and what we have and have not proven.");
   }
 
@@ -160,19 +163,21 @@ async function build() {
     kicker(s, "THE PROBLEM");
     s.addText("Money in the bank is not money to spend", { placeholder: "title" });
     box(s, { x: MX, y: TOP, w: 5.6, h: 2.95, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
-    tag(s, "HYPOTHESIS", MX + 0.35, TOP + 0.32);
-    text(s, "“There’s money in my account, but I don’t know how much of it is already needed for bills — or what happens if I buy this now.”", {
-      x: MX + 0.35, y: TOP + 0.78, w: 4.9, h: 1.5, fontSize: 18, italic: true, color: C.text1, lineSpacingMultiple: 1.12,
+    text(s, "Ten days to payday. $2,200 in the account. Rent, insurance and internet have not gone out yet.", {
+      x: MX + 0.35, y: TOP + 0.33, w: 4.9, h: 0.85, fontSize: 15, color: C.text2, lineSpacingMultiple: 1.15,
     });
-    text(s, "Our hypothesis. Interviews in the US segment come next.", { x: MX + 0.35, y: TOP + 2.42, w: 4.9, h: 0.3, fontSize: 12, color: C.text2 });
+    text(s, "“Can I buy this for $400?”", { x: MX + 0.35, y: TOP + 1.25, w: 4.9, h: 0.6, fontSize: 26, bold: true, color: C.text1, valign: "middle" });
+    text(s, "The balance says yes. The honest answer depends on what is already spoken for.", {
+      x: MX + 0.35, y: TOP + 2.0, w: 4.9, h: 0.7, fontSize: 15, color: C.text1, lineSpacingMultiple: 1.15,
+    });
     await iconCircle(s, fi.FiUser, MX, 5.3);
     text(s, [
-      { text: "Starting segment. ", options: { bold: true } },
-      { text: "A working adult in the US, 25–45: a regular paycheck, several fixed bills, tried a budgeting app and stopped keeping it up." },
+      { text: "Who we build for. ", options: { bold: true } },
+      { text: "A working adult in the US, 25–45: paid on a schedule, several fixed bills, tried a budgeting app and stopped keeping it up." },
     ], { x: MX + 0.8, y: 5.27, w: 4.8, h: 1.2, fontSize: 14, color: C.text1, lineSpacingMultiple: 1.15 });
 
     const x = 6.5, w = W - MX - 6.5;
-    box(s, { x, y: TOP, w, h: 4.45, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
+    box(s, { x, y: TOP, w, h: 4.65, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", x + 0.4, TOP + 0.28);
     text(s, "The pain is measured, in public data", { x: x + 0.4 + 0.72 + 0.15, y: TOP + 0.28, w: w - 1.7, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
     const facts = [
@@ -181,13 +186,13 @@ async function build() {
       ["$14.5B", "in credit card late fees charged to US cardholders in a single year", "CFPB Consumer Credit Card Market Report, 2023 (2022 data)"],
     ];
     facts.forEach((f, i) => {
-      const y = TOP + 0.78 + i * 1.2;
-      if (i > 0) s.addShape(S.line, { x: x + 0.4, y: y - 0.1, w: w - 0.8, h: 0, line: { color: C.accent3, width: 1 }, objectName: name("Divider") });
-      text(s, f[0], { x: x + 0.4, y, w: 2.0, h: 0.95, fontSize: 34, bold: true, color: C.text1, valign: "middle" });
-      text(s, f[1], { x: x + 2.15, y: y + 0.02, w: w - 2.55, h: 0.62, fontSize: 12, color: C.text1, lineSpacingMultiple: 1.1, valign: "middle" });
-      text(s, f[2], { x: x + 2.15, y: y + 0.68, w: w - 2.55, h: 0.24, fontSize: 9, color: C.text2, valign: "middle" });
+      const y = TOP + 0.8 + i * 1.27;
+      if (i > 0) s.addShape(S.line, { x: x + 0.4, y: y - 0.12, w: w - 0.8, h: 0, line: { color: C.accent3, width: 1 }, objectName: name("Divider") });
+      text(s, f[0], { x: x + 0.4, y, w: 2.0, h: 1.0, fontSize: 34, bold: true, color: C.text1, valign: "middle" });
+      text(s, f[1], { x: x + 2.15, y, w: w - 2.5, h: 0.56, fontSize: 12.5, color: C.text1, lineSpacingMultiple: 1.08 });
+      text(s, f[2], { x: x + 2.15, y: y + 0.6, w: w - 2.5, h: 0.4, fontSize: FOOT, color: C.text2 });
     });
-    s.addNotes("0:20. The person: a regular paycheck, rent, insurance, internet, a phone bill. The balance looks fine, but part of it is already promised. Three public numbers: 63% live paycheck to paycheck, 37% would not cover a $400 surprise from cash, and card issuers charged $14.5 billion in late fees in a year. So 'can I afford $400' is a real question. The quote is our hypothesis; interviews come next.");
+    s.addNotes("0:20. The person: a regular paycheck, rent, insurance, internet, a phone bill. The balance looks fine, but part of it is already promised. Three public numbers: 63% live paycheck to paycheck, 37% would not cover a $400 surprise from cash, and card issuers charged $14.5 billion in late fees in a year. So 'can I afford $400' is a real question. We have not interviewed this segment yet; that is the first step after today.");
   }
 
   // 3 — alternatives
@@ -200,10 +205,9 @@ async function build() {
     text(s, "Today’s option", { x: cols[0], y: TOP, w: widths[0], h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
     text(s, "What it already does", { x: cols[1], y: TOP, w: 2.1, h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
     tag(s, "FACT", cols[1] + 2.0, TOP + 0.01);
-    text(s, "Where Covered focuses", { x: cols[2], y: TOP, w: 2.2, h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
-    tag(s, "HYPOTHESIS", cols[2] + 2.15, TOP + 0.01);
+    text(s, "What Covered does", { x: cols[2], y: TOP, w: 3, h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
     const rows = [
-      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account and no bank login: a plan from a CSV, in your browser"],
+      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account to start: a plan from a CSV, five questions or by hand, in your browser"],
       ["PocketGuard", "$12.99 a month", "“Leftover” shows what remains after bills, goals and debt", "Not only the leftover: the answer names what a purchase would break"],
       ["Monarch", "$14.99 a month", "AI assistant, explanations and a weekly review", "Every dollar is computed by tested code; a figure the model made up never reaches you"],
       ["Spreadsheet", "free", "Whatever the template allows", "Import, suggestions and recalculation in one flow"],
@@ -216,9 +220,9 @@ async function build() {
       text(s, r[2], { x: cols[1], y, w: widths[1], h: 0.74, fontSize: 14, color: C.text2, valign: "middle" });
       text(s, r[3], { x: cols[2], y, w: widths[2], h: 0.74, fontSize: 14, bold: true, color: C.text1, valign: "middle" });
     });
-    text(s, "What is new: no sign-up, no bank login, and an answer that names what a purchase breaks.", { x: MX, y: 5.9, w: CW, h: 0.35, fontSize: 15, bold: true, color: C.accent1 });
-    text(s, "Features: YNAB, PocketGuard and Monarch help pages. Prices: list prices reported in November 2026 (PocketGuard from its own site; YNAB and Monarch from review sites).", { x: MX, y: 6.38, w: CW, h: 0.3, fontSize: 10, color: C.text2 });
-    s.addNotes("0:40. These tools are good and they already compute a leftover. People still quit them because of upkeep. What is new here: no account and no bank login, the plan is built from a CSV in the browser, and the answer to 'can I afford it' names what breaks: the reserve, everyday spending or a bill. That this is faster and clearer than the alternatives is a hypothesis we test on the same task after the hackathon.");
+    text(s, "What is new: an answer that names what a purchase breaks, and every dollar computed by tested code.", { x: MX, y: 5.88, w: CW, h: 0.35, fontSize: 15, bold: true, color: C.accent1 });
+    text(s, "Features: YNAB, PocketGuard and Monarch help pages. Prices: list prices reported in November 2026 (PocketGuard from its own site; YNAB and Monarch from review sites).", { x: MX, y: 6.36, w: CW, h: 0.3, fontSize: FOOT, color: C.text2 });
+    s.addNotes("0:40. These tools are good and they already compute a leftover. People still quit them because of upkeep. What is new here: no account to start, the plan is built in the browser, and the answer to 'can I afford it' names what breaks: the reserve, everyday spending or a bill. Whether that is faster and clearer than the alternatives is what we test on the same task after the hackathon.");
   }
 
   // 4 — product
@@ -241,27 +245,40 @@ async function build() {
     box(s, { x: MX, y: 5.25, w: 5.2, h: 1.1, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
     text(s, "$2,200 − $1,300 − $350 − $250 = $300", { x: MX + 0.3, y: 5.4, w: 4.6, h: 0.4, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
     text(s, "balance − bills − everyday spending − reserve = available", { x: MX + 0.3, y: 5.85, w: 4.6, h: 0.3, fontSize: 11, color: C.text2, valign: "middle" });
-    await shot(s, "overview.png", { x: 6.2, y: TOP + 0.1, w: W - MX - 6.2, alt: "Covered overview: $300 available to spend, upcoming bills and a purchase check" });
+    await shot(s, "plan.png", { x: 6.2, y: TOP + 0.1, w: W - MX - 6.2, radiusPx: 28, alt: "Covered overview: $300 available to spend, $1,300 of upcoming bills, $350 of everyday spending, three bills coming up and a purchase check" });
     s.addNotes("1:00 — switch to the live product here. Three ways in: a bank CSV, five questions answered in plain words, or the numbers typed by hand; whichever you pick, you confirm every bill before the plan exists. For the demo: Try sample data, continue to setup, confirm the bills (point at the savings transfer it flagged), build the plan. $2,200 in the account, $300 actually free.");
   }
 
-  // 5 — demo
+  // 5 — in the product
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "LIVE DEMO");
+    kicker(s, "IN THE PRODUCT");
     s.addText("Ask before you spend. Confirm to save", { placeholder: "title" });
-    const imgY = TOP + 0.42, imgH = 3.95;
-    text(s, "1   Check a purchase", { x: MX, y: TOP - 0.02, w: 4.5, h: 0.3, fontSize: 14, bold: true, color: C.text1 });
-    const a = await shot(s, "dlg-purchase.png", { crop: { left: 30, top: 975, width: 800, height: 655 }, x: MX, y: imgY, h: imgH, radiusPx: 24, alt: "Assistant answer: a $400 purchase leaves you $100 below your $250 reserve; bills and everyday spending are still covered" });
+    const imgY = TOP + 0.4;
+    text(s, "1   Check a purchase", { x: MX, y: TOP - 0.02, w: 3, h: 0.3, fontSize: 14, bold: true, color: C.text1 });
+    const a = await shot(s, "purchase.png", { pad: 24, x: MX, y: imgY, w: 3.0, radiusPx: 24, alt: "Assistant answer: a $400 purchase leaves you $100 below your $250 reserve; bills and everyday spending are still covered" });
+    text(s, "Real screens from the live product, with its sample data.", { x: MX, y: imgY + a.h + 0.2, w: 3.0, h: 0.45, fontSize: 11, color: C.text2 });
     const bx = MX + a.w + 0.4;
     text(s, "2   Change a bill", { x: bx, y: TOP - 0.02, w: 3, h: 0.3, fontSize: 14, bold: true, color: C.text1 });
-    const b = await shot(s, "assistant-proposal.png", { crop: { left: 1700, top: 184, width: 812, height: 1046 }, x: bx, y: imgY, h: imgH, radiusPx: 24, alt: "Assistant draft: car insurance from $150 to $180, available from $300 to $270, with a Confirm change button" });
-    const tx = bx + b.w + 0.45, tw = W - MX - tx;
-    text(s, "The right warning", { x: tx, y: imgY, w: tw, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
-    text(s, "$100 below the reserve. Bills and everyday spending stay covered. It does not say you cannot pay rent.", { x: tx, y: imgY + 0.42, w: tw, h: 1.3, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
-    text(s, "A draft, not a write", { x: tx, y: imgY + 1.95, w: tw, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
-    text(s, "Before and after, side by side. Nothing is saved until you press Confirm.", { x: tx, y: imgY + 2.37, w: tw, h: 1.0, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
-    text(s, "Screens from the product with its sample data.", { x: tx, y: imgY + imgH - 0.45, w: tw, h: 0.45, fontSize: 11, color: C.text2, valign: "bottom" });
+    const b = await shot(s, "proposal.png", { pad: 24, x: bx, y: imgY, w: 2.63, radiusPx: 24, alt: "Assistant draft: car insurance from $150 to $180, available from $300 to $270, with a Confirm change button" });
+    const tx = bx + b.w + 0.5, tw = W - MX - tx;
+    const points = [
+      ["The answer says what gives", "$100 below the reserve, while bills and everyday spending stay covered. Not a yes or a no: what the purchase would touch."],
+      ["Nothing changes until you confirm", "A bill change arrives as a draft, with before and after side by side. The plan moves only when you press Confirm."],
+      ["Every answer names its model", "The reply says which model answered, and shows exactly what was shared with it."],
+    ];
+    points.forEach((p, i) => {
+      const y = imgY + i * 1.24;
+      text(s, p[0], { x: tx, y, w: tw, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
+      text(s, p[1], { x: tx, y: y + 0.4, w: tw, h: 0.8, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
+    });
+    if (PROD_URL) {
+      box(s, { x: tx, y: 6.02, w: tw, h: 0.6, rectRadius: 0.1, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
+      text(s, [
+        { text: "Try it, no sign-up:  ", options: { color: C.text2 } },
+        { text: PROD_URL, options: { bold: true, color: C.text1, hyperlink: { url: "https://" + PROD_URL, tooltip: "Open the live product" } } },
+      ], { x: tx + 0.25, y: 6.02, w: tw - 0.5, h: 0.6, fontSize: 13, valign: "middle" });
+    }
     s.addNotes("1:40, still live. Ask: can I afford $400 this weekend? The answer is precise: $100 below the reserve, bills still covered. Then: my car insurance went up by $30. A draft with before and after appears; press Confirm, the plan moves from $300 to $270. Then update the balance to $950 and tick rent as paid: still $270, nothing counted twice. Backup: recorded video.");
   }
 
@@ -271,36 +288,36 @@ async function build() {
     kicker(s, "ONLY IN COVERED");
     s.addText("Private AI, a late-payday test, bills you lower", { placeholder: "title" });
     const cols = [
-      ["only-private.png", "AI that stays on your device", "Private mode runs our own model in the browser. Nothing is sent, it works offline, no daily limit.", "Private mode: the assistant answers on the device; caption says nothing was sent"],
-      ["only-latepay.png", "What if payday is late?", "Which bills land before a late paycheck, and how many days the plan holds.", "Stress test card: a week late, gym and phone bills land first, $27.74 of the reserve is used"],
-      ["only-lower.png", "Lower a bill yourself", "A script with your own numbers, and a due date moved past payday.", "Lower Brightwave Internet: what to try, what to say, a copy button"],
+      { file: "private.png", crop: { left: 0, top: 0, width: 764, height: 372 }, pad: 20, title: "AI that stays on your device", body: "Our own model runs in the browser. Nothing is sent, and it works offline.", alt: "Private mode: the assistant answers a purchase check on the device; the caption says nothing was sent" },
+      { file: "late-pay.png", crop: { left: 20, top: 436, width: 492, height: 640 }, pad: 0, title: "What if payday is late?", body: "Which bills land before a late paycheck, and how many days the plan holds.", alt: "Stress test, a week late: three bills land first and $227.74 of the reserve is used" },
+      { file: "lower-bill.png", crop: { left: 0, top: 868, width: 848, height: 500 }, pad: 20, title: "Lower a bill yourself", body: "What to say, with your own numbers, and a due date moved past payday.", alt: "Lower a bill: a script to read to the insurer, with a copy button" },
     ];
-    const cw = (CW - 0.6) / 3, imgH = 2.6;
+    const cw = (CW - 0.6) / 3, zone = 2.5, maxW = cw - 0.5;
     for (let i = 0; i < cols.length; i++) {
-      const x = MX + i * (cw + 0.3);
+      const c = cols[i], x = MX + i * (cw + 0.3);
       box(s, { x, y: TOP, w: cw, h: 4.05, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
-      const meta = await sharp(path.join(SHOTS, cols[i][0])).metadata();
-      const iw = imgH * (meta.width / meta.height);
-      await shot(s, cols[i][0], { x: x + (cw - iw) / 2, y: TOP + 0.25, h: imgH, radiusPx: 22, alt: cols[i][3] });
-      text(s, cols[i][1], { x: x + 0.3, y: TOP + 3.0, w: cw - 0.6, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
-      text(s, cols[i][2], { x: x + 0.3, y: TOP + 3.38, w: cw - 0.6, h: 0.6, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.1 });
+      const ratio = (c.crop.width + 2 * c.pad) / (c.crop.height + 2 * c.pad);
+      const iw = Math.min(maxW, zone * ratio), ih = iw / ratio;
+      await shot(s, c.file, { crop: c.crop, pad: c.pad, x: x + (cw - iw) / 2, y: TOP + 0.25 + (zone - ih) / 2, w: iw, radiusPx: 22, alt: c.alt });
+      text(s, c.title, { x: x + 0.3, y: TOP + 2.95, w: cw - 0.6, h: 0.35, fontSize: 16, bold: true, color: C.text1 });
+      text(s, c.body, { x: x + 0.3, y: TOP + 3.33, w: cw - 0.6, h: 0.6, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.1 });
     }
     tag(s, "FACT", MX, 6.24);
     text(s, "Rocket Money keeps 35–60% of the first year’s savings when it negotiates a bill. With Covered you keep all of it.", { x: MX + 0.85, y: 6.2, w: CW - 0.85, h: 0.36, fontSize: 13, bold: true, color: C.accent1, valign: "middle" });
-    text(s, "Source: Rocket Money help center, “Bill Negotiation savings process”, November 2026.", { x: MX, y: 6.6, w: CW, h: 0.25, fontSize: 10, color: C.text2 });
-    s.addNotes("2:30, still live. Three things only Covered does. One: private mode. Switch it on, turn off Wi-Fi, ask again: our own model answers inside the browser and the app says nothing was sent. Two: what if payday is late. A week late, the gym and the phone bill land first and you would use $28 of your reserve; the card says how many days the plan holds. Three: Lower it. A script with your own numbers and a due date moved past payday. Rocket Money keeps 35 to 60% of the first year's savings for that; here you keep all of it.");
+    text(s, "Source: Rocket Money help center, “Bill Negotiation savings process”, November 2026.", { x: MX, y: 6.58, w: CW, h: 0.27, fontSize: FOOT, color: C.text2 });
+    s.addNotes("2:30, still live. Three things only Covered does. One: private mode. Switch it on, turn off Wi-Fi, ask again: our own model answers inside the browser and the app says nothing was sent. Two: what if payday is late. A week late, three bills land first and you would use part of your reserve; the card says how many days the plan holds. Three: Lower it. A script with your own numbers and a due date moved past payday. Rocket Money keeps 35 to 60% of the first year's savings for that; here you keep all of it.");
   }
 
   // 7 — how it works
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
     kicker(s, "HOW IT WORKS · OUR OWN AI");
-    s.addText("Our own model reads you. Code does the math", { placeholder: "title" });
+    s.addText("Our own model listens. Code does the math", { placeholder: "title" });
     const flow = [
       ["You", "Ask in plain English, or by voice"],
-      ["Covered model", "Ours. Picks 1 of 4 functions"],
+      ["Covered model", "Ours. Works out what you asked"],
       ["Tested code", "Computes every dollar"],
-      ["You", "Confirm to save"],
+      ["You", "Confirm before anything changes"],
     ];
     const fw = 2.62, gap = (CW - 4 * fw) / 3;
     for (let i = 0; i < flow.length; i++) {
@@ -308,27 +325,26 @@ async function build() {
       const dark = i === 2;
       box(s, { x, y: TOP, w: fw, h: 1.2, fill: { color: dark ? C.text1 : C.background2 }, line: { color: dark ? C.text1 : C.background2, width: 0 } });
       text(s, flow[i][0], { x: x + 0.25, y: TOP + 0.2, w: fw - 0.5, h: 0.28, fontSize: 11, bold: true, charSpacing: 1, color: dark ? C.accent3 : C.text2 });
-      text(s, flow[i][1], { x: x + 0.25, y: TOP + 0.55, w: fw - 0.5, h: 0.45, fontSize: 15, bold: true, color: dark ? C.background1 : C.text1 });
+      text(s, flow[i][1], { x: x + 0.25, y: TOP + 0.55, w: fw - 0.5, h: 0.5, fontSize: 15, bold: true, color: dark ? C.background1 : C.text1 });
       if (i < flow.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + fw + (gap - 0.3) / 2, y: TOP + 0.45, w: 0.3, h: 0.3, objectName: name("Arrow") });
     }
     const cards = [
-      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 examples. Live today: ~2 ms, $0 per request."],
+      [fi.FiCpu, "Our own model", "covered-nlu-1: 254K parameters, trained by us on 7,672 synthetic examples. Live in production: about 2 ms and $0 per request."],
       [fi.FiDollarSign, "Amounts are checked", "A dollar figure in any model’s text that does not match a computed value is replaced before you see it."],
-      [fi.FiEdit3, "Drafts, not writes", "The server stores nothing. A change applies only after Confirm, and only to the plan version it was drafted for."],
+      [fi.FiEdit3, "You confirm every change", "The plan lives in your browser; we store no financial data. A change applies only after you press Confirm."],
     ];
     const cw = (CW - 0.6) / 3;
     for (let i = 0; i < cards.length; i++) {
       const x = MX + i * (cw + 0.3), y = TOP + 1.6;
-      box(s, { x, y, w: cw, h: 2.1, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
+      box(s, { x, y, w: cw, h: 2.3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
       await iconCircle(s, cards[i][0], x + 0.3, y + 0.3);
       text(s, cards[i][1], { x: x + 1.02, y: y + 0.3, w: cw - 1.3, h: 0.56, fontSize: 16, bold: true, color: C.text1, valign: "middle" });
-      text(s, cards[i][2], { x: x + 0.3, y: y + 1.05, w: cw - 0.6, h: 0.85, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
+      text(s, cards[i][2], { x: x + 0.3, y: y + 1.05, w: cw - 0.6, h: 1.1, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.15 });
     }
     text(s, [
       { text: "Who answers. ", options: { bold: true, color: C.text1 } },
-      { text: "Our model takes clear requests: a purchase check, a bill change, explaining the plan. OpenAI takes vague or unusual wording (our model under 50% sure) and the five-question setup. Every answer in the app names the model that gave it." },
-    ], { x: MX, y: 5.82, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
-    text(s, "Private by default: the CSV is parsed in the browser and the assistant is off until you agree. Private mode runs our model on your device and sends nothing. A draft with a guessed bill or an invented date is rejected.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+      { text: "Our model takes clear requests: a purchase check, a bill change, explaining the plan. OpenAI takes wording our model is under 50% sure about, and the five-question setup. Every answer in the app names the model that gave it. In private mode our model runs on your device and nothing is sent." },
+    ], { x: MX, y: 6.08, w: CW, h: 0.65, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.12 });
     s.addNotes("3:00. Covered has its own AI. We trained a small model, covered-nlu-1, 254 thousand parameters, on 7,672 examples we generated ourselves. It runs inside our own server: about two milliseconds, zero cost, no data sent to anyone. It understands the request and picks one of four functions; it also recognises bill types, which is how 'rent' finds 'Oakwood Apartments' and how it spots subscriptions. When it is less than 50% sure, OpenAI answers instead, and the app says which model replied. In both cases the money is computed by tested code and nothing is saved until you press Confirm.");
   }
 
@@ -338,18 +354,26 @@ async function build() {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "WHAT WE SELL");
     s.addText("What we sell: a plan that stays true", { placeholder: "title" });
-    const pw = 4.5;
-    box(s, { x: MX, y: TOP, w: pw, h: 4.45, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
-    tag(s, "HYPOTHESIS", MX + 0.4, TOP + 0.35);
+    const pw = 3.95;
+    box(s, { x: MX, y: TOP, w: pw, h: 4.6, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
+    text(s, "COVERED PLUS", { x: MX + 0.4, y: TOP + 0.35, w: pw - 0.8, h: 0.28, fontSize: 11, bold: true, charSpacing: 1.5, color: C.accent3 });
     text(s, [
-      { text: "$10", options: { fontSize: 66, bold: true, color: C.background1 } },
+      { text: "$10", options: { fontSize: 60, bold: true, color: C.background1 } },
       { text: "  a month", options: { fontSize: 18, color: C.accent3 } },
-    ], { x: MX + 0.4, y: TOP + 0.8, w: pw - 0.8, h: 1.15, valign: "middle" });
-    text(s, "Covered Plus: the assistant and a plan that stays current.", { x: MX + 0.4, y: TOP + 2.1, w: pw - 0.8, h: 0.75, fontSize: 15, color: C.background1, lineSpacingMultiple: 1.15 });
-    text(s, "Free: 5 assistant questions a day. The next one shows the Plus offer, and we count who takes it. Live in the product today.", { x: MX + 0.4, y: TOP + 2.85, w: pw - 0.8, h: 0.85, fontSize: 13, color: C.accent3, lineSpacingMultiple: 1.15 });
-    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99); list prices, November 2026.", { x: MX + 0.4, y: TOP + 3.82, w: pw - 0.8, h: 0.4, fontSize: 10, color: C.accent3 });
+    ], { x: MX + 0.4, y: TOP + 0.62, w: pw - 0.8, h: 1.05, valign: "middle" });
+    const plus = ["The cloud assistant, up to 60 questions a day", "A bill changed in one sentence, with a before and after", "Payday reminders and a recap of what changed"];
+    text(s, plus.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < plus.length - 1 } })), { x: MX + 0.4, y: TOP + 1.72, w: pw - 0.8, h: 1.65, fontSize: 12.5, color: C.background1, paraSpaceAfter: 4 });
+    text(s, "Free: the plan, the purchase check, private mode and 5 cloud questions a day.", { x: MX + 0.4, y: TOP + 3.3, w: pw - 0.8, h: 0.5, fontSize: 12, color: C.accent3, lineSpacingMultiple: 1.1 });
+    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99). List prices, November 2026.", { x: MX + 0.4, y: TOP + 3.88, w: pw - 0.8, h: 0.55, fontSize: FOOT, color: C.accent3 });
 
-    const rx = MX + pw + 0.55, rw = W - MX - rx;
+    const ix = MX + pw + 0.35, iw = 3.05;
+    const offer = await shot(s, "plus-offer.png", { x: ix, y: TOP, w: iw, radiusPx: 22, alt: "The Plus offer in the product: keep asking with Covered Plus, up to 60 questions a day, planned price $10 a month" });
+    text(s, [
+      { text: "Live today. ", options: { bold: true, color: C.text1 } },
+      { text: "The sixth question shows this offer and we count who takes it. Payment is not connected yet." },
+    ], { x: ix, y: TOP + offer.h + 0.2, w: iw, h: 0.9, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.12 });
+
+    const rx = ix + iw + 0.45, rw = W - MX - rx;
     text(s, "Why they come back", { x: rx, y: TOP, w: rw, h: 0.4, fontSize: 18, bold: true, color: C.text1 });
     const loop = [
       [fi.FiRefreshCw, "Every payday", "A calendar reminder brings you back: new balance, paid bills, what changed."],
@@ -357,21 +381,19 @@ async function build() {
       [fi.FiShoppingBag, "Before a purchase", "Ask first. The answer names what is affected: the reserve, everyday spending or bills."],
     ];
     for (let i = 0; i < loop.length; i++) {
-      const y = TOP + 0.7 + i * 1.12;
+      const y = TOP + 0.7 + i * 1.27;
       await iconCircle(s, loop[i][0], rx, y);
       text(s, loop[i][1], { x: rx + 0.8, y: y - 0.03, w: rw - 0.8, h: 0.32, fontSize: 16, bold: true, color: C.text1 });
-      text(s, loop[i][2], { x: rx + 0.8, y: y + 0.33, w: rw - 0.8, h: 0.6, fontSize: 14, color: C.text2, lineSpacingMultiple: 1.12 });
+      text(s, loop[i][2], { x: rx + 0.8, y: y + 0.33, w: rw - 0.8, h: 0.8, fontSize: 13, color: C.text2, lineSpacingMultiple: 1.12 });
     }
-    const tw = tag(s, "TARGET", rx, 6.14);
-    text(s, "First plan in 5 minutes, weekly update in 2. To be measured in walkthroughs.", { x: rx + tw + 0.15, y: 6.14, w: rw - tw - 0.15, h: 0.28, fontSize: 12, color: C.text2, valign: "middle" });
-    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month is a hypothesis, set below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
+    s.addNotes("3:30. What the user pays for: not charts, but not having to keep a budget by hand. $10 a month sits below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. Payment itself is not connected yet; that is the pilot. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
   }
 
   // 9 — business potential
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "BUSINESS POTENTIAL");
-    s.addText("$100M ARR: 0.9% of the segment, if they stay", { placeholder: "title" });
+    s.addText("$100M ARR is 834,000 subscribers at $10 a month", { placeholder: "title" });
 
     // scale strip
     box(s, { x: MX, y: TOP, w: CW, h: 0.8, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
@@ -380,18 +402,18 @@ async function build() {
       { text: "  subscribers × $10 × 12 = ", options: { color: C.accent3 } },
       { text: "$100M a year", options: { bold: true, color: C.background1 } },
     ], { x: MX + 0.4, y: TOP, w: 6.6, h: 0.8, fontSize: 20, valign: "middle" });
-    text(s, "About 0.9% of roughly 89 million US adults aged 25–44 (US Census Bureau estimates, 2024). Arithmetic, not a forecast.", { x: MX + 7.1, y: TOP, w: CW - 7.5, h: 0.8, fontSize: 12, color: C.accent3, valign: "middle", lineSpacingMultiple: 1.1 });
+    text(s, "About 0.9% of roughly 89 million US adults aged 25–44 (US Census Bureau estimates, 2024).", { x: MX + 7.1, y: TOP, w: CW - 7.5, h: 0.8, fontSize: 12, color: C.accent3, valign: "middle", lineSpacingMultiple: 1.1 });
 
     // LTV scenarios
     const y1 = TOP + 1.0;
     const tw = tag(s, "ESTIMATE", MX, y1);
     text(s, "LTV per subscriber = $9.38 margin a month × months they keep paying. CAC ceiling = LTV ÷ 3.", { x: MX + tw + 0.15, y: y1, w: CW - tw - 0.15, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    const sc = [["6 months", "$56", "$19"], ["12 months", "$113", "$38"], ["24 months", "$225", "$75"]];
+    const sc = [["6 months  ·  our base case", "$56", "$19"], ["12 months", "$113", "$38"], ["24 months", "$225", "$75"]];
     const cw = (CW - 0.6) / 3, y2 = y1 + 0.42, ch = 1.3;
     sc.forEach((c, i) => {
-      const x = MX + i * (cw + 0.3), mid = i === 1;
-      box(s, { x, y: y2, w: cw, h: ch, fill: { color: mid ? C.accent4 : C.background2 }, line: { color: mid ? C.accent2 : C.background2, width: mid ? 1 : 0 } });
-      text(s, "stays " + c[0], { x: x + 0.35, y: y2 + 0.13, w: cw - 0.7, h: 0.26, fontSize: 12, color: C.text2 });
+      const x = MX + i * (cw + 0.3), base = i === 0;
+      box(s, { x, y: y2, w: cw, h: ch, fill: { color: base ? C.accent4 : C.background2 }, line: { color: base ? C.accent2 : C.background2, width: base ? 1 : 0 } });
+      text(s, "stays " + c[0], { x: x + 0.35, y: y2 + 0.13, w: cw - 0.7, h: 0.26, fontSize: 12, bold: base, color: base ? C.accent1 : C.text2 });
       text(s, [
         { text: "LTV " + c[1], options: { fontSize: 28, bold: true, color: C.text1 } },
       ], { x: x + 0.35, y: y2 + 0.38, w: cw - 0.7, h: 0.5, valign: "middle" });
@@ -402,66 +424,66 @@ async function build() {
     });
 
     // facts behind the estimate
-    const y3 = y2 + ch + 0.2, h3 = 1.1, lw = (CW - 0.3) / 2;
+    const y3 = y2 + ch + 0.2, h3 = 1.16, lw = (CW - 0.3) / 2;
     box(s, { x: MX, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", MX + 0.3, y3 + 0.18);
     text(s, "We keep $9.38 of $10: − $0.59 card fee − ≤$0.03 AI", { x: MX + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s, "Stripe list price 2.9% + 30¢. AI: $0 on our own model; at most $0.03 if all 100 tasks a month went to OpenAI ($0.0003 per task, measured on gpt-6-luna).", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "Stripe list price 2.9% + 30¢. AI: $0 on our own model; at most $0.03 if all 100 tasks a month went to OpenAI ($0.0003 per task, measured on gpt-6-luna).", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.55, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     const rx = MX + lw + 0.3;
     box(s, { x: rx, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", rx + 0.3, y3 + 0.18);
     text(s, "Retention decides: 54–57% renew after month one", { x: rx + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s, "Median first renewal of monthly plans, Productivity and Utilities apps. RevenueCat, State of Subscription Apps 2026.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.5, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    text(s, "Median first renewal of monthly plans, Productivity and Utilities apps. RevenueCat, State of Subscription Apps 2026.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.55, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
 
-    text(s, "Months retained and CAC are assumptions until the pilot measures them. First channel to test: the free, no-sign-up purchase check as the entry point from search and personal-finance communities.", { x: MX, y: 6.28, w: CW, h: 0.45, fontSize: 10, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. That is arithmetic. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay: a year gives $113, which pays back if a subscriber costs under $38 to acquire. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month. That is why the product is built around payday, the moment people have a reason to return. Months retained and CAC are assumptions; the pilot measures both.");
+    text(s, "Six months is our base case because of that renewal rate. CAC is not measured yet: the first channel is the free, no-sign-up purchase check, reached from search and personal-finance communities. The pilot measures both.", { x: MX, y: 6.3, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep $9.38 a month. The AI is three cents, measured. So LTV is decided by how long people stay. The benchmark is hard: about half of monthly subscribers in comparable app categories leave after the first month, so our base case is six months: $56, which pays back if a subscriber costs under $19 to acquire. That is why the product is built around payday, the moment people have a reason to return, and why the first channel is the free purchase check. CAC and months retained are what the pilot measures.");
   }
 
   // 10 — evidence and next steps (the case allows ten slides)
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "EVIDENCE · NEXT STEP");
-    s.addText("Verified today, still a bet, and what is next", { placeholder: "title" });
+    s.addText("Proven today. Tested next", { placeholder: "title" });
     const h = 3.95, cw = (CW - 0.6) / 3;
     const cols = [
       {
-        tag: "FACT", title: "Verified", dark: false, fill: C.background1, line: C.accent3,
+        label: "FACT", title: "Proven today", dark: false, fill: C.background1, line: C.accent3,
         items: [
+          "Live in production, no sign-up needed",
           "Our own model alone: 24 of 25 assistant scenarios, 77% on unseen phrasings",
-          "With OpenAI (gpt-6-luna), twice: 25 of 25 scenarios, 34 of 34 interview answers",
-          "171 unit tests: money math, CSV import, quotas, AI guards",
-          "Live: release walkthrough passes on desktop and phone sizes",
+          "With OpenAI as backup: 25 of 25 scenarios, 34 of 34 interview answers",
+          "171 unit tests on the money math, import and AI guards; CI on every change",
         ],
       },
       {
-        tag: "HYPOTHESIS", title: "Still a bet", dark: false, fill: C.background2, line: C.background2,
+        label: "WEEKS 1–2", title: "The pain", dark: false, fill: C.background2, line: C.background2,
         items: [
-          "How common this pain is in our US segment",
-          "Willingness to pay $10 a month",
-          "Weekly return, and 2 minutes to keep the plan current",
-          "CSV export as the first step; a bank connection may be needed sooner",
+          "10–15 interviews with working adults in the US segment",
+          "The same task in Covered and in the tool they use today",
+          "A pass: they describe this moment unprompted, and finish faster in Covered",
         ],
       },
       {
-        tag: null, title: "Next", dark: true, fill: C.text1, line: C.text1,
+        label: "WEEKS 3–6", title: "The price and the habit", dark: true, fill: C.text1, line: C.text1,
         items: [
-          "Weeks 1–2: 10–15 interviews in the US segment; the same task in Covered and in the alternatives",
-          "Weeks 3–6: a pilot with accounts and sync, day-7 and day-30 retention, a real $10 offer",
-          "After the pilot: an official bank data API replaces the CSV step",
+          "A pilot with accounts and sync",
+          "A real $10 charge; the Plus offer is already counted in the product",
+          "Day-7 and day-30 return; the base case needs 6 paid months",
+          "Then: an optional bank connection through an official data API",
         ],
       },
     ];
     cols.forEach((c, i) => {
       const x = MX + i * (cw + 0.3);
       box(s, { x, y: TOP, w: cw, h, fill: { color: c.fill }, line: { color: c.line, width: c.dark ? 0 : 1 } });
-      if (c.tag) tag(s, c.tag, x + 0.35, TOP + 0.3);
-      else text(s, "PROVE THE PAIN, THEN THE PRICE", { x: x + 0.35, y: TOP + 0.32, w: cw - 0.7, h: 0.28, fontSize: 10, bold: true, charSpacing: 1, color: C.accent3 });
+      if (c.label === "FACT") tag(s, "FACT", x + 0.35, TOP + 0.3);
+      else text(s, c.label, { x: x + 0.35, y: TOP + 0.32, w: cw - 0.7, h: 0.28, fontSize: 11, bold: true, charSpacing: 1.5, color: c.dark ? C.accent3 : C.accent2 });
       text(s, c.title, { x: x + 0.35, y: TOP + 0.72, w: cw - 0.7, h: 0.4, fontSize: 20, bold: true, color: c.dark ? C.background1 : C.text1 });
-      text(s, c.items.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < c.items.length - 1 } })), { x: x + 0.35, y: TOP + 1.25, w: cw - 0.7, h: h - 1.45, fontSize: 12.5, color: c.dark ? C.background2 : C.text1, paraSpaceAfter: 7 });
+      text(s, c.items.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < c.items.length - 1 } })), { x: x + 0.35, y: TOP + 1.25, w: cw - 0.7, h: h - 1.4, fontSize: 12.5, color: c.dark ? C.background2 : C.text1, paraSpaceAfter: 6 });
     });
     text(s, "Covered: know what’s covered before you spend.", { x: MX, y: TOP + h + 0.18, w: 6.6, h: 0.42, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
     prodLink(s, MX + 6.9, TOP + h + 0.1, { color: C.text1, mutedColor: C.text2, w: CW - 6.9 });
-    s.addNotes("4:20. What is proven is the engineering: our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price. We say so plainly. 4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the alternatives. Then a four-week pilot with a real $10 offer. Then a bank connection instead of CSV. Covered: know what's covered before you spend.");
+    s.addNotes("4:20. What is proven is the engineering: the product is live, our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price, and we know how we test both. 4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the tool they use today. Then a four-week pilot with a real $10 charge. Then an optional bank connection. Covered: know what's covered before you spend.");
   }
 
   await pres.writeFile({ fileName: OUT });
