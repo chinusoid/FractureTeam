@@ -7,4 +7,4 @@ test-results/
 playwright-report/
 **/tests/e2e/screenshots/
 .DS_Store
-tests/ai-eval/last-run.json
+**/tests/ai-eval/last-run.json
