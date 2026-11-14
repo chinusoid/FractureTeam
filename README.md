@@ -128,7 +128,7 @@ npm run typecheck
 npm run build
 ```
 
-There are 141 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
+There are 152 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
 
 With the app running in another terminal:
 
