@@ -39,7 +39,7 @@ pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 in
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 pres.title = "Covered — pitch deck";
 pres.author = "FractureTeam";
-pres.subject = "Business Cup 2.0, track Money";
+pres.subject = "Business Cup 2.0, track Money. Covered: a bill planner for working adults in the US. Live: covered-fracture.vercel.app";
 const C = pres.SchemeColor;
 const S = pres.ShapeType;
 
@@ -147,7 +147,7 @@ async function build() {
     s.addImage({ data: await icon(fi.FiCheckCircle, HEX.lt2), x: MX, y: 0.62, w: 0.36, h: 0.36, objectName: "Logo mark" });
     text(s, "Covered", { x: MX + 0.48, y: 0.6, w: 3, h: 0.4, fontSize: 20, bold: true, color: C.background2, valign: "middle" });
     text(s, "Know what’s covered\nbefore you spend", { x: MX, y: 1.75, w: 6.9, h: 1.55, fontSize: 40, bold: true, color: C.background1, objectName: "Title" });
-    text(s, "A bill planner for working adults in the US. It turns a bank balance into one number, what is left after bills, everyday spending and a reserve, and answers “can I afford this?” against it.", {
+    text(s, "A bill planner for working adults in the US. It turns a bank balance into one honest number, what is left after bills, everyday spending and a reserve, and answers “can I afford this?” against it.", {
       x: MX, y: 3.55, w: 6.3, h: 1.4, fontSize: 16, color: C.accent3, lineSpacingMultiple: 1.15,
     });
     prodLink(s, MX, 5.2, { color: C.background1, mutedColor: C.accent3, w: 5.9 });
@@ -160,8 +160,8 @@ async function build() {
   // 2 — problem
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Problem" });
-    kicker(s, "THE PROBLEM");
-    s.addText("Money in the bank is not money to spend", { placeholder: "title" });
+    kicker(s, "WHO DO WE SELL TO? · THE PROBLEM");
+    s.addText("$2,200 in the bank. Only $300 is yours to spend", { placeholder: "title" });
     box(s, { x: MX, y: TOP, w: 5.6, h: 2.95, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
     text(s, "Ten days to payday. $2,200 in the account. Rent, insurance and internet have not gone out yet.", {
       x: MX + 0.35, y: TOP + 0.33, w: 4.9, h: 0.85, fontSize: 15, color: C.text2, lineSpacingMultiple: 1.15,
@@ -198,7 +198,7 @@ async function build() {
   // 3 — alternatives
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Problem" });
-    kicker(s, "ALTERNATIVES");
+    kicker(s, "IS IT NEW? · ALTERNATIVES");
     s.addText("Budget apps exist. Keeping one up is hard", { placeholder: "title" });
     const cols = [MX + 0.3, 3.2, 8.05];
     const widths = [2.4, 4.55, 4.4];
@@ -229,7 +229,7 @@ async function build() {
   pres.addSection({ title: "Product" });
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "THE PRODUCT");
+    kicker(s, "DOES IT WORK? · THE PRODUCT");
     s.addText("Start your way. Confirm. See what is yours", { placeholder: "title" });
     const steps = [
       ["CSV, five questions, or by hand", "The CSV is read in your browser. No file? Answer five questions in your own words."],
@@ -252,7 +252,7 @@ async function build() {
   // 5 — in the product
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "IN THE PRODUCT");
+    kicker(s, "DOES IT WORK? · IN THE LIVE PRODUCT");
     s.addText("Ask before you spend. Confirm to save", { placeholder: "title" });
     const imgY = TOP + 0.4;
     text(s, "1   Check a purchase", { x: MX, y: TOP - 0.02, w: 3, h: 0.3, fontSize: 14, bold: true, color: C.text1 });
@@ -285,7 +285,7 @@ async function build() {
   // 6 — only in Covered
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "ONLY IN COVERED");
+    kicker(s, "IS IT NEW? · ONLY IN COVERED");
     s.addText("Private AI, a late-payday test, bills you lower", { placeholder: "title" });
     const cols = [
       { file: "private.png", crop: { left: 0, top: 0, width: 764, height: 372 }, pad: 20, title: "AI that stays on your device", body: "Our own model runs in the browser. Nothing is sent, and it works offline.", alt: "Private mode: the assistant answers a purchase check on the device; the caption says nothing was sent" },
@@ -311,7 +311,7 @@ async function build() {
   // 7 — how it works
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-    kicker(s, "HOW IT WORKS · OUR OWN AI");
+    kicker(s, "DOES IT WORK? · OUR OWN AI");
     s.addText("Our own model listens. Code does the math", { placeholder: "title" });
     const flow = [
       ["You", "Ask in plain English, or by voice"],
@@ -352,8 +352,8 @@ async function build() {
   pres.addSection({ title: "Business" });
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
-    kicker(s, "WHAT WE SELL");
-    s.addText("What we sell: a plan that stays true", { placeholder: "title" });
+    kicker(s, "WHAT DO WE SELL?");
+    s.addText("$10 a month for a plan that stays true", { placeholder: "title" });
     const pw = 3.95;
     box(s, { x: MX, y: TOP, w: pw, h: 4.6, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
     text(s, "COVERED PLUS", { x: MX + 0.4, y: TOP + 0.35, w: pw - 0.8, h: 0.28, fontSize: 11, bold: true, charSpacing: 1.5, color: C.accent3 });
@@ -392,7 +392,7 @@ async function build() {
   // 9 — business potential
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
-    kicker(s, "BUSINESS POTENTIAL");
+    kicker(s, "WHY DOES IT MAKE MONEY?");
     s.addText("$100M ARR is 834,000 subscribers at $10 a month", { placeholder: "title" });
 
     // scale strip
@@ -481,7 +481,12 @@ async function build() {
       text(s, c.title, { x: x + 0.35, y: TOP + 0.72, w: cw - 0.7, h: 0.4, fontSize: 20, bold: true, color: c.dark ? C.background1 : C.text1 });
       text(s, c.items.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < c.items.length - 1 } })), { x: x + 0.35, y: TOP + 1.25, w: cw - 0.7, h: h - 1.4, fontSize: 12.5, color: c.dark ? C.background2 : C.text1, paraSpaceAfter: 6 });
     });
-    text(s, "Covered: know what’s covered before you spend.", { x: MX, y: TOP + h + 0.18, w: 6.6, h: 0.42, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
+    text(s, "Covered: know what’s covered before you spend.", { x: MX, y: TOP + h + 0.1, w: 6.6, h: 0.42, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
+    text(s, [
+      { text: "Proof for every number: ", options: { color: C.text2 } },
+      { text: "docs/evidence.md", options: { bold: true, color: C.text1, hyperlink: { url: "https://" + REPO + "/blob/main/docs/evidence.md", tooltip: "Every claim in this deck, with how to check it" } } },
+      { text: " in the repo", options: { color: C.text2 } },
+    ], { x: MX, y: TOP + h + 0.52, w: 6.6, h: 0.32, fontSize: 13, valign: "middle" });
     prodLink(s, MX + 6.9, TOP + h + 0.1, { color: C.text1, mutedColor: C.text2, w: CW - 6.9 });
     s.addNotes("4:20. What is proven is the engineering: the product is live, our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price, and we know how we test both. 4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the tool they use today. Then a four-week pilot with a real $10 charge. Then an optional bank connection. Covered: know what's covered before you spend.");
   }
