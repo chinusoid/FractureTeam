@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newId, today, type AppState, type Bill, type Transaction } from "./model";
+import { newId, ProposalSchema, today, type AppState, type Bill, type Transaction } from "./model";
 import {
   AssistantErrorSchema,
   AssistantResponseSchema as ContractResponseSchema,
@@ -13,17 +13,11 @@ import { scrubDescription } from "../ai/scrub";
  * The wire format is the shared contract in src/lib/schemas/assistant.ts; this file adapts it to the
  * shape the assistant UI renders. Amounts in cards are always recomputed on the device.
  */
-const proposal = z.object({
-  id: z.string().min(1),
-  stateVersion: z.number().int(),
-  billId: z.string().min(1),
-  amountCents: z.number().int().positive().max(1e12),
-});
 export const AssistantResponseSchema = z
   .object({
     kind: z.enum(["simulation", "change_proposal", "question", "answer", "setup"]),
     message: z.string().max(6000),
-    proposal: proposal.optional(),
+    proposal: ProposalSchema.optional(),
     simulation: z
       .object({
         amountCents: z.number().int().positive().max(1e12),
@@ -54,6 +48,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INVALID_REQUEST: "This request couldn’t be read. Rephrase it or use the form instead.",
   RATE_LIMITED: "Too many requests right now. Wait a minute or use the form instead.",
   QUOTA_EXCEEDED: "The assistant’s quota has been reached. Use the manual forms and try again later.",
+  QUOTA_UNAVAILABLE: "The assistant’s request limit service is unavailable. Try again shortly or use the form instead.",
   BUDGET_EXCEEDED: "Today’s assistant budget has been reached. Your plan and forms still work.",
   DAILY_BUDGET_EXCEEDED: "Today’s assistant budget has been reached. Use the form instead.",
   UPSTREAM_ERROR: "The assistant service couldn’t reply. Try again or use the form instead.",
@@ -72,7 +67,7 @@ const CONTRACT_CODE: Record<string, string> = {
   ai_disabled: "AI_DISABLED",
   rate_limited: "RATE_LIMITED",
   budget_exhausted: "BUDGET_EXCEEDED",
-  quota_unavailable: "AI_UNAVAILABLE",
+  quota_unavailable: "QUOTA_UNAVAILABLE",
   upstream_error: "UPSTREAM_ERROR",
   timeout: "TIMEOUT",
 };
@@ -194,23 +189,10 @@ export function toUiResponse(r: ContractResponse): AssistantResponse {
     };
   }
   if (r.kind === "change_proposal" && r.proposal) {
-    const p = r.proposal.payload;
-    if (p.type === "update_obligation" && p.changes.amountCents !== undefined && !p.changes.dueDate && !p.changes.name) {
-      return {
-        ...base,
-        kind: "change_proposal",
-        proposal: {
-          id: r.proposal.id,
-          stateVersion: r.proposal.baseVersion,
-          billId: p.targetId,
-          amountCents: p.changes.amountCents,
-        },
-      };
-    }
-    // Date, name and new-bill changes are made in the Bills form for now.
     return {
-      kind: "answer",
-      message: `${r.message} Open Bills to make this change and review it before saving.`,
+      ...base,
+      kind: "change_proposal",
+      proposal: { id: r.proposal.id, stateVersion: r.proposal.baseVersion, payload: r.proposal.payload },
     };
   }
   return { ...base, kind: r.kind === "question" ? "question" : "answer" };
