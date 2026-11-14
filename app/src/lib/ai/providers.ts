@@ -1,6 +1,7 @@
 /**
- * Picks the model for a request: OpenAI (default), the deterministic mock, or our own model
- * (AI_PROVIDER=local) with automatic fallback to OpenAI when it fails or is too slow.
+ * Picks the model for a request: our own Covered model (AI_PROVIDER=own, used in production),
+ * OpenAI (the default when AI_PROVIDER is unset), a self-hosted LLM (AI_PROVIDER=local) or the
+ * deterministic test model. Own and local hand a request to OpenAI when they are unsure, fail or are too slow.
  */
 import { chatCompletionsProvider } from "./chat";
 import { type ServerEnv, mockActive } from "./env";

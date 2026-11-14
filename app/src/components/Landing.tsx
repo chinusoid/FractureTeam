@@ -281,8 +281,9 @@ export function Landing() {
                 "Import a bank CSV and confirm your bills",
                 "See what’s left after bills, everyday spending and your reserve",
                 "Check a purchase with the form",
+                "Payday reminders and a recap of what changed",
                 "5 cloud assistant questions a day",
-                "Private mode: the assistant on your device, no daily limit",
+                "Private mode: our model on your device, no daily limit",
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />
@@ -304,9 +305,9 @@ export function Landing() {
             <ul>
               {[
                 "Everything in Starter",
-                "Up to 60 assistant questions a day",
-                "Change a bill in one sentence, with a before and after",
-                "Payday reminders and a recap of what changed",
+                "Up to 60 cloud assistant questions a day, instead of 5",
+                "Our model plus OpenAI for anything it is unsure about",
+                "Coming with the pilot: bank sync instead of a CSV",
               ].map((line) => (
                 <li key={line}>
                   <Icon name="check" size={13} />

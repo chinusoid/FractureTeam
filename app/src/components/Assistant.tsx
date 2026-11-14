@@ -386,7 +386,7 @@ export function Assistant({
                           {item.response.servedBy === "own"
                             ? "Answered by the Covered model, trained by our team and running on our server"
                             : item.response.servedBy === "local"
-                              ? "Answered by our fine-tuned Qwen model"
+                              ? "Answered by our self-hosted model"
                               : item.response.servedBy === "mock"
                                 ? "Answered by the test model"
                                 : "Answered by OpenAI"}

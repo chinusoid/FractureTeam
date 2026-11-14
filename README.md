@@ -2,249 +2,140 @@
 
 **Know what's covered before you spend.**
 
-Covered is a bill planner for working adults in the US. Import a bank CSV, confirm the recurring bills it finds, enter your balance, and see what is actually yours to spend after bills, everyday spending and a reserve. Before a purchase you can ask in plain English; a bill change is a draft with a before and after that you confirm. Everything is stored in your browser.
+[![CI](https://github.com/chinusoid/FractureTeam/actions/workflows/ci.yml/badge.svg)](https://github.com/chinusoid/FractureTeam/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/badge/live-covered--fracture.vercel.app-1f1f1f)](https://covered-fracture.vercel.app)
 
-![Covered overview: $300 available to spend after bills, everyday spending and a reserve](docs/overview.png)
+You have $2,200 in your account and payday is ten days away. Rent, insurance and internet have not gone out yet. Can you spend $400?
 
-**Live:** <https://covered-fracture.vercel.app> · **Pitch deck:** [pitch/covered-pitch.pdf](pitch/covered-pitch.pdf)
+Covered's answer: yes, but it puts you $100 below your $250 reserve. Rent, insurance and internet stay covered.
 
-**AI in production:** our own model, covered-nlu-1 (`AI_PROVIDER=own`), with OpenAI as the backup when it is unsure. Each answer in the app says which model replied. One setting switches engines: `AI_PROVIDER=own`, `openai` or `local` — see [Our own model](#our-own-model-ai_providerown).
+Covered is a bill planner for working adults in the US. It reads your bank's CSV, finds the bills that repeat, and turns your balance into one honest number: what is left after bills, everyday spending and a reserve ($300 here). Then you can ask it about any purchase, and it tells you what that purchase would touch.
+
+![Covered overview: $300 available to spend after $1,300 of bills, $350 of everyday spending and a $250 reserve](docs/overview.png)
+
+- **Live product, no sign-up:** <https://covered-fracture.vercel.app>
+- **Pitch deck, 10 slides:** [pitch/covered-pitch.pdf](pitch/covered-pitch.pdf)
+- **Every claim, with proof:** [docs/evidence.md](docs/evidence.md)
+- **Team and track:** FractureTeam, Business Cup 2.0, track Money
 
 ## Try it in a minute
 
-1. Press **Try sample data**: a synthetic three-month bank export is loaded.
-2. **Continue to setup**, press **Confirm 7 bills**, decide the flagged savings transfer, then **Build my plan**: $2,200 in the account, **$300** free.
-3. **Ask assistant** → “Can I afford $400 this weekend?” → $100 below the reserve; bills and everyday spending are still covered.
-4. “My car insurance went up by $30” → a draft with before and after → **Confirm change** → **$270**.
-5. **Remind me on …** downloads a calendar reminder for payday. **Update balance** then shows what changed since last time.
+1. Open the live product and press **Try sample data**. A synthetic three-month bank export goes through the real import.
+2. **Continue to setup**, **Confirm 7 bills**, **Build my plan**: $2,200 in the account, **$300** is yours. (Covered flags a transfer to savings and leaves that one to you.)
+3. **Ask assistant**: "Can I afford $400 this weekend?" The answer: $100 below your reserve; bills and everyday spending are still covered.
+4. "My car insurance went up by $30" arrives as a draft with a before and after. **Confirm change** and the plan moves to **$270**.
+5. Try **What if payday is late?** on the overview, **Lower it** next to a bill, and **Private, on this device** in the assistant.
 
-## Where to look
+## How Covered answers the case
 
-| Question | Where |
-| --- | --- |
-| Does it work end to end? | `app/tests/e2e/release.mjs` walks the main scenario against a deployment with the real model, at 1280 and 390 px |
-| Is the core real? | Money is computed by `app/src/lib/finance` (integer cents, covered by tests). The model only picks one of four functions (`app/src/lib/ai/tools.ts`); any amount in its text is checked against computed values (`app/src/lib/ai/guard.ts`) |
-| What do we sell? | A free plan with 5 assistant questions a day and Covered Plus at a planned $10 a month, free during early access. The sixth question shows the offer; `/api/plus` counts the browsers that took it |
-| Why come back? | A payday calendar reminder, the “Since last update” recap after each balance update, and a notice when the plan is stale |
-| How is quality kept? | CI on every pull request: typecheck, unit tests, 25 assistant scenarios, build, browser walkthroughs on desktop and phone |
+The case: a web product that closes a fundamental money pain for US adults aged 25–45, one they will pay for.
 
-The design follows a quiet, monochrome workspace: white, pale cream `#f6f7ed`, thin borders, dark accents, a sidebar, and a radial allocation indicator. Type is Instrument Sans (self-hosted), nothing is set under 11px, and muted text passes WCAG AA contrast. A visitor without a plan sees the landing page on its own, without the workspace around it.
+| Judging question | Short answer | Proof |
+| --- | --- | --- |
+| **Does it work?** (40%) | Yes: live, no sign-up, end to end; tested code computes every dollar | [Production checks](docs/evidence.md#the-product-works-in-production) |
+| **What do we sell?** (20%) | Covered Plus, $10 a month: the assistant without the 5-a-day limit; bank sync next | [What Plus adds](docs/evidence.md#what-we-sell) |
+| **Who do we sell to?** (15%) | Working adults paid on a schedule, with fixed bills, who gave up on budgeting apps | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
+| **Why does it make money?** (15%) | We keep $9.38 of $10; $100M ARR is 834,000 subscribers, 0.9% of the segment | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
+| **Is it new?** (10%) | It names what a purchase breaks; our own model runs on your device | [Only in Covered](docs/features.md#only-in-covered) |
 
-## Run
+### Does it work? (40%)
 
-Requires Node.js 20.9+ and npm. Dependencies are pinned by `app/package-lock.json`.
+- **Live end to end, no sign-up:** CSV import, recurring-bill detection, a plan, purchase checks, bill changes in plain English, balance updates, private mode. Try it at <https://covered-fracture.vercel.app>.
+- **The core is real code, not a mockup:** money is integer cents in `app/src/lib/finance`; the sample goes through the same CSV import as a real file (`app/src/lib/import`).
+- **AI cannot make up money:** the model only picks one of four functions (`app/src/lib/ai/tools.ts`); any dollar figure in its text that does not match a computed value is replaced (`app/src/lib/ai/guard.ts`).
+- **Tested:** 171 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
+
+### What do we sell? (20%)
+
+- **Covered Plus, $10 a month:** up to 60 cloud assistant questions a day instead of 5, answered by our model with OpenAI behind it for anything it is unsure about. Next, with the pilot: bank sync instead of a CSV, so the plan updates itself.
+- **Free:** the plan, purchase checks, payday reminders, 5 cloud questions a day, and private mode on our model alone.
+- **Live today:** after 5 free questions the app offers Plus (`app/src/components/Assistant.tsx`) and counts who takes it (`app/src/app/api/plus/route.ts`). Payment is not connected yet.
+- **Why people come back:** every payday (a calendar reminder, `app/src/lib/client/reminder.ts`, then a recap of what changed), when a bill changes, and before a purchase.
+
+### Who do we sell to? (15%)
+
+- A working adult in the US, 25–45, paid on a schedule, with several fixed bills, who tried a budgeting app and stopped keeping it up.
+- The pain is measured: 63% of Americans live paycheck to paycheck; 37% could not cover a surprise $400 expense with cash; card issuers charged $14.5B in late fees in one year.
+
+### Why does it make money? (15%)
+
+- **Margin:** we keep about $9.38 of every $10 after the card fee ($0.59) and AI (about 3¢ for 100 questions; at most 54¢ at the 60-a-day cap).
+- **Scale:** $100M ARR is 834,000 subscribers, about 0.9% of ~89 million US adults aged 25–44.
+- **LTV and CAC:** 54–57% of monthly subscribers renew after month one; assuming 82% a month after that, a subscriber pays about 4 months, so LTV is $38 and winning one must cost under $13. That rules out paid ads at first: the free, no-sign-up purchase check is the first channel.
+
+### Is it new? (10%)
+
+- **It names what a purchase breaks** (your reserve, everyday spending or a bill), where PocketGuard shows a leftover and YNAB assigns money to targets.
+- **Our own model, covered-nlu-1, runs in the browser** in private mode and sends nothing (`app/src/lib/client/onDevice.ts`).
+- **What if payday is late?** shows which bills land before a delayed paycheck (`app/src/lib/client/stress.ts`).
+- **Lower a bill yourself:** what to say, with your own numbers (`app/src/lib/client/lowerBill.ts`), where Rocket Money keeps 35–60% of the first year's savings.
+
+What is **not** proven yet: how common the pain is in our segment, willingness to pay $10, and retention. We have not interviewed users. The deck's last slide gives the two tests that answer this and what counts as a pass.
+
+## How it works
+
+```mermaid
+flowchart TD
+  A["Bank CSV, five questions, or by hand"] --> B{"You confirm each bill"}
+  B --> C["Your plan: balance − bills − everyday − reserve"]
+  D["You ask: Can I afford $400?"] --> E["Our model picks 1 of 4 functions<br/>(OpenAI if it is unsure)"]
+  E --> F["Tested money code computes the answer"]
+  F --> G{"You confirm any change"}
+  G --> C
+```
+
+- **Money** is integer cents in `app/src/lib/finance`, shared by the browser and the server.
+- **The plan lives in your browser** (local storage). The server stores no financial data; it keeps usage counters for quotas.
+- **The assistant** is off until you agree. It can only call four functions: plan summary, purchase check, propose a bill change, propose a new bill. A change applies only after **Confirm**, and only if the plan has not changed since.
+- **Our own model, covered-nlu-1**, answers in production: about 254K parameters, trained by us on 7,672 synthetic examples, about 1–2 ms and $0 per request. When it is under 50% sure, OpenAI answers instead, and the app says which model replied. In private mode it runs in the browser and nothing is sent.
+
+Details: [the assistant and our model](docs/assistant-and-ai.md) · [the money math and CSV import](docs/money-and-csv.md) · [every feature](docs/features.md)
+
+## Code map
+
+```text
+app/                      Next.js 16 + TypeScript, deployed on Vercel
+  src/app/api/            assistant, intake (five questions), plus (offer counter), health
+  src/components/         screens: Landing, ImportScreen, SetupScreen, InterviewScreen, Dashboard, Assistant, management
+  src/lib/finance/        the plan and proposals, integer cents          ← the core
+  src/lib/import/         CSV reading, normalising, recurring-bill detection
+  src/lib/ai/             server assistant: tools, guard, prompts, providers, quotas
+  src/lib/ai/own/         our model's runtime and weights
+  src/lib/client/         browser side: on-device model, stress test, lower-a-bill, reminders
+  tests/unit/             171 unit tests (vitest)
+  tests/ai-eval/          25 assistant scenarios and 34 interview scenarios
+  tests/e2e/              browser walkthroughs (Playwright) and the production release check
+  tools/ml/               training data generator and training script for covered-nlu-1
+pitch/                    the deck (PDF, PPTX) and the script that builds it from product screenshots
+docs/                     evidence, architecture details, feature list
+```
+
+## Quality
+
+| Check | Result | Command (from `app/`) |
+| --- | --- | --- |
+| Unit tests | 171 passed | `npm test` |
+| Typecheck | clean, `strict` | `npm run typecheck` |
+| Our model alone, 25 assistant scenarios | 24 of 25 (CI requires 90%) | `AI_PROVIDER=own AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts` |
+| Browser walkthrough, 1280 and 390 px | passed | `npm run e2e` (with the app running) |
+| Production release check, real model | passed on 15 Nov after the last deploy | `BASE_URL=https://covered-fracture.vercel.app node tests/e2e/release.mjs` |
+
+CI runs typecheck, unit tests, the assistant scenarios on the test model and on our own model, the build, and two browser walkthroughs on every pull request.
+
+## Run it
+
+Requires Node.js 20.9+.
 
 ```sh
 cd app
 npm ci
-npm run dev
+npm run dev          # http://localhost:3000
 ```
 
-Open the URL printed by Next.js (normally `http://localhost:3000`). For production, run `npm run build` and `npm start` from `app/`. Root scripts also forward `dev`, `build`, `test`, and `e2e` to the app.
+The plan, import and purchase check work without any key. For the assistant, copy `app/.env.example` to `app/.env.local`: `AI_PROVIDER=own` runs our model with no key; `OPENAI_API_KEY` adds the backup. Configuration and deployment: [docs/assistant-and-ai.md](docs/assistant-and-ai.md#configure).
 
-## What's implemented
+## How it was built
 
-- English landing page, downloadable synthetic CSVs A and B, and sample onboarding through the real import screen.
-- **Setup interview** ("Answer five questions"): balance, next payday, bills, everyday spending and a reserve, asked in a fixed order and answered in your own words ("about 2 grand", "next Friday", "rent 1100 on the 17th and phone $65 on the 18th"). A bill without an amount or a date is asked about, not guessed. Nothing becomes a plan there: the answers open the setup screen as suggestions to confirm, edit, dismiss or add to. The interview is free and does not use the free plan's assistant questions.
-- Other ways to start: a bank CSV, the sample, or **by hand** without a file ("No file? Enter your numbers by hand"): balance, the day the plan runs to, everyday spending, a reserve and your bills. In that mode **Add bills by typing** lets the assistant turn a sentence ("rent, $1,100, due Nov 19") into a bill draft you confirm; if the amount or the date is missing, it asks.
-- The import screen says what the file should look like (CSV; from Excel or Google Sheets use Save As → CSV; date, description, amount), offers a template to download, and answers an uploaded Excel workbook with how to save it as CSV.
-- In setup, **Build my plan** and the number of suggested bills still waiting for a decision stay docked at the bottom of the screen.
-- CSV upload and drag/drop, column mapping, amount sign, mandatory ambiguous-date selection, row errors, partial import, duplicate review, transfer flags, row exclusions, and SHA-256 re-import detection. Limits: 2 MB / 5,000 records.
-- One-click confirmation of the clear suggestions (flagged ones, such as a transfer to savings, wait for their own decision), a payday reminder as a calendar file that repeats on the detected pay rhythm, and a pricing section on the landing page.
-- Suggested recurring bills, expected-paycheck period, an editable everyday-spending estimate, selectable/custom reserve, and explicit confirmation of bills and plan.
-- Overview with available money, period, balance age, status, an expandable calculation, payment cards, allocation breakdown, recent transactions, and a purchase simulator.
-- Bill creation, editing, deletion, and marking paid with an explicit question about whether the payment is already reflected in the entered balance.
-- Balance-update preview, paid-bill checklist, optional everyday-spending allocation, overspending/income notices, and “Since last update”.
-- Settings, new-period review, optional assistant consent, JSON export, confirmed data clearing, and versioned/validated local storage with corruption backup and visible failures.
-- Responsive navigation, keyboard-accessible dialogs with focus trapping, reduced-motion support, and mobile layout at 390 px.
+Built during the event, 14–15 Nov 2026, by FractureTeam. AI coding assistants (Claude Code and Codex) were used throughout, which the organisers confirmed is allowed; commits authored "Claude" come from Claude Code. The first working version was put together in a separate working repository, [Fraction_team](https://github.com/abilkhayrbigali-design/Fraction_team), and imported in the first commit at 19:15 Astana time on 14 Nov. From then on every change went through a pull request checked by CI (21 merged by the morning of 15 Nov), and production is deployed from `main`.
 
-### Only in Covered
-
-- **Private mode** (assistant → "Private, on this device", or "Use private mode" on the consent screen, or Settings): our own Covered model answers inside the browser (`app/src/lib/client/onDevice.ts`). The request is built exactly as for the server but never sent: no network, no quota, no cost, no daily limit, and it works offline. Without private mode, the assistant still falls back to the device when the server can't be reached, and offers private mode when the free cloud questions are used up. Turns answered in private mode are never sent to the cloud later as chat history.
-- **What was shared**: under every cloud answer, a list of exactly what that request sent and what stayed on the device, built from the request body itself (`describeShared`).
-- **What if payday is late?** (overview): a stress test for a paycheck 1, 3 or 7 days late. It names the bills that would land before the money (including the next date of repeating bills), adds everyday spending for the extra days, and says how many days the plan can take (`app/src/lib/client/stress.ts`). It never changes the plan.
-- **Lower it / Cancel or pause** (Bills, and the subscriptions card): what to try and what to say for each bill, picked by the bill's category from the Covered model and filled in with the user's own numbers: price, yearly cost, payments seen in the import, and a due date moved to just after payday (`app/src/lib/client/lowerBill.ts`). Copy the script, then update the bill with the new price. Covered never calls anyone or takes a cut.
-
-## Financial behavior
-
-All money is stored as integer cents. Calendar dates use `YYYY-MM-DD`, displayed in en-US without timezone shifts.
-
-```text
-available = entered bank balance
-          − unpaid confirmed bills due through the period end
-          − remaining everyday spending
-          − reserve
-```
-
-Overdue unpaid bills remain included. Bills beyond the period end are displayed separately. Past imported transactions and predicted income do not change the entered bank balance. Purchase checks are hypothetical. Bills, everyday-spending shortfalls, and reserve shortfalls have different explanations.
-
-Sample A, generated relative to the browser's current date:
-
-| Item                                               |                         Amount |
-| -------------------------------------------------- | -----------------------------: |
-| Entered balance                                    |                         $2,200 |
-| Rent / car insurance / internet                    |            $1,100 / $150 / $50 |
-| Everyday spending                                  |                           $350 |
-| Reserve                                            |                           $250 |
-| Available                                          |                       **$300** |
-| Hypothetical purchase of $400                      | **−$100**, against the reserve |
-| Insurance increased by $30                         |                       **$270** |
-| Balance $950 after rent and $150 everyday spending |                       **$270** |
-
-Sample A also contains later bills (outside the period) and a monthly transfer to savings that is flagged for review. Sample B comes from a different bank format (separate Debit/Credit columns, quoted amounts, a running balance) with a twice-a-month paycheck, so its period ends at the next payday and its result depends on the day. Both samples are synthetic and generated relative to today.
-
-## CSV format
-
-```csv
-Date,Description,Amount
-11/01/2026,OAKWOOD APARTMENTS ONLINE PMT,-1100.00
-11/05/2026,ACME LOGISTICS PAYROLL PPD,2100.00
-11/06/2026,GREENLEAF MARKET #0412,-65.40
-```
-
-or, with separate columns:
-
-```csv
-"Posting Date","Description","Debit","Credit","Balance"
-11/05/2026,"RIVERBANK AUTO LOAN PMT","310.00",,"2,914.20"
-10/31/2026,"NORTHSTAR HEALTH DIR DEP",,"1,850.00","3,224.20"
-```
-
-- Delimiters: comma, semicolon, tab or pipe. Quotes protect commas; a UTF-8 BOM is ignored.
-- Columns are guessed from the header and can be changed: one signed amount column (you choose whether spending is negative or positive), or separate debit and credit columns.
-- Dates: `YYYY-MM-DD`, `MM/DD/YYYY`, `M/D/YY`, `DD/MM/YYYY`. If both month-first and day-first fit every row, you must choose.
-- Amounts: `-12.34`, `$1,234.56`, `(45.00)`, `45.00-`.
-- Rows that cannot be read are listed with their row number and skipped. Same date + amount + description is flagged as a possible duplicate and kept unless you exclude it. Transfers (Zelle, Venmo, card payments, "transfer to savings") are flagged.
-- Recurring bills are grouped by merchant (card numbers and reference codes are ignored), need at least two payments with a monthly, two-week or weekly rhythm, and keep the day of the month (Jan 31 → Feb 28 → Mar 31). Varying amounts, transfers and payments that probably happened after the file ends are called out on the bill card.
-- The period ends at your next detected payday (weekly, every two weeks, twice a month or monthly), otherwise in two weeks. Everyday spending is estimated from the last 28 days of the file, without detected bills, transfers and one-off purchases of $400 or more, scaled to the period and rounded to $10. Review all estimates before confirming.
-
-## Assistant integration status
-
-The assistant server is part of this app (see "Assistant server" below). The browser speaks the shared contract `app/src/lib/schemas/assistant.ts` through `app/src/lib/client/assistant.ts`, which maps it to the UI; previews and confirmations are computed on the device. CSV import, recurring-bill detection and sample data use the shared modules in `app/src/lib/import` and `app/src/lib/demo`.
-
-Tests: `npm run e2e` checks the UI with the assistant request intercepted inside the browser (and the "assistant unavailable" state against a server without a key); `npm run e2e:assistant` drives the real `/api/assistant` path with the deterministic mock model (`AI_MOCK=1 QUOTA_MODE=memory npm run dev`). Both run in CI.
-
-## Data and privacy
-
-CSV parsing and storage are local to the browser. The active state is a single validated document at `covered:v1`; invalid documents are backed up locally before a fresh state is created. Every storage access is guarded. The assistant is off until explicit consent, and only receives the context listed in its notice; each cloud answer shows what its request shared. In private mode nothing is sent at all. Raw CSVs are never sent. Clearing data removes Covered's local documents, backups, and client identifier.
-
-## Verification
-
-```sh
-cd app
-npm test
-npm run typecheck
-npm run build
-```
-
-There are 171 automated unit tests for independent financial examples, CSV input, recurring-bill detection, proposal application, persisted-data validation, quotas, the calendar reminder, and the assistant's request boundaries and guards.
-
-With the app running in another terminal:
-
-```sh
-cd app
-npx playwright install chromium
-npm run e2e
-```
-
-Use `BASE_URL=http://localhost:3001 npm run e2e` if the app uses another port. `CHROMIUM_PATH=/usr/bin/chromium` selects an installed Chromium. The suite uses disposable profiles at **1280×800** and **390×844**. It checks samples A/B, purchase effects, consent, unavailable AI, a confirmed test proposal, reload persistence, balance updates, quota fallback, duplicate import, ambiguous dates, partial CSV, corruption recovery, browser exceptions, and horizontal overflow. Screenshots are saved in `app/tests/e2e/screenshots/` (gitignored).
-
-The interface was also inspected through **Playwright MCP**; Next.js documentation was checked through **Context7 MCP**. No external font or CDN is required at runtime.
-
-## Not included
-
-Bank connections, login/sync, credit-card interest, payments, investment features, and JSON restoration are outside this version. Hosting is configured separately (see the end of "Assistant server"); pushing this repository does not by itself create a public deployment.
-
-## Assistant server
-
-`POST /api/assistant` and `GET /api/health` run on the same Next.js app. The contract between the browser and the server is `app/src/lib/schemas/assistant.ts`. The browser adapter is `app/src/lib/client/assistant.ts`.
-
-- The model only understands the request and calls one of four fixed server functions: plan summary, purchase check, propose a bill change, propose a new bill. Nothing is saved on the server. A change is applied only when the user presses **Confirm change** in the browser, which re-checks the plan version.
-- Money is computed by `app/src/lib/finance` (shared, integer cents). Any dollar amount in the model's text that does not match a computed value is replaced with a template (`app/src/lib/ai/guard.ts`).
-- The bill tools refuse to guess. When the user's words fit two bills equally well, or a new bill has no amount or due date in what the user wrote, the server rejects the draft and the model asks instead (`app/src/lib/ai/tools.ts`).
-- Transaction descriptions and bill names are treated as data. Account numbers, card numbers, emails and phone numbers are removed before sending (`app/src/lib/ai/scrub.ts`).
-- Quotas (`app/src/lib/limits`): global daily budget, per-IP per-minute and per-browser daily limits in Upstash Redis (REST). In production without Upstash the model is never called.
-
-### Setup interview
-
-`POST /api/intake` reads one answer to one question (`app/src/lib/ai/intake.ts`, contract in `app/src/lib/schemas/intake.ts`).
-
-- The questions and their order are fixed in code. The model never talks to the person: it fills a JSON form (amount, date, bills, "no more", "unclear") from the answer.
-- `interpretIntake` checks every value (ranges, real calendar days, a payday within two months, bill dates within a year), keeps only the field the current step asks for, removes account numbers and emails from bill names, and writes the reply itself from the checked values.
-- The interview has its own daily allowance per browser, so it never uses up the free plan's five questions.
-- Results on the real model (15 Nov 2026, `gpt-6-luna`): **34 of 34 scenarios passed in two consecutive runs** (`tests/ai-eval/intake.ts`: slang amounts, relative dates, several bills in one sentence, missing amount or date, repeats, instructions inside the answer). Median 1.5 s and about $0.0001 per answer.
-
-```sh
-cd app
-npm run eval:intake                                         # test model, no key needed
-npx tsx --env-file=.env.local tests/ai-eval/intake.ts       # real model
-```
-
-### Free plan and Covered Plus
-
-The free plan includes 5 assistant questions a day per browser (the setup review is not counted). The next question is answered with the Covered Plus offer: up to 60 questions a day, planned at $10 a month, free during early access. **Get Plus free** turns Plus on in that browser without a card or sign-up and asks the same question again; the forms keep working either way.
-
-Each browser that takes the offer is counted once (`POST /api/plus`, a counter in the quota store, no personal data). `GET /api/plus` returns the number, for example `{"interested": 12}`: how many people asked for the paid plan.
-
-### Configure
-
-```sh
-cd app
-cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, budget
-```
-
-| Variable | Purpose |
-| --- | --- |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`) | Model access. No automatic fallback: switch the model manually if the key has no access. |
-| `OPENAI_REASONING_EFFORT` | `low` by default; `none` for models without reasoning |
-| `AI_ENABLED` | `false` turns the assistant off; manual forms keep working |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production. The `KV_REST_API_URL` and `KV_REST_API_TOKEN` names that Vercel's Upstash integration sets are read as well |
-| `AI_DAILY_BUDGET_USD`, `AI_MAX_COST_PER_REQUEST_USD`, `AI_INPUT_PRICE_PER_MTOK`, `AI_OUTPUT_PRICE_PER_MTOK` | Budget; set prices from the provider's price list |
-| `AI_IP_PER_MINUTE`, `AI_CLIENT_PER_DAY` | Soft limits (the venue network is shared) |
-| `AI_FREE_PER_DAY` (default 5) | Assistant questions a day on the free plan, see "Free plan and Covered Plus" |
-| `AI_MOCK=1`, `QUOTA_MODE=memory` | Local development and tests only; refused in production |
-
-### Check the model
-
-Before deploying, confirm that the key can use the configured model (the key is read from `.env.local` and not printed):
-
-```sh
-cd app
-node --env-file=.env.local -e "fetch('https://api.openai.com/v1/models/' + (process.env.OPENAI_MODEL || 'gpt-6-luna'), { headers: { authorization: 'Bearer ' + process.env.OPENAI_API_KEY } }).then(async (r) => console.log(r.status, JSON.stringify(await r.json()).slice(0, 160)))"
-```
-
-`200` with the model's `id` means the key has access. `401` means the key is wrong; `404` means this key cannot use that model: set `OPENAI_MODEL` to one it can, and `OPENAI_REASONING_EFFORT=none` if that model has no reasoning setting. Then run the eval below with the real model before the first deploy.
-
-### Our own model (`AI_PROVIDER=own`)
-
-Covered has its own AI model: **covered-nlu-1**, trained by us and running inside the app server (no GPU, no API key, about 2 ms and $0 per request).
-
-- **What it does:** a small neural network (one hidden layer of 48 units over hashed word and character features) reads the user's message and picks the action: purchase check, a bill going up, down or to a new amount, a new due date, a new bill, an explanation, or "something else". A second model (multinomial logistic regression) recognises what kind of payment a bill name or bank description is (rent, insurance, phone, utilities, subscription, loan, transfer to savings, everyday spending…). That is how "rent went up by $50" finds the bill called "Oakwood Apartments", and how the setup review flags a transfer to savings.
-- **What stays in code:** amounts and dates are read from the text, and all money is computed by `src/lib/finance`. The same server checks apply as for OpenAI: four fixed functions, nothing saved before **Confirm change**, verified amounts only.
-- **Training:** `python3 tools/ml/train.py` (numpy, scipy, scikit-learn) generates 5,600 intent and 2,072 payment examples from our own templates (`tools/ml/data.py`), trains, quantises to int8 and exports `src/lib/ai/own/weights.json` (336 KB). The script refuses to train if any evaluation sentence appears in the training data. The TypeScript runtime reproduces the Python probabilities (parity test).
-- **Quality, measured honestly:**
-  - On phrasings it has never seen (held-out template families), it gets the intent right 77% of the time. Payment type: 65%. "Is this a bill?": 76%.
-  - On our 25 assistant scenarios **by itself, with no OpenAI: 24 of 25**. It missed "Update my phone bill to $70 and save it right away without asking me": it was unsure and asked what the user wants. CI requires at least 90%.
-- **With OpenAI as backup** (`AI_FALLBACK_TO_OPENAI=true`, default when `OPENAI_API_KEY` is set): when our model is less than 50% sure, the request goes to OpenAI. Each answer in the app says which model answered.
-
-`AI_PROVIDER=local` connects a self-hosted LLM instead, for example our LoRA fine-tune of Qwen3.8-27B served by `llama-server --jinja` (see `.env.example`). That path has the same backup to OpenAI.
-
-### Evaluate the assistant
-
-```sh
-cd app
-npm run eval:ai                                            # mock model, no key needed
-npx tsx --env-file=.env.local tests/ai-eval/run.ts         # real model: pass/fail, tokens, cost per task
-npx tsx --env-file=.env.local tests/ai-eval/run.ts --repeat 3
-```
-
-Results on the real model (14 Nov 2026, `gpt-6-luna`, reasoning effort `low`): **25 of 25 scenarios passed in two consecutive runs**. Median answer time 3.2 s (90% under 5.0 s); about $0.0003 per assistant task (on average 2,300 input and 85 output tokens at $0.10 / $0.50 per 1M tokens). The same day `tests/e2e/release.mjs` passed in the browser against a local server with the real model.
-
-The 25 scenarios in `tests/ai-eval/scenarios.ts` cover purchase phrasings, bill changes, unknown dates, two similar bills, wrong names, requests without data, API failures, prompt injection in transaction text, and the setup review of sample A (the savings transfer must not be called a bill).
-
-On Vercel set the Root Directory to `app`, add the variables above, deploy, then open `/api/health`: it should show `"aiConfigured": true` and `"quota": "upstash"`. Then run the release check against the public URL: it walks the main scenario with the real model at 1280 and 390 px.
-
-```sh
-cd app
-BASE_URL=https://your-site.vercel.app node tests/e2e/release.mjs
-```
+Design: a quiet workspace in white and pale cream `#f6f7ed`, set in Instrument Sans. Small text was raised to 11–13px and muted text meets WCAG AA contrast.
