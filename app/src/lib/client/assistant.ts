@@ -1,7 +1,18 @@
 import { z } from "zod";
-import { newId, type AppState } from "./model";
-// Provisional browser-side contract until the team's shared schema is supplied.
-// There is intentionally no mock AI endpoint or API key in this client project.
+import { newId, today, type AppState, type Bill, type Transaction } from "./model";
+import {
+  AssistantErrorSchema,
+  AssistantResponseSchema as ContractResponseSchema,
+  type AssistantRequest,
+  type AssistantResponse as ContractResponse,
+} from "../schemas/assistant";
+import { scrubDescription } from "../ai/scrub";
+
+/**
+ * Browser side of POST /api/assistant.
+ * The wire format is the shared contract in src/lib/schemas/assistant.ts; this file adapts it to the
+ * shape the assistant UI renders. Amounts in cards are always recomputed on the device.
+ */
 const proposal = z.object({
   id: z.string().min(1),
   stateVersion: z.number().int(),
@@ -10,13 +21,7 @@ const proposal = z.object({
 });
 export const AssistantResponseSchema = z
   .object({
-    kind: z.enum([
-      "simulation",
-      "change_proposal",
-      "question",
-      "answer",
-      "setup",
-    ]),
+    kind: z.enum(["simulation", "change_proposal", "question", "answer", "setup"]),
     message: z.string().max(6000),
     proposal: proposal.optional(),
     simulation: z
@@ -41,40 +46,39 @@ export const AssistantResponseSchema = z
   .refine((r) => r.kind !== "change_proposal" || !!r.proposal)
   .refine((r) => r.kind !== "simulation" || !!r.simulation);
 export type AssistantResponse = z.infer<typeof AssistantResponseSchema>;
+
 export const ERROR_MESSAGES: Record<string, string> = {
-  AI_UNAVAILABLE:
-    "The assistant isn’t connected yet. Use the purchase checker or bill forms to keep going.",
-  AI_DISABLED:
-    "The assistant is turned off. Your plan and manual forms are still available.",
-  CONSENT_REQUIRED:
-    "Review the data-sharing notice and enable the assistant before sending a message.",
-  INVALID_REQUEST:
-    "This request couldn’t be read. Rephrase it or use the form instead.",
-  RATE_LIMITED:
-    "Too many requests right now. Wait a minute or use the form instead.",
-  QUOTA_EXCEEDED:
-    "The assistant’s quota has been reached. Use the manual forms and try again later.",
-  BUDGET_EXCEEDED:
-    "Today’s assistant budget has been reached. Your plan and forms still work.",
-  DAILY_BUDGET_EXCEEDED:
-    "Today’s assistant budget has been reached. Use the form instead.",
-  UPSTREAM_ERROR:
-    "The assistant service couldn’t reply. Try again or use the form instead.",
-  MODEL_UNAVAILABLE:
-    "The assistant model is unavailable. Use the manual forms while the connection is restored.",
+  AI_UNAVAILABLE: "The assistant isn’t connected yet. Use the purchase checker or bill forms to keep going.",
+  AI_DISABLED: "The assistant is turned off. Your plan and manual forms are still available.",
+  CONSENT_REQUIRED: "Review the data-sharing notice and enable the assistant before sending a message.",
+  INVALID_REQUEST: "This request couldn’t be read. Rephrase it or use the form instead.",
+  RATE_LIMITED: "Too many requests right now. Wait a minute or use the form instead.",
+  QUOTA_EXCEEDED: "The assistant’s quota has been reached. Use the manual forms and try again later.",
+  BUDGET_EXCEEDED: "Today’s assistant budget has been reached. Your plan and forms still work.",
+  DAILY_BUDGET_EXCEEDED: "Today’s assistant budget has been reached. Use the form instead.",
+  UPSTREAM_ERROR: "The assistant service couldn’t reply. Try again or use the form instead.",
+  MODEL_UNAVAILABLE: "The assistant model is unavailable. Use the manual forms while the connection is restored.",
   TIMEOUT: "The assistant took too long. Try again or use the form instead.",
-  INVALID_RESPONSE:
-    "The assistant returned an incomplete reply. Nothing was changed. Try again or use the form.",
-  INTERNAL_ERROR:
-    "The assistant couldn’t finish this request. Your data is unchanged. Use the form instead.",
+  INVALID_RESPONSE: "The assistant returned an incomplete reply. Nothing was changed. Try again or use the form.",
+  INTERNAL_ERROR: "The assistant couldn’t finish this request. Your data is unchanged. Use the form instead.",
 };
-function scrubDescription(s: string) {
-  return s
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
-    .replace(/\b\d{4,}\b/g, "[number]")
-    .replace(/https?:\/\/\S+/gi, "[link]")
-    .slice(0, 100);
-}
+
+/** Contract error codes (lower case) -> messages above. Upper-case codes are accepted as they are. */
+const CONTRACT_CODE: Record<string, string> = {
+  bad_request: "INVALID_REQUEST",
+  too_large: "INVALID_REQUEST",
+  forbidden_origin: "INVALID_REQUEST",
+  no_consent: "CONSENT_REQUIRED",
+  ai_disabled: "AI_DISABLED",
+  rate_limited: "RATE_LIMITED",
+  budget_exhausted: "BUDGET_EXCEEDED",
+  quota_unavailable: "AI_UNAVAILABLE",
+  upstream_error: "UPSTREAM_ERROR",
+  timeout: "TIMEOUT",
+};
+
+export type HistoryItem = { role: "user" | "assistant"; text: string };
+
 let memoryId = "";
 function clientId() {
   try {
@@ -88,54 +92,145 @@ function clientId() {
     return memoryId;
   }
 }
+
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const CADENCE: Record<Bill["frequency"], "monthly" | "biweekly" | "weekly" | null> = {
+  Monthly: "monthly",
+  Biweekly: "biweekly",
+  Weekly: "weekly",
+  "One-time": null,
+};
+
+function billName(name: string) {
+  return scrubDescription(name).slice(0, 60) || "Bill";
+}
+
+/** Builds the minimal context the server needs (plan section 13). The raw CSV never leaves the browser. */
+export function buildAssistantRequest(
+  state: AppState,
+  message: string,
+  mode: "setup" | "plan",
+  history: HistoryItem[] = [],
+): AssistantRequest {
+  const { plan } = state;
+  const obligations = state.bills
+    .filter((b) => b.status !== "dismissed" && b.amountCents > 0 && SAFE_ID.test(b.id))
+    .filter((b) => mode === "setup" || b.status !== "candidate")
+    .slice(0, 60)
+    .map((b) => ({
+      id: b.id,
+      name: billName(b.name),
+      amountCents: b.amountCents,
+      dueDate: b.dueDate,
+      paymentStatus: b.status === "paid" ? ("paid" as const) : ("unpaid" as const),
+      confirmationStatus: b.status === "candidate" ? ("suggested" as const) : ("confirmed" as const),
+    }));
+  const request: AssistantRequest = {
+    mode: mode === "setup" ? "setup" : "chat",
+    message: message.slice(0, 500),
+    baseVersion: state.stateVersion,
+    consent: { aiEnabled: true, policyVersion: 1 },
+    context: {
+      today: today(),
+      plan: {
+        balanceCents: plan.balanceCents,
+        balanceAsOf: plan.balanceDate,
+        startDate: plan.balanceDate,
+        endDate: plan.horizonEndDate,
+        essentialRemainingCents: plan.essentialsCents,
+        reserveTargetCents: plan.reserveCents,
+      },
+      obligations,
+      history: history.slice(-6).map((h) => ({ role: h.role, text: h.text.slice(0, 600) })),
+    },
+  };
+  if (mode === "setup") {
+    const byId = new Map(state.transactions.map((t) => [t.id, t]));
+    request.context.candidates = state.bills
+      .filter((b) => b.status === "candidate" && b.amountCents > 0 && SAFE_ID.test(b.id) && CADENCE[b.frequency])
+      .slice(0, 30)
+      .map((b) => {
+        const evidence = b.evidence.map((id) => byId.get(id)).filter((t): t is Transaction => t !== undefined);
+        const amounts = evidence.map((t) => Math.abs(t.amountCents));
+        return {
+          id: b.id,
+          displayName: billName(b.name),
+          amountCents: b.amountCents,
+          minCents: amounts.length ? Math.min(...amounts) : b.amountCents,
+          maxCents: amounts.length ? Math.max(...amounts) : b.amountCents,
+          cadence: CADENCE[b.frequency]!,
+          occurrences: Math.max(1, Math.min(500, b.evidence.length)),
+          nextDueDate: b.dueDate,
+          sampleDescriptions: [...new Set(evidence.map((t) => scrubDescription(t.description)))].slice(0, 3),
+          possibleTransfer: evidence.some((t) => t.transfer),
+        };
+      });
+  }
+  return request;
+}
+
+/** Contract response -> what the assistant UI renders. */
+export function toUiResponse(r: ContractResponse): AssistantResponse {
+  const base = { message: r.message };
+  if (r.kind === "setup_review") {
+    return {
+      ...base,
+      kind: "setup",
+      setupReview: {
+        items: (r.setupReview?.items ?? []).map((i) => ({
+          candidateId: i.candidateId,
+          name: i.displayName,
+          reason: i.isLikelyBill ? i.reason : `Probably not a bill. ${i.reason}`,
+          question: i.question ?? undefined,
+        })),
+      },
+    };
+  }
+  if (r.kind === "simulation" && r.simulation && r.simulation.kind !== "invalid") {
+    return {
+      ...base,
+      kind: "simulation",
+      simulation: { amountCents: r.simulation.amountCents, purchaseDate: r.simulation.purchaseDate },
+    };
+  }
+  if (r.kind === "change_proposal" && r.proposal) {
+    const p = r.proposal.payload;
+    if (p.type === "update_obligation" && p.changes.amountCents !== undefined && !p.changes.dueDate && !p.changes.name) {
+      return {
+        ...base,
+        kind: "change_proposal",
+        proposal: {
+          id: r.proposal.id,
+          stateVersion: r.proposal.baseVersion,
+          billId: p.targetId,
+          amountCents: p.changes.amountCents,
+        },
+      };
+    }
+    // Date, name and new-bill changes are made in the Bills form for now.
+    return {
+      kind: "answer",
+      message: `${r.message} Open Bills to make this change and review it before saving.`,
+    };
+  }
+  return { ...base, kind: r.kind === "question" ? "question" : "answer" };
+}
+
 export async function requestAssistant(
   state: AppState,
   message: string,
   mode: "setup" | "plan",
+  history: HistoryItem[] = [],
 ): Promise<AssistantResponse> {
   if (!state.aiConsent) throw new Error(ERROR_MESSAGES.CONSENT_REQUIRED);
   const controller = new AbortController(),
-    timer = setTimeout(() => controller.abort(), 25000);
+    timer = setTimeout(() => controller.abort(), 28000);
   try {
     const response = await fetch("/api/assistant", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-client-id": clientId(),
-      },
+      headers: { "content-type": "application/json", "x-client-id": clientId() },
       signal: controller.signal,
-      body: JSON.stringify({
-        mode,
-        message,
-        consent: true,
-        stateVersion: state.stateVersion,
-        context: {
-          plan: state.plan,
-          bills: state.bills
-            .filter((b) => b.status === "confirmed" || b.status === "candidate")
-            .slice(0, 50)
-            .map((b) => ({
-              ...b,
-              name: scrubDescription(b.name),
-              note: "",
-              evidence: b.evidence.slice(0, 3),
-            })),
-          transactions:
-            mode === "setup"
-              ? state.transactions
-                  .filter((t) =>
-                    state.bills.some((b) => b.evidence.includes(t.id)),
-                  )
-                  .slice(0, 30)
-                  .map((t) => ({
-                    id: t.id,
-                    date: t.date,
-                    amountCents: t.amountCents,
-                    description: scrubDescription(t.description),
-                  }))
-              : [],
-        },
-      }),
+      body: JSON.stringify(buildAssistantRequest(state, message, mode, history)),
     });
     if (!response.ok) {
       let code =
@@ -144,25 +239,34 @@ export async function requestAssistant(
           : response.status === 429
             ? "RATE_LIMITED"
             : "UPSTREAM_ERROR";
+      let serverMessage = "";
       try {
         const body = await response.json();
-        code = body.error?.code ?? body.code ?? code;
+        const parsed = AssistantErrorSchema.safeParse(body);
+        if (parsed.success) {
+          code = CONTRACT_CODE[parsed.data.error.code] ?? code;
+          serverMessage = parsed.data.error.message;
+        } else {
+          code = body.error?.code ?? body.code ?? code;
+        }
       } catch {
         /* Non-JSON proxy response. */
       }
-      throw new Error(ERROR_MESSAGES[code] ?? ERROR_MESSAGES.UPSTREAM_ERROR);
+      const known = ERROR_MESSAGES[code];
+      throw new Error(code === "UPSTREAM_ERROR" && serverMessage ? serverMessage : (known ?? ERROR_MESSAGES.UPSTREAM_ERROR));
     }
-    if (!response.headers.get("content-type")?.includes("application/json"))
-      throw new Error(ERROR_MESSAGES.AI_UNAVAILABLE);
+    if (!response.headers.get("content-type")?.includes("application/json")) throw new Error(ERROR_MESSAGES.AI_UNAVAILABLE);
     let body: unknown;
     try {
       body = await response.json();
     } catch {
       throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
     }
-    const result = AssistantResponseSchema.safeParse(body);
-    if (!result.success) throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
-    return result.data;
+    const contract = ContractResponseSchema.safeParse(body);
+    if (!contract.success) throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
+    const ui = AssistantResponseSchema.safeParse(toUiResponse(contract.data));
+    if (!ui.success) throw new Error(ERROR_MESSAGES.INVALID_RESPONSE);
+    return ui.data;
   } catch (e) {
     if (controller.signal.aborted) throw new Error(ERROR_MESSAGES.TIMEOUT);
     if (e instanceof TypeError) throw new Error(ERROR_MESSAGES.AI_UNAVAILABLE);

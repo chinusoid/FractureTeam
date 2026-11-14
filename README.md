@@ -110,3 +110,42 @@ The interface was also inspected through **Playwright MCP**; Next.js documentati
 - Configure hosting separately; pushing this repository does not by itself create a public deployment.
 
 Bank connections, login/sync, credit-card interest, payments, investment features, and JSON restoration are outside this client version.
+
+## Assistant server
+
+`POST /api/assistant` and `GET /api/health` run on the same Next.js app. The contract between the browser and the server is `app/src/lib/schemas/assistant.ts`. The browser adapter is `app/src/lib/client/assistant.ts`.
+
+- The model only understands the request and calls one of four fixed server functions: plan summary, purchase check, propose a bill change, propose a new bill. Nothing is saved on the server. A change is applied only when the user presses **Confirm change** in the browser, which re-checks the plan version.
+- Money is computed by `app/src/lib/finance` (shared, integer cents). Any dollar amount in the model's text that does not match a computed value is replaced with a template (`app/src/lib/ai/guard.ts`).
+- Transaction descriptions and bill names are treated as data. Account numbers, card numbers, emails and phone numbers are removed before sending (`app/src/lib/ai/scrub.ts`).
+- Quotas (`app/src/lib/limits`): global daily budget, per-IP per-minute and per-browser daily limits in Upstash Redis (REST). In production without Upstash the model is never called.
+
+### Configure
+
+```sh
+cd app
+cp .env.example .env.local   # OPENAI_API_KEY, OPENAI_MODEL, prices, Upstash, budget
+```
+
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6.1-sol`) | Model access. No automatic fallback: switch the model manually if the key has no access. |
+| `OPENAI_REASONING_EFFORT` | `low` by default; `none` for models without reasoning |
+| `AI_ENABLED` | `false` turns the assistant off; manual forms keep working |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared quota storage, required in production |
+| `AI_DAILY_BUDGET_USD`, `AI_MAX_COST_PER_REQUEST_USD`, `AI_INPUT_PRICE_PER_MTOK`, `AI_OUTPUT_PRICE_PER_MTOK` | Budget; set prices from the provider's price list |
+| `AI_IP_PER_MINUTE`, `AI_CLIENT_PER_DAY` | Soft limits (the venue network is shared) |
+| `AI_MOCK=1`, `QUOTA_MODE=memory` | Local development and tests only; refused in production |
+
+### Evaluate the assistant
+
+```sh
+cd app
+npm run eval:ai                                            # mock model, no key needed
+npx tsx --env-file=.env.local tests/ai-eval/run.ts         # real model: pass/fail, tokens, cost per task
+npx tsx --env-file=.env.local tests/ai-eval/run.ts --repeat 3
+```
+
+The 25 scenarios in `tests/ai-eval/scenarios.ts` cover purchase phrasings, bill changes, unknown dates, two similar bills, wrong names, requests without data, API failures, prompt injection in transaction text, and the setup review of sample A (the savings transfer must not be called a bill).
+
+On Vercel set the Root Directory to `app`, add the variables above, deploy, then open `/api/health`: it should show `"aiConfigured": true` and `"quota": "upstash"`.
