@@ -51,6 +51,7 @@ export function BillDialog({
             amountCents: cents,
             dueDate: due,
             frequency,
+            recurrenceAnchorDay: bill?.dueDate === due && bill.frequency === frequency ? bill.recurrenceAnchorDay : undefined,
             status: bill?.status === "paid" ? "paid" : "confirmed",
             evidence: bill?.evidence ?? [],
             note,

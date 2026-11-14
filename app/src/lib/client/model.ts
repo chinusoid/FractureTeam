@@ -1,6 +1,7 @@
 // Browser model for the UI. CSV import, recurring-bill detection and sample data come from the shared
 // modules (src/lib/import, src/lib/demo); plan math mirrors src/lib/finance used by the server.
 import { z } from "zod";
+import { addMonths } from "../finance/dates";
 import { validatePayload } from "../finance/proposals";
 import { ChangeProposalSchema } from "../schemas/assistant";
 import { parseCsv as sharedParseCsv } from "../import/csv";
@@ -75,6 +76,7 @@ const BillSchema = z.object({
   amountCents: cents,
   dueDate: day,
   frequency: z.enum(["Monthly", "Biweekly", "Weekly", "One-time"]),
+  recurrenceAnchorDay: z.number().int().min(1).max(31).optional(),
   status: z.enum(["candidate", "confirmed", "dismissed", "paid"]),
   evidence: z.array(z.string()),
   note: z.string().max(1000),
@@ -207,6 +209,27 @@ export function simulatePurchase(
     ),
   };
 }
+/** Close each occurrence once and keep the original monthly day across short months. */
+function closeBills(bills: Bill[], paidIds: string[]): Bill[] {
+  const closing = bills.filter((b) => b.status === "confirmed" && paidIds.includes(b.id));
+  const next = bills.map((b) => closing.includes(b) ? { ...b, status: "paid" as const } : b);
+  for (const bill of closing) {
+    if (bill.frequency === "One-time") continue;
+    const anchor = bill.recurrenceAnchorDay ?? Number(bill.dueDate.slice(8));
+    next.push({
+      ...bill,
+      id: newId(),
+      dueDate: bill.frequency === "Monthly"
+        ? addMonths(bill.dueDate, 1, anchor)
+        : addDays(bill.dueDate, bill.frequency === "Weekly" ? 7 : 14),
+      status: "confirmed",
+      recurrenceAnchorDay: bill.frequency === "Monthly" ? anchor : undefined,
+    });
+  }
+  if (next.length > 500) throw new Error("Your bill list is full. Delete old paid bills before recording another payment.");
+  return next;
+}
+
 export function markBillPaid(
   state: AppState,
   id: string,
@@ -226,7 +249,7 @@ export function markBillPaid(
       balanceCents:
         state.plan.balanceCents - (alreadyDeducted ? 0 : bill.amountCents),
     },
-    bills: state.bills.map((b) => (b.id === id ? { ...b, status: "paid" } : b)),
+    bills: closeBills(state.bills, [id]),
   };
 }
 export function previewBalanceUpdate(
@@ -263,9 +286,7 @@ export function previewBalanceUpdate(
       balanceDate: today(),
       essentialsCents: state.plan.essentialsCents - essentialsSpentCents,
     },
-    bills: state.bills.map((b) =>
-      closed.some((c) => c.id === b.id) ? { ...b, status: "paid" } : b,
-    ),
+    bills: closeBills(state.bills, closed.map((b) => b.id)),
     lastUpdate: {
       date: today(),
       previousBalanceCents: state.plan.balanceCents,
@@ -308,6 +329,7 @@ export function previewProposal(state: AppState, proposal: Proposal) {
         ...target!,
         ...payload.changes,
         name: payload.changes.name?.trim() ?? target!.name,
+        recurrenceAnchorDay: payload.changes.dueDate ? undefined : target!.recurrenceAnchorDay,
       }
     : {
         id: "__preview__",
