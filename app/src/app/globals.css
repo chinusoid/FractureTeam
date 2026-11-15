@@ -4502,3 +4502,37 @@ details p {
   line-height: 1.35;
   color: var(--muted);
 }
+
+/* The Plus paywall and its test checkout. */
+.plus-offer .plus-price {
+  margin: 2px 0 0;
+  font-size: 15px;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 6px;
+}
+.plus-price strong {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+.checkout-lines {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.checkout-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.checkout-lines dt,
+.checkout-lines dd {
+  margin: 0;
+}
+.checkout-lines .checkout-total {
+  padding-top: 8px;
+  border-top: 1px solid var(--line, #e3e4da);
+  font-weight: 600;
+}

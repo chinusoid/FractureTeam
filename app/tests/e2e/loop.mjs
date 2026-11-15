@@ -44,7 +44,13 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   const offer = page.getByRole("dialog");
   await expect(offer).toContainText("Save and compare what-ifs");
   await expect(page.getByTestId("whatif-row")).toHaveCount(0);
-  await offer.getByRole("button", { name: "Get Plus free", exact: true }).click();
+  // The paywall names the price; the checkout is a test and says so. Nothing is saved until it is completed.
+  await expect(offer.getByTestId("plus-paywall")).toContainText("$10 a month");
+  await offer.getByRole("button", { name: "Continue to checkout", exact: true }).click();
+  await expect(offer.getByTestId("plus-checkout")).toContainText("Test mode");
+  await expect(offer.getByTestId("plus-checkout")).toContainText("nothing is charged");
+  await expect(page.getByTestId("whatif-row")).toHaveCount(0);
+  await offer.getByRole("button", { name: "Pay $10.00 (test)", exact: true }).click();
   const rows = page.getByTestId("whatif-row");
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("Sneakers, $400");
@@ -126,7 +132,9 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   await page.getByRole("button", { name: "Start next period", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Carry your plan from paycheck to paycheck");
   assert.equal((await stored()).plan.horizonEndDate, before.plan.horizonEndDate, "nothing moves before the offer is answered");
-  await page.getByRole("dialog").getByRole("button", { name: "Get Plus free", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Continue to checkout", exact: true }).click();
+  assert.equal((await stored()).plan.horizonEndDate, before.plan.horizonEndDate, "nothing moves before the checkout is completed");
+  await page.getByRole("dialog").getByRole("button", { name: "Pay $10.00 (test)", exact: true }).click();
   await expect(page.getByTestId("balance-age")).toContainText("today");
   const after = await stored();
   assert.equal(after.plan.horizonEndDate, payday);
@@ -173,11 +181,17 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   await page.goto(`${baseURL}/app`);
   await expect(page.getByTestId("plan-remainder")).toHaveText(withWeekly);
 
+  // The sample plan can jump to the day after payday, so the return can be seen in one sitting.
+  await page.getByTestId("demo-skip").click();
+  await expect(page.getByTestId("update-first")).toContainText("Payday has passed");
+  await expect(page.getByTestId("demo-skip")).toHaveCount(0);
+  await expect(page.getByTestId("plan-remainder")).toHaveCount(0);
+
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "no horizontal overflow");
   assert.deepEqual(errors, [], "no browser exceptions");
   return {
     viewport: `${width}×${height}`,
     loop: "passed",
-    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap counts bills paid before the move and at it", "a bill due twice before payday is set aside twice", "no overflow", "no browser exceptions"],
+    checks: ["paywall and test checkout before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "paywall and test checkout before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap counts bills paid before the move and at it", "a bill due twice before payday is set aside twice", "demo: skip to payday on the sample plan", "no overflow", "no browser exceptions"],
   };
 }
