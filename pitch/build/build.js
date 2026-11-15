@@ -454,7 +454,7 @@ async function build() {
           "Live in production, no sign-up needed",
           "Our own model alone: 24 of 25 test questions, 77% on new wordings",
           "With OpenAI as backup: 25 of 25 test questions, 34 of 34 setup answers",
-          "182 automated tests on the money math, import and AI guards",
+          "186 automated tests on the money math, import and AI guards",
         ],
       },
       {

@@ -4,7 +4,9 @@ import {
   computePlan,
   emptyState,
   everydayForNextPeriod,
+  markBillPaid,
   nextPayday,
+  previewBalanceUpdate,
   startNextPeriod,
   type AppState,
   type Bill,
@@ -108,6 +110,46 @@ describe("the next pay period", () => {
     // The recap of the period that ended: its dates and what was paid from it.
     expect(state.lastUpdate?.endedPeriod).toEqual({ start: NOW, end: "2026-11-25", paidCents: 130000 });
     expect(state.stateVersion).toBe(spent.stateVersion + 1);
+  });
+
+  it("the recap counts a bill marked paid earlier in the period, not only those ticked at the move", () => {
+    // Reported on 15 Nov: rent marked paid first, then the move to the next period showed "$0 of bills paid".
+    const afterRent = markBillPaid(plan(), "rent", false);
+    const { state, remainderCents } = startNextPeriod(afterRent, 290000, [], "2026-12-09", 35000, "2026-11-25");
+    expect(state.lastUpdate?.endedPeriod).toEqual({ start: NOW, end: "2026-11-25", paidCents: 110000 });
+    expect(state.lastUpdate?.closedBills).toEqual([]);
+    // The number itself was always right: insurance and internet are still owed, rent repeats on Dec 21.
+    expect(remainderCents).toBe(290000 - 15000 - 5000 - 35000 - 25000);
+  });
+
+  it("adds up bills paid on the bills page, with a balance update and at the move, from the day the period began", () => {
+    const began = { ...plan(), plan: { ...plan().plan, balanceDate: "2026-11-11", periodStartDate: "2026-11-11", periodPaidCents: 0 } };
+    const afterRent = markBillPaid(began, "rent", true);
+    expect(afterRent.plan.periodPaidCents).toBe(110000);
+    // A balance update moves the balance date; the period still began on Nov 11.
+    const afterUpdate = previewBalanceUpdate(afterRent, 90000, ["insurance"], true).state;
+    expect(afterUpdate.plan).toMatchObject({ periodStartDate: "2026-11-11", periodPaidCents: 125000 });
+    const { state } = startNextPeriod(afterUpdate, 290000, ["internet"], "2026-12-09", 35000, "2026-11-25");
+    expect(state.lastUpdate?.endedPeriod).toEqual({ start: "2026-11-11", end: "2026-11-25", paidCents: 130000 });
+    expect(state.lastUpdate?.closedBills).toEqual(["Internet"]);
+    // The new period starts its own count.
+    expect(state.plan).toMatchObject({ periodStartDate: "2026-11-25", periodPaidCents: 0 });
+    expect(AppStateSchema.safeParse(state).success).toBe(true);
+  });
+
+  it("a plan saved before the count existed reports the bills already marked paid, once", () => {
+    const paidRent = { ...plan(), bills: plan().bills.map((b) => (b.id === "rent" ? { ...b, status: "paid" as const } : b)) };
+    const first = startNextPeriod(paidRent, 290000, ["insurance"], "2026-12-09", 35000, "2026-11-25").state;
+    expect(first.lastUpdate?.endedPeriod?.paidCents).toBe(125000);
+    // A plan that moved to a new period before the count existed: bills closed in the earlier period stay out.
+    const moved = { ...first, plan: { ...first.plan, periodStartDate: undefined, periodPaidCents: undefined } };
+    const second = startNextPeriod(moved, 300000, ["internet"], "2026-12-23", 35000, "2026-12-09").state;
+    expect(second.lastUpdate?.endedPeriod).toEqual({ start: "2026-11-25", end: "2026-12-09", paidCents: 5000 });
+  });
+
+  it("a paycheck that comes early ends the period that day, so the recap does not run into the new period", () => {
+    const { state } = startNextPeriod(plan(), 290000, [], "2026-12-04", 35000, "2026-11-20");
+    expect(state.lastUpdate?.endedPeriod).toEqual({ start: NOW, end: "2026-11-20", paidCents: 0 });
   });
 
   it("an unpaid bill stays owed in the new period", () => {

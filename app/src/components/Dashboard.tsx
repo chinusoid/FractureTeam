@@ -633,19 +633,26 @@ export function Dashboard() {
               {state.lastUpdate.newPeriod && (
                 <p data-testid="period-recap">
                   {state.lastUpdate.endedPeriod
-                    ? `Your last period, ${dateLabel(state.lastUpdate.endedPeriod.start)} – ${dateLabel(state.lastUpdate.endedPeriod.end)}: ${money(state.lastUpdate.endedPeriod.paidCents)} of bills paid. `
+                    ? `Your last period, ${
+                        state.lastUpdate.endedPeriod.start === state.lastUpdate.endedPeriod.end
+                          ? dateLabel(state.lastUpdate.endedPeriod.end)
+                          : `${dateLabel(state.lastUpdate.endedPeriod.start)} – ${dateLabel(state.lastUpdate.endedPeriod.end)}`
+                      }: ${money(state.lastUpdate.endedPeriod.paidCents)} of bills paid. `
                     : ""}
                   A new period started {dateLabel(state.lastUpdate.date)} with {money(state.lastUpdate.newBalanceCents)}
                   {" "}(was {money(state.lastUpdate.previousBalanceCents)}). Your bills, reserve and settings carried over.
                 </p>
               )}
-              <p>
-                {state.lastUpdate.closedBills.length
-                  ? `${state.lastUpdate.closedBills.join(", ")} marked paid.`
-                  : state.lastUpdate.newPeriod
-                    ? "No bills were marked paid."
-                    : "Balance refreshed."}
-              </p>
+              {state.lastUpdate.closedBills.length > 0 ? (
+                <p>
+                  {state.lastUpdate.closedBills.join(", ")} marked paid
+                  {state.lastUpdate.newPeriod ? " with this update" : ""}.
+                </p>
+              ) : !state.lastUpdate.newPeriod ? (
+                <p>Balance refreshed.</p>
+              ) : !state.lastUpdate.endedPeriod?.paidCents ? (
+                <p>No bills were marked paid.</p>
+              ) : null}
               {!state.lastUpdate.newPeriod && (
                 <p>
                   {money(state.lastUpdate.essentialsSpentCents)} of everyday

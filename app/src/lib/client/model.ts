@@ -98,6 +98,10 @@ export const AppStateSchema = z.object({
       essentialsCents: cents,
       /** Everyday spending planned for a whole period; the next period starts from it. */
       everydayPerPeriodCents: cents.optional(),
+      /** The first day of this pay period. Absent in plans saved before it was recorded. */
+      periodStartDate: day.optional(),
+      /** Bills marked paid so far in this pay period, however they were marked: the period's recap reports it. */
+      periodPaidCents: cents.optional(),
       reserveCents: cents,
       confirmed: z.boolean(),
     })
@@ -120,7 +124,7 @@ export const AppStateSchema = z.object({
       excessCents: cents,
       /** True when this update started a new pay period. */
       newPeriod: z.boolean().optional(),
-      /** The period that ended, for its recap: its dates and what was paid from it in this update. */
+      /** The period that ended, for its recap: its dates and every bill marked paid during it. */
       endedPeriod: z.object({ start: day, end: day, paidCents: cents }).optional(),
     })
     .nullable(),
@@ -246,6 +250,31 @@ function closeBills(bills: Bill[], paidIds: string[]): Bill[] {
   return next;
 }
 
+/**
+ * Where this pay period stands: its first day, and the bills marked paid in it so far.
+ * A plan saved before these were recorded falls back to what it still holds: the paid bills on file
+ * (those due since the last move to a new period, when there was one) and the last known start.
+ */
+export function periodSoFar(state: AppState): { start: string; paidCents: number } {
+  const { plan, lastUpdate } = state;
+  const lastMove = lastUpdate?.newPeriod ? lastUpdate.date : null;
+  const paidOnFile = () =>
+    state.bills
+      .filter((b) => b.status === "paid" && (!lastMove || b.dueDate >= lastMove))
+      .reduce((n, b) => n + b.amountCents, 0);
+  return {
+    start: plan.periodStartDate ?? lastMove ?? plan.balanceDate,
+    paidCents: plan.periodPaidCents ?? paidOnFile(),
+  };
+}
+/** The period's running count after these bills are marked paid. Call it before the bills are closed. */
+function countPaid(state: AppState, paid: Bill[]) {
+  const period = periodSoFar(state);
+  return {
+    periodStartDate: period.start,
+    periodPaidCents: period.paidCents + paid.reduce((n, b) => n + b.amountCents, 0),
+  };
+}
 export function markBillPaid(
   state: AppState,
   id: string,
@@ -264,6 +293,7 @@ export function markBillPaid(
       ...state.plan,
       balanceCents:
         state.plan.balanceCents - (alreadyDeducted ? 0 : bill.amountCents),
+      ...countPaid(state, [bill]),
     },
     bills: closeBills(state.bills, [id]),
   };
@@ -301,6 +331,7 @@ export function previewBalanceUpdate(
       balanceCents: newBalanceCents,
       balanceDate: today(),
       essentialsCents: state.plan.essentialsCents - essentialsSpentCents,
+      ...countPaid(state, closed),
     },
     bills: closeBills(state.bills, closed.map((b) => b.id)),
     lastUpdate: {
@@ -331,6 +362,7 @@ export function everydayForNextPeriod(state: AppState): number {
 /**
  * A paycheck arrived: the plan moves to the next pay period. Bills, the reserve and settings carry over;
  * bills ticked as paid are closed (repeating ones get their next date); everyday spending starts again.
+ * The recap of the period that ended counts every bill marked paid during it, not only those ticked here.
  */
 export function startNextPeriod(
   state: AppState,
@@ -347,6 +379,8 @@ export function startNextPeriod(
   if (!day.safeParse(endDate).success || endDate <= now)
     throw new Error("Choose your next payday: a date after today.");
   const closed = state.bills.filter((b) => paidIds.includes(b.id) && b.status === "confirmed");
+  // The period that is ending: everything marked paid during it, plus what is ticked in this update.
+  const ended = countPaid(state, closed);
   const next: AppState = {
     ...state,
     stateVersion: state.stateVersion + 1,
@@ -357,6 +391,8 @@ export function startNextPeriod(
       horizonEndDate: endDate,
       essentialsCents: everydayCents,
       everydayPerPeriodCents: everydayCents,
+      periodStartDate: now,
+      periodPaidCents: 0,
     },
     bills: closeBills(state.bills, closed.map((b) => b.id)),
     lastUpdate: {
@@ -368,9 +404,10 @@ export function startNextPeriod(
       excessCents: 0,
       newPeriod: true,
       endedPeriod: {
-        start: state.plan.balanceDate,
-        end: state.plan.horizonEndDate,
-        paidCents: closed.reduce((n, b) => n + b.amountCents, 0),
+        start: ended.periodStartDate,
+        // A paycheck that came early ends the period on the day of the move, not on the planned payday.
+        end: state.plan.horizonEndDate < now ? state.plan.horizonEndDate : now,
+        paidCents: ended.periodPaidCents,
       },
     },
   };

@@ -654,6 +654,10 @@ export function UpdateScreen() {
                   <p>
                     Bills marked paid<strong>{nextPreview.closed.length}</strong>
                   </p>
+                  <p data-testid="ended-period-paid">
+                    Bills paid in the period that is ending
+                    <strong>{money(nextPreview.state.lastUpdate?.endedPeriod?.paidCents ?? 0)}</strong>
+                  </p>
                   <p>
                     Bills due before {dateLabel(payday)}
                     <strong>
