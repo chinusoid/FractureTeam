@@ -108,7 +108,7 @@ These are scenarios with assumptions, not forecasts: nobody has paid yet.
 | Scale | $100M ARR is **834,000** subscribers | Arithmetic at $10 a month: about 0.9% of ~89 million US adults aged 25–44. Whether that many will pay is not known |
 | Retention | About **4** paid months in the base scenario | Assumption: 55% renew after month one (RevenueCat's 54–57% for comparable monthly plans), then 82% a month |
 | LTV and CAC | LTV **$38**, so winning a subscriber must cost under **$13** | Follows from the two rows above. At 6 months it is $56 and $19; at 12 months, $113 and $38. At $9.38 a month, $13 pays back in under 2 months |
-| CAC by channel | Search and communities → the free purchase check: content cost only. Creators: paid per subscriber, capped at **$13**. Paid ads: not before the pilot | Assumption: 2% of free plans become paid, so $13 buys 50 free plans, $0.26 each. Paid clicks cost more than that, so ads wait until retention is measured |
+| CAC by channel | Search and communities → the free purchase check: content cost only. Creators: paid per subscriber, capped at **$13**. Paid ads: not before the pilot | Assumption: 2% of free plans become paid, so $13 buys 50 free plans, $0.26 each. The 2% is the median for freemium apps in RevenueCat's 2026 report (2.1% of installs pay within 35 days); ours is a web product, so it is an analogy, not a measurement. Paid clicks cost more than $0.26, so ads wait until retention is measured |
 
 The paid pilot measures CAC and months retained and replaces these assumptions.
 

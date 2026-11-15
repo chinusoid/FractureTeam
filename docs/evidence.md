@@ -76,6 +76,8 @@ The first plan is free; Covered Plus is the recurring job of keeping it true. $1
 | $0.59 card fee on $10 | Stripe list price, 2.9% + 30¢ |
 | About 3¢ of AI a month | 100 questions × $0.0003, the measured OpenAI cost per task; $0 when our model answers. Worst case 60 a day, all on OpenAI: 1,800 × $0.0003 = $0.54 |
 | About 4 paid months in the base scenario (an assumption, not a measurement) | 1 + 0.55 ÷ (1 − 0.82) ≈ 4.1: 55% renew after month one (RevenueCat median), then an assumed 82% a month. LTV = 4 × $9.38 ≈ $38; CAC ceiling = LTV ÷ 3 ≈ $13 |
+| 2% of free plans become paid (assumption behind CAC by channel) | RevenueCat, State of Subscription Apps 2026: freemium apps convert a median 2.1% of installs to a paid subscription within 35 days (hard paywalls 10.7%). Mobile apps, used here as an analogy for a web product |
+| $13 pays back in under 2 months | $13 ÷ $9.38 kept per month ≈ 1.4 months |
 | Competitor prices | PocketGuard's own pricing page; YNAB and Monarch list prices as reported in November 2026 |
 
 ## Not proven yet
