@@ -8,7 +8,8 @@ import path from "node:path";
 import fs from "node:fs";
 
 const [appDir, baseURL, outDir] = process.argv.slice(2);
-const require = createRequire(path.join(appDir, "package.json"));
+// A relative app directory works too: it is resolved from where the script is run.
+const require = createRequire(path.join(path.resolve(appDir), "package.json"));
 const { chromium } = require("@playwright/test");
 fs.mkdirSync(outDir, { recursive: true });
 const out = (name) => path.join(outDir, `${name}.png`);
