@@ -29,7 +29,7 @@ npx tsx --env-file=.env.local tests/ai-eval/intake.ts       # real model
 
 ## Free plan and Covered Plus
 
-Covered Plus is the recurring job: carrying the plan from paycheck to paycheck, seeing what changed, saved what-ifs, the payday reminder and recap (see [evidence](evidence.md#what-we-sell)). For the assistant, the free plan includes 5 cloud questions a day per browser (the setup review is not counted) and Plus 60; the assistant on the device has no limit. The sixth cloud question is answered with the Plus offer: $10 a month is the price being tested, free during early access. **Get Plus free** turns Plus on in that browser without a card or sign-up and asks the same question again; the forms keep working either way.
+Covered Plus is the recurring job: carrying the plan from paycheck to paycheck, seeing what changed, saved what-ifs, the payday reminder and recap (see [evidence](evidence.md#what-we-sell)). For the assistant, the free plan includes 5 cloud questions a day per browser (the setup review is not counted) and Plus 60; the assistant on the device has no limit. The sixth cloud question is answered with the paywall: $10 a month, the price being tested, then a checkout in test mode that charges nothing and asks for no card. **Pay $10.00 (test)** turns Plus on in that browser and asks the same question again; the forms keep working either way.
 
 Each browser that takes the offer is counted once (`POST /api/plus`, a counter in the quota store, no personal data). `GET /api/plus` returns the number, for example `{"interested": 12}`: how many people asked for the paid plan.
 

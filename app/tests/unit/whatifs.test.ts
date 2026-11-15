@@ -5,6 +5,7 @@ import {
   emptyState,
   everydayForNextPeriod,
   markBillPaid,
+  skipToPayday,
   nextPayday,
   previewBalanceUpdate,
   startNextPeriod,
@@ -259,5 +260,28 @@ describe("a bill paid around a balance update", () => {
     const now = markBillPaid(unticked, "insurance", false);
     expect(now.plan).toMatchObject({ balanceCents: 90000, essentialsCents: 0 });
     expect(now.lastUpdate).toEqual(unticked.lastUpdate);
+  });
+});
+
+describe("the demo control on the sample plan", () => {
+  it("moves every date back so that payday was yesterday, and changes no money", () => {
+    const sample = { ...plan(), sample: true, plan: { ...plan().plan, periodStartDate: NOW, periodPaidCents: 0 } };
+    const later = skipToPayday(sample, NOW);
+    // Payday was Nov 25, ten days ahead: eleven days pass.
+    expect(later.plan).toMatchObject({ balanceDate: "2026-11-04", periodStartDate: "2026-11-04", horizonEndDate: "2026-11-14", balanceCents: 220000, essentialsCents: 35000, reserveCents: 25000 });
+    expect(later.bills.map((b) => b.dueDate)).toEqual(["2026-11-10", "2026-11-07", "2026-11-12"]);
+    expect(computePlan(later).remainderCents).toBe(computePlan(sample).remainderCents);
+    expect(AppStateSchema.safeParse(later).success).toBe(true);
+    // The move to the next period then works as it would on the real day.
+    const { state } = startNextPeriod(later, 290000, ["rent", "insurance", "internet"], "2026-11-29", 35000, NOW);
+    expect(state.lastUpdate?.endedPeriod).toEqual({ start: "2026-11-04", end: "2026-11-14", paidCents: 130000 });
+  });
+
+  it("does nothing to a real plan, or once payday has already passed", () => {
+    const real = plan();
+    expect(skipToPayday(real, NOW)).toBe(real);
+    const sample = { ...plan(), sample: true };
+    const later = skipToPayday(sample, NOW);
+    expect(skipToPayday(later, NOW)).toBe(later);
   });
 });

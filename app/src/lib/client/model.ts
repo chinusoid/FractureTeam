@@ -462,6 +462,38 @@ export function startNextPeriod(
   };
   return { state: next, closed, remainderCents: computePlan(next).remainderCents };
 }
+/**
+ * Demo only, for the sample plan: time passes until the day after payday. Every date in the plan moves
+ * back by the same number of days, so the plan is exactly what it would be if it had been left untouched
+ * until then. Lets a visitor see the return on payday in one sitting. A real plan is never changed.
+ */
+export function skipToPayday(state: AppState, now = today()): AppState {
+  if (!state.sample || !state.plan.confirmed) return state;
+  const days = daysBetween(now, state.plan.horizonEndDate) + 1;
+  if (days <= 0) return state;
+  const back = (date: string) => addDays(date, -days);
+  return {
+    ...state,
+    stateVersion: state.stateVersion + 1,
+    plan: {
+      ...state.plan,
+      balanceDate: back(state.plan.balanceDate),
+      horizonEndDate: back(state.plan.horizonEndDate),
+      periodStartDate: state.plan.periodStartDate ? back(state.plan.periodStartDate) : undefined,
+    },
+    bills: state.bills.map((b) => ({ ...b, dueDate: back(b.dueDate) })),
+    scenarios: state.scenarios.map((s) => (s.kind === "new_bill" ? { ...s, dueDate: back(s.dueDate) } : s)),
+    lastUpdate: state.lastUpdate
+      ? {
+          ...state.lastUpdate,
+          date: back(state.lastUpdate.date),
+          endedPeriod: state.lastUpdate.endedPeriod
+            ? { ...state.lastUpdate.endedPeriod, start: back(state.lastUpdate.endedPeriod.start), end: back(state.lastUpdate.endedPeriod.end) }
+            : undefined,
+        }
+      : null,
+  };
+}
 /** The payday after `lastPayday`, at the rhythm found in the import (two weeks when none was found). */
 export function nextPayday(lastPayday: string, cadence: string | null, now = today()): string {
   const step = cadence === "weekly" ? 7 : cadence === "semimonthly" ? 15 : cadence === "monthly" ? 0 : 14;

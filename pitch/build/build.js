@@ -388,9 +388,9 @@ async function build() {
     text(s, [
       { text: "Nothing is imported again. Measured: 1 field, 3 ticks, 2 clicks, and 0.2 s of the product's own time. Not measured yet: how long people take. " },
       { text: "How we test the price. ", options: { bold: true, color: C.text1 } },
-      { text: "Carrying the plan over, or saving a what-if, shows the Plus offer, and we count who takes it. A click is interest; the proof is a real purchase in a paid pilot. Payment is not connected yet." },
+      { text: "Carrying the plan over, or saving a what-if, opens the paywall and a test checkout, and we count who completes it. That is interest; the proof is a real charge in a paid pilot." },
     ], { x: MX, y: ly + lh + 0.14, w: CW, h: 0.5, fontSize: 11.5, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import. We measured it in the product: one field, three ticks and two clicks, and the product itself answers in a fifth of a second. How long a person takes we have not measured yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
+    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import. We measured it in the product: one field, three ticks and two clicks, and the product itself answers in a fifth of a second. How long a person takes we have not measured yet. Ten dollars a month is the price we are testing: the paywall is live with a checkout in test mode, and every completed checkout is counted, but that is only interest. The proof is a real charge in a paid pilot.");
   }
 
   // 9 — business potential
@@ -439,8 +439,8 @@ async function build() {
     text(s, "About 4 paid months per subscriber", { x: rx + 1.83, y: y3 + 0.18, w: lw - 2.08, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
     text(s, "54–57% renew after month one (RevenueCat, 2026). We assume 82% a month after that: 1 + 0.55 ÷ 0.18 ≈ 4 months.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.65, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
 
-    text(s, "These are scenarios with assumptions, not forecasts: nobody has paid yet. A CAC under $13 rules out paid ads at first, so the first channel is the free, no-sign-up purchase check. The pilot measures CAC and months retained.", { x: MX, y: 6.36, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep about $9.38 a month; the AI is about three cents, measured. So LTV is decided by how long people stay, and the benchmark is hard: only 54 to 57% of monthly subscribers in comparable app categories renew after the first month. These are scenarios with assumptions, not forecasts: nobody has paid yet. The base scenario assumes 82% a month after that, about four paid months: LTV $38, so a subscriber must cost under $13 to acquire. That rules out paid ads at first, which is why the entry point is the free purchase check, with no sign-up. The pilot measures CAC and months retained.");
+    text(s, "Scenarios with assumptions, not forecasts: nobody has paid yet. CAC by channel: search and communities to the free check cost content only (if 2% of free plans turn paid, the freemium median in RevenueCat 2026, $13 buys 50 free plans); creators are paid per subscriber, capped at $13; paid ads wait for the pilot. $13 pays back in under 2 months.", { x: MX, y: 6.36, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep about $9.38 a month; the AI is about three cents, measured. So LTV is decided by how long people stay, and the benchmark is hard: only 54 to 57% of monthly subscribers in comparable app categories renew after the first month. These are scenarios with assumptions, not forecasts: nobody has paid yet. The base scenario assumes 82% a month after that, about four paid months: LTV $38, so a subscriber must cost under $13 to acquire. By channel: search and personal-finance communities lead to the free purchase check and cost us content only; if two percent of free plans become paid, which is the median for freemium apps in RevenueCat's 2026 report, thirteen dollars buys fifty free plans. Creators are paid per subscriber, capped at thirteen dollars. Paid ads wait until the pilot shows retention. At $9.38 a month, thirteen dollars pays back in under two months.");
   }
 
   // 10 — evidence and next steps (the case allows ten slides)
@@ -456,7 +456,7 @@ async function build() {
           "Live in production, no sign-up needed",
           "Our own model alone: 24 of 25 test questions, 77% on new wordings",
           "With OpenAI as backup: 25 of 25 test questions, 34 of 34 setup answers",
-          "202 automated tests on the money math, import and AI guards",
+          "204 automated tests on the money math, import and AI guards",
         ],
       },
       {

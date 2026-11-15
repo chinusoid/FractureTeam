@@ -29,7 +29,7 @@ You have $2,200 in your account and payday is ten days away. Open the [live prod
 | **3. A late paycheck** | **What if payday is late?** → **3 days** | Covered, using **$35.46** of your reserve: the savings transfer and the gym now land before the money, plus three more days of everyday spending | Which payment to move or skip if the paycheck slips, decided before it happens |
 | **4. A bill is paid** | Rent goes out. **Update balance** → **1100** → tick **Oakwood Apartments** → **Confirm update** | Still **$300**: the rent was already set aside, and nothing is counted twice | Keep spending as planned. Your number stays right after money moves, without a new import |
 
-On payday the same screen starts the next period: enter the new balance, tick what was paid, **Start next period**. Bills, reserve, settings and saved what-ifs carry over.
+**See the return without waiting ten days.** On the sample plan, press **Demo: skip to payday** under the number. Covered now says payday has passed and asks for an update first: **Update now**, enter the new balance, tick what was paid, **Start next period**. That is the paid job, so the paywall opens: **Continue to checkout**, **Pay $10.00 (test)**. Nothing is charged. Bills, reserve, settings and saved what-ifs carry over, and the overview shows a recap of the period that ended.
 
 More to try:
 
@@ -54,7 +54,7 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 - **Live end to end, no sign-up:** CSV import, recurring-bill detection, a plan, purchase checks, bill changes in plain English, balance updates, private mode. Try it at <https://covered-fracture.vercel.app>.
 - **The core is real code, not a mockup:** money is integer cents in `app/src/lib/finance`; the sample goes through the same CSV import as a real file (`app/src/lib/import`).
 - **AI cannot make up money:** the model only picks one of four functions (`app/src/lib/ai/tools.ts`); any dollar figure in its text that does not match a computed value is replaced (`app/src/lib/ai/guard.ts`).
-- **Tested:** 202 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
+- **Tested:** 204 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
 
 ### What do we sell? (20%)
 
@@ -68,7 +68,7 @@ We sell keeping the number right after every paycheck, not a number of AI questi
 | Update your balance until payday | A payday reminder and a recap of the period |
 | Get the math explained by the assistant on your device | |
 
-- **$10 a month is a price we are testing, not a proven one.** Plus features are marked in the product and free during early access. Carrying the plan to the next paycheck, or saving the first what-if, shows the offer; turning Plus on is counted (`app/src/app/api/plus/route.ts`). A click is interest. Willingness to pay is proven only by a real purchase in a paid pilot, and if the free purchase check turns out to be enough for people, the subscription model has to change.
+- **$10 a month is a price we are testing, not a proven one.** Carrying the plan to the next paycheck, or saving the first what-if, opens the paywall: the price, then a checkout. The checkout runs in test mode: nothing is charged and no card is asked for, and each completed checkout is counted (`app/src/components/Plus.tsx`, `app/src/app/api/plus/route.ts`). That is interest. Willingness to pay is proven only by a real purchase in a paid pilot, and if the free purchase check turns out to be enough for people, the subscription model has to change.
 - **Coming back takes a few fields, not a new import.** Open the reminder, enter your balance, tick what was paid, see the new number. Bills, the reserve and settings carry over to the next pay period (`startNextPeriod` in `app/src/lib/client/model.ts`), and the overview then shows a recap of the period that ended. You import once; coming back never needs a file. What we measured is below.
 - **An old balance is not shown as today's answer.** The overview always says how old the balance is. After a week, or once payday has passed, the overview holds back every figure computed from it and asks for the update first (`app/src/components/Dashboard.tsx`).
 - **What-ifs stay true.** A saved what-if is re-evaluated against the plan every time it changes (`app/src/lib/client/scenarios.ts`).
@@ -88,7 +88,7 @@ How long people take is not measured yet, so we do not quote a number of seconds
 
 1. **What a subscriber gets.** The plan carried from paycheck to paycheck (bills, reserve, settings and what-ifs), what changed since last time and why, saved what-ifs recalculated on every change, a payday reminder and a recap of the period that ended.
 2. **Why it is needed every pay period.** The number is right for one balance and one set of bills. Every paycheck changes the balance, which bills fall before the next payday and what has already been paid, so the plan has to be redone each time: 26 times a year for someone paid every two weeks. Free gets you the number once; Plus keeps it right.
-3. **How we test the price.** The offer is live where the paid job happens, and each acceptance is counted: that is interest, not proof. Proof is a paid pilot with a real $10 charge, where we watch who pays and who comes back after their next paycheck. If the free purchase check turns out to be enough for people, the model changes.
+3. **How we test the price.** The paywall is live where the paid job happens, with a checkout in test mode, and each completed checkout is counted: that is interest, not proof. Proof is a paid pilot with a real $10 charge, where we watch who pays and who comes back after their next paycheck. If the free purchase check turns out to be enough for people, the model changes.
 
 ### Who do we sell to? (15%)
 
@@ -107,9 +107,10 @@ These are scenarios with assumptions, not forecasts: nobody has paid yet.
 | Margin | We keep about **$9.38** of every $10 | Fact: Stripe's list fee ($0.59) and the measured AI cost (about 3¢ for 100 questions; at most 54¢ at the 60-a-day cap; $0 when our model answers) |
 | Scale | $100M ARR is **834,000** subscribers | Arithmetic at $10 a month: about 0.9% of ~89 million US adults aged 25–44. Whether that many will pay is not known |
 | Retention | About **4** paid months in the base scenario | Assumption: 55% renew after month one (RevenueCat's 54–57% for comparable monthly plans), then 82% a month |
-| LTV and CAC | LTV **$38**, so winning a subscriber must cost under **$13** | Follows from the two rows above. At 6 months it is $56 and $19; at 12 months, $113 and $38 |
+| LTV and CAC | LTV **$38**, so winning a subscriber must cost under **$13** | Follows from the two rows above. At 6 months it is $56 and $19; at 12 months, $113 and $38. At $9.38 a month, $13 pays back in under 2 months |
+| CAC by channel | Search and communities → the free purchase check: content cost only. Creators: paid per subscriber, capped at **$13**. Paid ads: not before the pilot | Assumption: 2% of free plans become paid, so $13 buys 50 free plans, $0.26 each. The 2% is the median for freemium apps in RevenueCat's 2026 report (2.1% of installs pay within 35 days); ours is a web product, so it is an analogy, not a measurement. Paid clicks cost more than $0.26, so ads wait until retention is measured |
 
-A CAC under $13 rules out paid ads at first, so the first channel is the free, no-sign-up purchase check. The paid pilot measures CAC and months retained and replaces these assumptions.
+The paid pilot measures CAC and months retained and replaces these assumptions.
 
 ### Is it new? (10%)
 
@@ -138,6 +139,8 @@ flowchart TD
 - **The assistant** is off until you agree. It can only call four functions: plan summary, purchase check, propose a bill change, propose a new bill. A change applies only after **Confirm**, and only if the plan has not changed since.
 - **Our own model, covered-nlu-1**, answers in production: about 254K parameters, trained by us on 7,672 synthetic examples, about 1–2 ms and $0 per request. When it is under 50% sure, OpenAI answers instead, and the app says which model replied. In private mode it runs in the browser and nothing is sent.
 
+**Built with.** Next.js 16 and React 19 in one app on Vercel, TypeScript, and zod to validate every request and the saved plan. Two outside services: OpenAI (`gpt-6-luna`) as the backup when our model is unsure, and Upstash Redis for usage counters. There is no database, no analytics and no payment provider; the plan stays in the browser's local storage. Tests run on vitest and Playwright.
+
 Details: [the assistant and our model](docs/assistant-and-ai.md) · [the money math and CSV import](docs/money-and-csv.md) · [every feature](docs/features.md)
 
 ## Code map
@@ -151,7 +154,7 @@ app/                      Next.js 16 + TypeScript, deployed on Vercel
   src/lib/ai/             server assistant: tools, guard, prompts, providers, quotas
   src/lib/ai/own/         our model's runtime and weights
   src/lib/client/         browser side: on-device model, stress test, lower-a-bill, reminders
-  tests/unit/             202 unit tests (vitest)
+  tests/unit/             204 unit tests (vitest)
   tests/ai-eval/          25 assistant scenarios and 34 interview scenarios
   tests/e2e/              browser walkthroughs (Playwright), the production release check, the timing script
   tools/ml/               training data generator and training script for covered-nlu-1
@@ -163,7 +166,7 @@ docs/                     evidence, architecture details, feature list
 
 | Check | Result | Command (from `app/`) |
 | --- | --- | --- |
-| Unit tests | 202 passed | `npm test` |
+| Unit tests | 204 passed | `npm test` |
 | Typecheck | clean, `strict` | `npm run typecheck` |
 | Our model alone, 25 assistant scenarios | 24 of 25 (CI requires 90%) | `AI_PROVIDER=own AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts` |
 | Browser walkthrough, 1280 and 390 px | passed | `npm run e2e` (with the app running) |

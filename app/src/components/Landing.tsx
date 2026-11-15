@@ -268,8 +268,8 @@ export function Landing() {
           </h2>
           <p>
             The first plan is free. Plus is for coming back, paycheck after
-            paycheck. $10 a month is the price we are testing; everything is
-            free during early access, with no card and no sign-up.
+            paycheck. $10 a month is the price we are testing: the checkout
+            runs in test mode, so nothing is charged and no card is needed.
           </p>
           <p className="small muted pricing-note">
             The cloud assistant answers 5 questions a day on Free and 60 on
@@ -301,7 +301,7 @@ export function Landing() {
             </Button>
           </article>
           <article className="price-card featured">
-            <span className="pill">Free during early access</span>
+            <span className="pill">Test-mode checkout</span>
             <h3>Covered Plus</h3>
             <p className="price">
               <strong>$10</strong>

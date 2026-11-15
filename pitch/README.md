@@ -22,12 +22,13 @@ One person, one pay period. Each step ends with the decision that person can now
 | 1:25 | A purchase | Check **$400**: "$100 below your $250 reserve; bills and everyday spending are still covered." | Buy and dip into the reserve, spend $300 instead, or wait for payday |
 | 1:45 | A late paycheck | **What if payday is late?** → **3 days**: covered, using $35.46 of the reserve; the savings transfer and the gym land before the money | Which payment to move or skip, decided before the paycheck slips |
 | 2:05 | A bill is paid | Rent goes out. **Update balance** → 1100 → tick **Oakwood Apartments** → **Confirm update**. Still $300 | Keep spending as planned: the rent was set aside, nothing is counted twice |
+| 2:25 | Payday, and the paywall | **Demo: skip to payday** (sample plan only). "Payday has passed": **Update now**, 2900, tick the bills, **Start next period**. The paywall opens: $10 a month, **Continue to checkout**, **Pay $10.00 (test)** | Keep the plan going for $10 a month, or build a new one for free |
 
-If there is time: "My car insurance went up by $30" in the assistant (a draft, **Confirm change**, $270), then **Start next period** on payday. Use a fresh browser profile: a browser that already has Plus on never shows the offer.
+If there is time: "My car insurance went up by $30" in the assistant (a draft, **Confirm change**, $270). Use a fresh browser profile: a browser that already has Plus on never shows the paywall.
 
 ## If asked about the $10
 
 - **What does a subscriber get?** The plan carried from paycheck to paycheck, what changed since last time and why, saved what-ifs that are recalculated on every change, a payday reminder and a recap of the period.
 - **Why every pay period?** The number is right for one balance and one set of bills. Each paycheck changes the balance, which bills fall before the next payday and what is already paid. Someone paid every two weeks redoes this 26 times a year. Free gives the number once; Plus keeps it right.
-- **How do you know people will pay $10?** We do not know yet. The offer is live and every acceptance is counted, but that is interest. The proof is a paid pilot with a real $10 charge, watching who pays and who returns after the next paycheck. If the free purchase check is enough for people, we change the model.
+- **How do you know people will pay $10?** We do not know yet. The paywall is live with a checkout in test mode, and every completed checkout is counted, but that is interest. The proof is a paid pilot with a real $10 charge, watching who pays and who returns after the next paycheck. If the free purchase check is enough for people, we change the model.
 - **And the revenue numbers?** Scenarios with assumptions, not forecasts. The margin ($9.38 of $10) is a fact from list prices and measured AI cost. The 4 paid months, LTV $38 and the CAC ceiling of $13 assume 55% renewal after month one and 82% a month after that. The pilot replaces those assumptions with measurements.

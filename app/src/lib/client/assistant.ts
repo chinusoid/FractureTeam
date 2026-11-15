@@ -97,7 +97,7 @@ export function plusActive(): boolean {
   }
 }
 
-/** Turns Plus on for this browser (free during early access) and tells the server one more browser asked for it. */
+/** Turns Plus on for this browser after the test checkout, and tells the server one more browser took it. */
 export async function activatePlus(): Promise<void> {
   memoryPlus = true;
   try {

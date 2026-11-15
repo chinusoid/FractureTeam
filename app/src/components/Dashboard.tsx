@@ -6,6 +6,7 @@ import {
   daysBetween,
   money,
   simulatePurchase,
+  skipToPayday,
   STALE_AFTER_DAYS,
   STATUS_LABEL,
   today,
@@ -118,7 +119,7 @@ function perDay(remainderCents: number, endDate: string): number | null {
 }
 
 export function Dashboard() {
-  const { state, navigate, openAssistant, toast } = useApp();
+  const { state, change, navigate, openAssistant, toast } = useApp();
   const plan = computePlan(state),
     p = state.plan;
   const [purchase, setPurchase] = useState(""),
@@ -303,6 +304,17 @@ export function Dashboard() {
           <Icon name="shield" size={13} />
           {state.sample ? "Sample data, built from a synthetic bank export" : "Your plan is stored in this browser"}
         </span>
+        {state.sample && p.horizonEndDate >= today() && (
+          <button
+            className="text-button demo-skip"
+            data-testid="demo-skip"
+            title="Sample plan only: moves every date back so that payday has passed, as if you came back then."
+            onClick={() => change((s) => skipToPayday(s))}
+          >
+            <Icon name="refresh" size={13} />
+            Demo: skip to payday
+          </button>
+        )}
         {p.horizonEndDate >= today() && (
           <button className="text-button reminder-button" onClick={remind}>
             <Icon name="calendar" size={13} />
