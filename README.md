@@ -1,15 +1,15 @@
 # Covered
 
-**Know what's covered before you spend.**
+**Know what you can spend until your next paycheck.**
 
 [![CI](https://github.com/chinusoid/FractureTeam/actions/workflows/ci.yml/badge.svg)](https://github.com/chinusoid/FractureTeam/actions/workflows/ci.yml)
 [![Live](https://img.shields.io/badge/live-covered--fracture.vercel.app-1f1f1f)](https://covered-fracture.vercel.app)
 
-You have $2,200 in your account and payday is ten days away. Rent, insurance and internet have not gone out yet. Can you spend $400?
+You have $2,200 in your account and payday is ten days away. Rent, insurance and internet have not gone out yet. Can you buy the $400 sneakers?
 
 Covered's answer: yes, but it puts you $100 below your $250 reserve. Rent, insurance and internet stay covered.
 
-Covered is a bill planner for working adults in the US. It reads your bank's CSV, finds the bills that repeat, and turns your balance into one honest number: what is left after bills, everyday spending and a reserve ($300 here). Then you can ask it about any purchase, and it tells you what that purchase would touch.
+Covered shows working adults in the US how much they can spend until their next paycheck ($300 here), with the money for bills and a chosen reserve set aside, without connecting a bank account. You set it up once, from a bank CSV, five questions or your own numbers. Then you come back on payday: enter your balance, tick what was paid, and see the new number.
 
 ![Covered overview: $300 available to spend after $1,300 of bills, $350 of everyday spending and a $250 reserve](docs/overview.png)
 
@@ -24,7 +24,9 @@ Covered is a bill planner for working adults in the US. It reads your bank's CSV
 2. **Continue to setup**, **Confirm 7 bills**, **Build my plan**: $2,200 in the account, **$300** is yours. (Covered flags a transfer to savings and leaves that one to you.)
 3. **Ask assistant**: "Can I afford $400 this weekend?" The answer: $100 below your reserve; bills and everyday spending are still covered.
 4. "My car insurance went up by $30" arrives as a draft with a before and after. **Confirm change** and the plan moves to **$270**.
-5. Try **What if payday is late?** on the overview, **Lower it** next to a bill, and **Private, on this device** in the assistant.
+5. Check a $400 purchase on the overview and press **Save as a what-if**; do the same under **What if payday is late?**. They appear side by side in **Your what-ifs** and are recalculated whenever the plan changes.
+6. **Update balance**: enter a new balance, tick what was paid, confirm. Tick **My paycheck is in this balance** to start the next pay period: bills, reserve and settings carry over.
+7. Also try **Lower it** next to a bill, and **Private, on this device** in the assistant.
 
 ## How Covered answers the case
 
@@ -33,29 +35,43 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 | Judging question | Short answer | Proof |
 | --- | --- | --- |
 | **Does it work?** (40%) | Yes: live, no sign-up, end to end; tested code computes every dollar | [Production checks](docs/evidence.md#the-product-works-in-production) |
-| **What do we sell?** (20%) | Covered Plus, $10 a month: the assistant without the 5-a-day limit; bank sync next | [What Plus adds](docs/evidence.md#what-we-sell) |
-| **Who do we sell to?** (15%) | Working adults paid on a schedule, with fixed bills, who gave up on budgeting apps | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
-| **Why does it make money?** (15%) | We keep $9.38 of $10; $100M ARR is 834,000 subscribers, 0.9% of the segment | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
-| **Is it new?** (10%) | It names what a purchase breaks; our own model runs on your device | [Only in Covered](docs/features.md#only-in-covered) |
+| **What do we sell?** (20%) | The first plan is free. Covered Plus keeps the number right after every paycheck; $10 a month is the price we are testing | [What Plus adds](docs/evidence.md#what-we-sell) |
+| **Who do we sell to?** (15%) | Working adults, 25–45, paid every two weeks, with bills between paychecks, who do not want to connect their bank to one more app | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
+| **Why does it make money?** (15%) | We keep $9.38 of $10; $100M ARR is 834,000 subscribers, 0.9% of US adults aged 25–44 | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
+| **Is it new?** (10%) | It names what a purchase breaks, asks for no bank login, and runs our own model on your device | [Only in Covered](docs/features.md#only-in-covered) |
 
 ### Does it work? (40%)
 
 - **Live end to end, no sign-up:** CSV import, recurring-bill detection, a plan, purchase checks, bill changes in plain English, balance updates, private mode. Try it at <https://covered-fracture.vercel.app>.
 - **The core is real code, not a mockup:** money is integer cents in `app/src/lib/finance`; the sample goes through the same CSV import as a real file (`app/src/lib/import`).
 - **AI cannot make up money:** the model only picks one of four functions (`app/src/lib/ai/tools.ts`); any dollar figure in its text that does not match a computed value is replaced (`app/src/lib/ai/guard.ts`).
-- **Tested:** 171 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
+- **Tested:** 182 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
 
 ### What do we sell? (20%)
 
-- **Covered Plus, $10 a month:** up to 60 cloud assistant questions a day instead of 5, answered by our model with OpenAI behind it for anything it is unsure about. Next, with the pilot: bank sync instead of a CSV, so the plan updates itself.
-- **Free:** the plan, purchase checks, payday reminders, 5 cloud questions a day, and private mode on our model alone.
-- **Live today:** after 5 free questions the app offers Plus (`app/src/components/Assistant.tsx`) and counts who takes it (`app/src/app/api/plus/route.ts`). Payment is not connected yet.
-- **Why people come back:** every payday (a calendar reminder, `app/src/lib/client/reminder.ts`, then a recap of what changed), when a bill changes, and before a purchase.
+We sell keeping the number right after every paycheck, not a number of AI questions.
+
+| Free: get your number | Covered Plus: keep it right |
+| --- | --- |
+| Build the first plan | Carry the plan from paycheck to paycheck |
+| See what you can spend until payday | See what changed since last time, and why |
+| Check a purchase before you make it | Save and compare what-ifs: a purchase, a new bill, a late paycheck |
+| Update your balance until payday | A payday reminder and a recap of the period |
+| Get the math explained by the assistant on your device | |
+
+- **$10 a month is a price we are testing, not a proven one.** Plus features are marked in the product and free during early access. Carrying the plan to the next paycheck, or saving the first what-if, shows the offer; turning Plus on is counted (`app/src/app/api/plus/route.ts`). A click is interest. Willingness to pay is proven only by a real purchase in a paid pilot, and if the free purchase check turns out to be enough for people, the subscription model has to change.
+- **Coming back takes a few fields, not a new import.** Open the reminder, enter your balance, tick what was paid, see the new number. Bills, the reserve and settings carry over to the next pay period (`startNextPeriod` in `app/src/lib/client/model.ts`), and the overview then shows a recap of the period that ended. You import once; coming back never needs a file. Our target is about 30 seconds; it is not measured yet.
+- **An old balance is not shown as today's answer.** The overview always says how old the balance is. After a week, or once payday has passed, the overview holds back every figure computed from it and asks for the update first (`app/src/components/Dashboard.tsx`).
+- **What-ifs stay true.** A saved what-if is re-evaluated against the plan every time it changes (`app/src/lib/client/scenarios.ts`).
+- The cloud assistant answers 5 questions a day on the free plan and 60 on Plus; the assistant on your device has no limit. Payment is not connected yet.
 
 ### Who do we sell to? (15%)
 
-- A working adult in the US, 25–45, paid on a schedule, with several fixed bills, who tried a budgeting app and stopped keeping it up.
-- The pain is measured: 63% of Americans live paycheck to paycheck; 37% could not cover a surprise $400 expense with cash; card issuers charged $14.5B in late fees in one year.
+- **Starting segment:** working adults in the US, 25–45, paid every two weeks, with bills due between paychecks, who do not want to connect their bank to one more app.
+- **Every two weeks is the most common pay schedule:** 43% of US private establishments pay that way (BLS, February 2023).
+- **Bank logins are a real barrier:** 24% of consumers are slightly or not at all comfortable sharing bank credentials with third-party apps (PYMNTS and MX, 2021).
+- **The pain is measured:** 63% of Americans live paycheck to paycheck; 37% could not cover a surprise $400 expense with cash; card issuers charged $14.5B in late fees in one year.
+- **A bank connection is deliberately later.** It would cut manual work, but it changes the privacy promise, so it waits until the 30-second update has been tested with people.
 
 ### Why does it make money? (15%)
 
@@ -66,6 +82,7 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 ### Is it new? (10%)
 
 - **It names what a purchase breaks** (your reserve, everyday spending or a bill), where PocketGuard shows a leftover and YNAB assigns money to targets.
+- **No bank login, by design.** The plan is built in your browser from a file, five questions or your own numbers, and stays there.
 - **Our own model, covered-nlu-1, runs in the browser** in private mode and sends nothing (`app/src/lib/client/onDevice.ts`).
 - **What if payday is late?** shows which bills land before a delayed paycheck (`app/src/lib/client/stress.ts`).
 - **Lower a bill yourself:** what to say, with your own numbers (`app/src/lib/client/lowerBill.ts`), where Rocket Money keeps 35–60% of the first year's savings.
@@ -102,7 +119,7 @@ app/                      Next.js 16 + TypeScript, deployed on Vercel
   src/lib/ai/             server assistant: tools, guard, prompts, providers, quotas
   src/lib/ai/own/         our model's runtime and weights
   src/lib/client/         browser side: on-device model, stress test, lower-a-bill, reminders
-  tests/unit/             171 unit tests (vitest)
+  tests/unit/             182 unit tests (vitest)
   tests/ai-eval/          25 assistant scenarios and 34 interview scenarios
   tests/e2e/              browser walkthroughs (Playwright) and the production release check
   tools/ml/               training data generator and training script for covered-nlu-1
@@ -114,7 +131,7 @@ docs/                     evidence, architecture details, feature list
 
 | Check | Result | Command (from `app/`) |
 | --- | --- | --- |
-| Unit tests | 171 passed | `npm test` |
+| Unit tests | 182 passed | `npm test` |
 | Typecheck | clean, `strict` | `npm run typecheck` |
 | Our model alone, 25 assistant scenarios | 24 of 25 (CI requires 90%) | `AI_PROVIDER=own AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts` |
 | Browser walkthrough, 1280 and 390 px | passed | `npm run e2e` (with the app running) |

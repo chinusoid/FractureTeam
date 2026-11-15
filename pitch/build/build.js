@@ -147,7 +147,7 @@ async function build() {
     s.addImage({ data: await icon(fi.FiCheckCircle, HEX.lt2), x: MX, y: 0.62, w: 0.36, h: 0.36, objectName: "Logo mark" });
     text(s, "Covered", { x: MX + 0.48, y: 0.6, w: 3, h: 0.4, fontSize: 20, bold: true, color: C.background2, valign: "middle" });
     text(s, "Know what’s covered\nbefore you spend", { x: MX, y: 1.75, w: 6.9, h: 1.55, fontSize: 40, bold: true, color: C.background1, objectName: "Title" });
-    text(s, "A bill planner for working adults in the US. It shows what is left after bills, everyday spending and a reserve, and answers “can I afford this?”", {
+    text(s, "For working adults in the US: how much you can spend until your next paycheck, with your bills and a reserve set aside. No bank login.", {
       x: MX, y: 3.55, w: 6.3, h: 1.4, fontSize: 16, color: C.accent3, lineSpacingMultiple: 1.15,
     });
     prodLink(s, MX, 5.2, { color: C.background1, mutedColor: C.accent3, w: 5.9 });
@@ -173,17 +173,17 @@ async function build() {
     await iconCircle(s, fi.FiUser, MX, 5.3);
     text(s, [
       { text: "Who we build for. ", options: { bold: true } },
-      { text: "A working adult in the US, 25–45: paid on a schedule, several fixed bills, tried a budgeting app and stopped keeping it up." },
+      { text: "Working adults in the US, 25–45, paid every two weeks, with bills due between paychecks, who do not want to connect their bank to one more app." },
     ], { x: MX + 0.8, y: 5.27, w: 4.8, h: 1.2, fontSize: 14, color: C.text1, lineSpacingMultiple: 1.15 });
 
     const x = 6.5, w = W - MX - 6.5;
     box(s, { x, y: TOP, w, h: 4.65, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
     tag(s, "FACT", x + 0.4, TOP + 0.28);
-    text(s, "The pain is measured, in public data", { x: x + 0.4 + 0.72 + 0.15, y: TOP + 0.28, w: w - 1.7, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s, "The segment, in public data", { x: x + 0.4 + 0.72 + 0.15, y: TOP + 0.28, w: w - 1.7, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
     const facts = [
       ["63%", "of Americans live paycheck to paycheck; 90% of them have under $500 left each month", "CNBC | SurveyMonkey Quarterly Money Survey, July 2026"],
-      ["37%", "of US adults could not cover a surprise $400 expense with cash or its equivalent", "Federal Reserve, Economic Well-Being of U.S. Households, 2025"],
-      ["$14.5B", "in credit card late fees in one year: the price of a bill that lands before the money", "CFPB Consumer Credit Card Market Report, 2023 (2022 data)"],
+      ["43%", "of US private establishments pay every two weeks: the most common pay schedule", "BLS, Length of pay periods in the Current Employment Statistics survey, February 2023"],
+      ["24%", "of consumers are uncomfortable sharing bank credentials with third-party apps", "PYMNTS and MX, Convenience Versus Security, 2021 (2,368 consumers)"],
     ];
     facts.forEach((f, i) => {
       const y = TOP + 0.8 + i * 1.27;
@@ -192,7 +192,7 @@ async function build() {
       text(s, f[1], { x: x + 2.15, y, w: w - 2.5, h: 0.56, fontSize: 12.5, color: C.text1, lineSpacingMultiple: 1.08 });
       text(s, f[2], { x: x + 2.15, y: y + 0.6, w: w - 2.5, h: 0.4, fontSize: FOOT, color: C.text2 });
     });
-    s.addNotes("0:20. The person: a regular paycheck, rent, insurance, internet, a phone bill. The balance looks fine, but part of it is already promised. Three public numbers: 63% live paycheck to paycheck, 37% would not cover a $400 surprise from cash, and card issuers charged $14.5 billion in late fees in a year. So 'can I afford $400' is a real question. We have not interviewed this segment yet; that is the first step after today.");
+    s.addNotes("0:20. The person: paid every two weeks, with rent, insurance, internet and a phone bill landing between paychecks. The balance looks fine, but part of it is already promised. Three public numbers: 63% of Americans live paycheck to paycheck; every two weeks is the most common pay schedule, 43% of private establishments; and a quarter of consumers are uncomfortable handing their bank login to an app. So we start with people paid every two weeks who do not want to connect a bank. We have not interviewed this segment yet; that is the first step after today.");
   }
 
   // 3 — product
@@ -200,11 +200,11 @@ async function build() {
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
     kicker(s, "DOES IT WORK? · THE PRODUCT");
-    s.addText("Start your way. Confirm. See what is yours", { placeholder: "title" });
+    s.addText("Set up once. Confirm. See what is yours", { placeholder: "title" });
     const steps = [
-      ["CSV, five questions, or by hand", "Upload your bank’s CSV (read in your browser), answer five questions in your own words, or type the numbers in."],
+      ["Set up once", "Upload your bank’s CSV (read in your browser), answer five questions in your own words, or type the numbers in."],
       ["Confirm each number and bill", "Edit, dismiss or add. Nothing enters the plan until you confirm it."],
-      ["See what is left", "After bills, everyday spending and your reserve."],
+      ["See what you can spend until payday", "After bills, everyday spending and your reserve."],
     ];
     steps.forEach((st, i) => {
       const y = TOP + 0.05 + i * 1.08;
@@ -304,7 +304,7 @@ async function build() {
     tag(s, "FACT", cols[1] + 2.0, TOP + 0.01);
     text(s, "What Covered does", { x: cols[2], y: TOP, w: 3, h: 0.3, fontSize: 12, bold: true, color: C.text2, valign: "middle" });
     const rows = [
-      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account to start: a plan from a CSV, five questions or by hand"],
+      ["YNAB", "$14.99 a month", "Auto-Assign spreads money across targets and scheduled transactions", "No account and no bank login: a plan from a CSV, five questions or by hand"],
       ["PocketGuard", "$12.99 a month", "“Leftover” shows what remains after bills, goals and debt", "Names what a purchase breaks: your reserve, everyday spending or a bill"],
       ["Monarch", "$14.99 a month", "AI assistant, explanations and a weekly review", "AI never invents a number: tested code computes every dollar"],
       ["Spreadsheet", "free", "Whatever the template allows", "Import, suggestions and recalculation in one flow"],
@@ -352,40 +352,43 @@ async function build() {
   {
     const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Business" });
     kicker(s, "WHAT DO WE SELL?");
-    s.addText("Free to plan. $10 a month for the assistant", { placeholder: "title" });
-    const pw = 3.95;
-    box(s, { x: MX, y: TOP, w: pw, h: 4.6, fill: { color: C.text1 }, line: { color: C.text1, width: 0 } });
-    text(s, "COVERED PLUS", { x: MX + 0.4, y: TOP + 0.35, w: pw - 0.8, h: 0.28, fontSize: 11, bold: true, charSpacing: 1.5, color: C.accent3 });
-    text(s, [
-      { text: "$10", options: { fontSize: 60, bold: true, color: C.background1 } },
-      { text: "  a month", options: { fontSize: 18, color: C.accent3 } },
-    ], { x: MX + 0.4, y: TOP + 0.62, w: pw - 0.8, h: 1.05, valign: "middle" });
-    const plus = ["60 assistant questions a day (free: 5), with OpenAI behind our model", "Next, with the pilot: bank sync, so the plan updates itself"];
-    text(s, plus.map((t, k) => ({ text: t, options: { bullet: true, breakLine: k < plus.length - 1 } })), { x: MX + 0.4, y: TOP + 1.72, w: pw - 0.8, h: 1.65, fontSize: 12.5, color: C.background1, paraSpaceAfter: 4 });
-    text(s, "Free: the plan, purchase checks, payday reminders, 5 cloud questions a day, private mode.", { x: MX + 0.4, y: TOP + 3.22, w: pw - 0.8, h: 0.6, fontSize: 12, color: C.accent3, lineSpacingMultiple: 1.1 });
-    text(s, "Below YNAB and Monarch ($14.99) and PocketGuard ($12.99). List prices, November 2026.", { x: MX + 0.4, y: TOP + 3.95, w: pw - 0.8, h: 0.5, fontSize: FOOT, color: C.accent3 });
-
-    const ix = MX + pw + 0.35, iw = 3.05;
-    const offer = await shot(s, "plus-offer.png", { x: ix, y: TOP, w: iw, radiusPx: 22, alt: "The Plus offer in the product: keep asking with Covered Plus, up to 60 questions a day, planned price $10 a month" });
-    text(s, [
-      { text: "Live today. ", options: { bold: true, color: C.text1 } },
-      { text: "After 5 free questions the app offers Plus, and we count who takes it. Payment is not connected yet." },
-    ], { x: ix, y: TOP + offer.h + 0.2, w: iw, h: 0.9, fontSize: 12, color: C.text2, lineSpacingMultiple: 1.12 });
-
-    const rx = ix + iw + 0.45, rw = W - MX - rx;
-    text(s, "Why they come back", { x: rx, y: TOP, w: rw, h: 0.4, fontSize: 18, bold: true, color: C.text1 });
-    const loop = [
-      [fi.FiRefreshCw, "Every payday", "A calendar reminder brings you back: new balance, paid bills, what changed."],
-      [fi.FiEdit3, "When a bill changes", "Say it in one sentence, check before and after, confirm."],
-      [fi.FiShoppingBag, "Before a purchase", "Ask first. The answer names what is affected: the reserve, everyday spending or bills."],
+    s.addText("Free to get your number. $10 a month to keep it right", { placeholder: "title" });
+    // Two tiers, split by the user's job rather than by the number of AI questions.
+    const tw = 2.85, th = 3.3;
+    const tiers = [
+      { x: MX, dark: false, label: "FREE", title: "Get your number", sub: "No card, no sign-up", items: ["Build the first plan", "See what you can spend until payday", "Check a purchase before you make it", "Update your balance until payday"] },
+      { x: MX + tw + 0.2, dark: true, label: "COVERED PLUS", title: "Keep it right", sub: "$10 a month, being tested", items: ["Carry the plan from paycheck to paycheck", "See what changed, and why", "Save and compare what-ifs", "A payday reminder and recap"] },
     ];
-    for (let i = 0; i < loop.length; i++) {
-      const y = TOP + 0.7 + i * 1.27;
-      await iconCircle(s, loop[i][0], rx, y);
-      text(s, loop[i][1], { x: rx + 0.8, y: y - 0.03, w: rw - 0.8, h: 0.32, fontSize: 16, bold: true, color: C.text1 });
-      text(s, loop[i][2], { x: rx + 0.8, y: y + 0.33, w: rw - 0.8, h: 0.8, fontSize: 13, color: C.text2, lineSpacingMultiple: 1.12 });
+    for (const t of tiers) {
+      box(s, { x: t.x, y: TOP, w: tw, h: th, fill: { color: t.dark ? C.text1 : C.background2 }, line: { color: t.dark ? C.text1 : C.background2, width: 0 } });
+      text(s, t.label, { x: t.x + 0.25, y: TOP + 0.24, w: tw - 0.5, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 1, color: t.dark ? C.accent3 : C.accent2 });
+      text(s, t.title, { x: t.x + 0.25, y: TOP + 0.56, w: tw - 0.5, h: 0.4, fontSize: 19, bold: true, color: t.dark ? C.background1 : C.text1 });
+      text(s, t.sub, { x: t.x + 0.25, y: TOP + 0.98, w: tw - 0.5, h: 0.26, fontSize: 11, color: t.dark ? C.accent3 : C.text2 });
+      text(s, t.items.map((v, k) => ({ text: v, options: { bullet: true, breakLine: k < t.items.length - 1 } })), { x: t.x + 0.25, y: TOP + 1.4, w: tw - 0.5, h: th - 1.5, fontSize: 12, color: t.dark ? C.background1 : C.text1, paraSpaceAfter: 4 });
     }
-    s.addNotes("3:35. What the user pays for: not charts, but not having to keep a budget by hand. Plus is the cloud assistant that understands any wording, and next the bank sync that keeps the plan current without a CSV. $10 a month sits below the main alternatives. The line between free and paid is already in the product: five assistant questions a day are free, the sixth shows the Plus offer, and we count every browser that takes it. Payment itself is not connected yet; that is the pilot. The reason to return is built into life: payday, a bill that changes, a purchase you are unsure about.");
+    const ix = MX + 2 * tw + 0.5, iw = W - MX - ix;
+    // The panel down to its last saved row, at the height of the tier cards.
+    const crop = { left: 0, top: 0, width: 1364, height: 816 };
+    const picW = Math.min(iw, th * (crop.width / crop.height));
+    await shot(s, "whatifs.png", { crop, x: ix + (iw - picW) / 2, y: TOP, w: picW, radiusPx: 26, alt: "Your what-ifs in the product: the plan today leaves $300; $400 sneakers leave you $100 below the reserve; a paycheck a week late uses the reserve; a $120 vet bill is covered" });
+
+    // The way back in: a few fields, not a new import.
+    const ly = TOP + th + 0.22, lh = 0.6;
+    const loop = ["Open the reminder", "Enter your balance", "Tick what was paid", "See the new number"];
+    text(s, "Coming back on payday", { x: MX, y: ly, w: 2.1, h: lh, fontSize: 14, bold: true, color: C.text1, valign: "middle" });
+    const lx = MX + 2.2, lw = 2.15, gap = 0.42;
+    for (let i = 0; i < loop.length; i++) {
+      const x = lx + i * (lw + gap);
+      box(s, { x, y: ly, w: lw, h: lh, rectRadius: 0.1, fill: { color: C.background2 }, line: { color: C.background2, width: 0 } });
+      text(s, loop[i], { x: x + 0.1, y: ly, w: lw - 0.2, h: lh, fontSize: 13, bold: true, color: C.text1, align: "center", valign: "middle" });
+      if (i < loop.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + lw + (gap - 0.26) / 2, y: ly + (lh - 0.26) / 2, w: 0.26, h: 0.26, objectName: name("Arrow") });
+    }
+    text(s, [
+      { text: "Bills, reserve and settings carry over; nothing is imported again. Target: 30 seconds, not measured yet. " },
+      { text: "How we test the price. ", options: { bold: true, color: C.text1 } },
+      { text: "Carrying the plan over, or saving a what-if, shows the Plus offer, and we count who takes it. A click is interest; the proof is a real purchase in a paid pilot. Payment is not connected yet." },
+    ], { x: MX, y: ly + lh + 0.14, w: CW, h: 0.5, fontSize: 11.5, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import; our target is thirty seconds and we have not measured it yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
   }
 
   // 9 — business potential
@@ -451,24 +454,24 @@ async function build() {
           "Live in production, no sign-up needed",
           "Our own model alone: 24 of 25 test questions, 77% on new wordings",
           "With OpenAI as backup: 25 of 25 test questions, 34 of 34 setup answers",
-          "171 automated tests on the money math, import and AI guards",
+          "182 automated tests on the money math, import and AI guards",
         ],
       },
       {
-        label: "NOT PROVEN YET · WEEKS 1–2", title: "The pain", dark: false, fill: C.background2, line: C.background2,
+        label: "NOT PROVEN YET · WEEKS 1–2", title: "The pain and the habit", dark: false, fill: C.background2, line: C.background2,
         items: [
-          "10–15 interviews with working adults in the US segment",
-          "The same task in Covered and in the tool they use today",
-          "A pass: they describe this moment unprompted, and finish faster in Covered",
+          "10–15 interviews with people paid every two weeks",
+          "The payday update, timed: the target is 30 seconds",
+          "A pass: they describe this moment unprompted, and come back after their next paycheck",
         ],
       },
       {
-        label: "NOT PROVEN YET · WEEKS 3–6", title: "The price and the habit", dark: true, fill: C.text1, line: C.text1,
+        label: "NOT PROVEN YET · WEEKS 3–6", title: "The price", dark: true, fill: C.text1, line: C.text1,
         items: [
-          "A pilot with accounts and sync",
-          "A real $10 charge; the Plus offer is already counted in the product",
+          "A paid pilot: a real $10 charge, not a click",
           "Day-7 and day-30 return; the base case needs 4 paid months",
-          "Then: an optional bank connection through an official data API",
+          "If the free purchase check is enough for people, we change the model",
+          "A bank connection only after that: it changes the privacy promise",
         ],
       },
     ];
@@ -487,7 +490,7 @@ async function build() {
       { text: " in the repo", options: { color: C.text2 } },
     ], { x: MX, y: TOP + h + 0.8, w: 6.6, h: 0.3, fontSize: 12.5, valign: "middle" });
     prodLink(s, MX + 6.9, TOP + h + 0.1, { color: C.text1, mutedColor: C.text2, w: CW - 6.9 });
-    s.addNotes("4:25. What is proven is the engineering: the product is live, our own model passes 24 of 25 assistant scenarios by itself and 77% on phrasings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand and price, and we know how we test both. 4:35. Next two weeks: 10 to 15 interviews with people in the US segment and a head-to-head task against the tool they use today. Then a four-week pilot with a real $10 charge. Then an optional bank connection. Covered: know what's covered before you spend.");
+    s.addNotes("4:25. What is proven is the engineering: the product is live, our own model passes 24 of 25 test questions by itself and 77% on wordings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand, the habit and the price, and we know how we test each. First two weeks: 10 to 15 interviews with people paid every two weeks, and the payday update timed against our thirty-second target. Then a paid pilot with a real ten-dollar charge, because a click on an offer is not a purchase. If the free purchase check turns out to be enough for people, we change the model. Covered: $2,200 in the bank, $300 is yours.");
   }
 
   await pres.writeFile({ fileName: OUT });

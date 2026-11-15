@@ -105,10 +105,11 @@ export async function activatePlus(): Promise<void> {
   } catch {
     /* Storage is unavailable: Plus stays on until the page is closed. */
   }
+  // The counter is best effort and never holds up the click: Plus is already on.
   try {
-    await fetch("/api/plus", { method: "POST", headers: { "x-client-id": clientId() } });
+    void fetch("/api/plus", { method: "POST", headers: { "x-client-id": clientId() }, keepalive: true }).catch(() => {});
   } catch {
-    /* The counter is best effort; Plus is already on. */
+    /* No fetch here (old browser, tests): nothing to count. */
   }
 }
 

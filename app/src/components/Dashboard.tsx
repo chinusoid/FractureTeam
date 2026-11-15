@@ -16,6 +16,8 @@ import { buildReminderIcs, REPEAT_LABEL } from "@/lib/client/reminder";
 import { billIcon, Icon } from "./Icon";
 import { parseMoney, today as todayIso } from "@/lib/client/model";
 import { lateCushionDays, latePaycheck } from "@/lib/client/stress";
+import { PlusTag } from "./Plus";
+import { useSaveWhatIf, WhatIfs } from "./WhatIfs";
 
 const LATE_OPTIONS = [
   [1, "1 day"],
@@ -29,6 +31,7 @@ function LatePayCard() {
   const [late, setLate] = useState(3);
   const result = latePaycheck(state, late);
   const cushion = lateCushionDays(state);
+  const { save, dialog } = useSaveWhatIf();
   return (
     <section className="late-pay-panel" aria-labelledby="late-pay-title" data-testid="late-pay">
       <div className="section-heading">
@@ -94,6 +97,11 @@ function LatePayCard() {
           </p>
         )}
       </div>
+      <button className="text-button save-whatif" onClick={() => save({ kind: "late_payday", lateDays: late })}>
+        <Icon name="plus" size={13} />
+        Save as a what-if
+      </button>
+      {dialog}
     </section>
   );
 }
@@ -115,7 +123,16 @@ export function Dashboard() {
     [date, setDate] = useState(today()),
     [result, setResult] = useState<ReturnType<typeof simulatePurchase> | null>(
       null,
-    );
+    ),
+    [purchaseName, setPurchaseName] = useState(""),
+    [showOld, setShowOld] = useState(false);
+  const { save, dialog } = useSaveWhatIf();
+  // A number built on an old balance is not one to trust: ask for the update first.
+  const age = daysBetween(p.balanceDate, today());
+  const ended = p.horizonEndDate < today();
+  const outdated = ended || age >= STALE_AFTER_DAYS;
+  const updateFirst = outdated && !showOld;
+  const ageLabel = age <= 0 ? "today" : age === 1 ? "yesterday" : `${age} days ago`;
   function remind() {
     // Repeat only when the period really ends on the paycheck found in the import.
     const suggestion = buildSetupSuggestion(state.transactions);
@@ -147,8 +164,8 @@ export function Dashboard() {
   return (
     <>
       <PageHeading
-        title="A little clarity. A lot less worry."
-        description="Here’s where your money stands, and what’s already spoken for."
+        title="What you can spend until payday."
+        description="After your bills, everyday spending and your reserve."
       >
         <Button
           kind="secondary"
@@ -161,30 +178,42 @@ export function Dashboard() {
           Ask assistant
         </Button>
       </PageHeading>
-      {daysBetween(p.balanceDate, today()) >= STALE_AFTER_DAYS && (
-        <Notice>
-          Your balance is {daysBetween(p.balanceDate, today())} days old. Update
-          it to keep this plan useful.{" "}
-          <button
-            className="text-button"
-            onClick={() => navigate("/app/update")}
-          >
-            Update now
-          </button>
-        </Notice>
+      {updateFirst ? (
+        <section className="update-first" aria-labelledby="update-first-title" data-testid="update-first">
+          <span className="status-label">
+            <i className="status-dot warning" />
+            {ended ? `Your period ended ${dateLabel(p.horizonEndDate)}` : `Balance as of ${dateLabel(p.balanceDate)}, ${ageLabel}`}
+          </span>
+          <h2 id="update-first-title">
+            {ended ? "Payday has passed. Start your next period." : "Update your balance to see today’s number."}
+          </h2>
+          <p>
+            This plan was right on {dateLabel(p.balanceDate)}. What you have paid and spent since then is not in it.
+            {ended
+              ? " Enter your new balance and next payday: your bills, reserve and settings carry over."
+              : " Enter your balance and tick what has been paid: your bills, reserve and settings are kept."}
+          </p>
+          <div className="inline-actions">
+            <Button icon="refresh" onClick={() => navigate("/app/update")}>
+              Update now
+            </Button>
+            <button className="text-button" onClick={() => setShowOld(true)}>
+              Show the {dateLabel(p.balanceDate)} plan anyway
+            </button>
+          </div>
+        </section>
+      ) : (
+        outdated && (
+          <Notice>
+            You are looking at the plan as of {dateLabel(p.balanceDate)} ({ageLabel}).{" "}
+            <button className="text-button" onClick={() => navigate("/app/update")}>
+              {ended ? "Start the next period" : "Update the balance"}
+            </button>
+          </Notice>
+        )
       )}
-      {p.horizonEndDate < today() && (
-        <Notice error>
-          This planning period has ended. Start a new period in Settings before
-          making spending decisions.{" "}
-          <button
-            className="text-button"
-            onClick={() => navigate("/app/settings")}
-          >
-            Review settings
-          </button>
-        </Notice>
-      )}
+      {!updateFirst && (
+        <>
       <section
         className={`summary-band ${plan.status !== "covered" ? "needs-attention" : ""}`}
         aria-label="Your plan summary"
@@ -218,6 +247,15 @@ export function Dashboard() {
           <div className="period-label">
             <Icon name="calendar" size={13} />
             {dateLabel(p.balanceDate)} – {dateLabel(p.horizonEndDate)}
+          </div>
+          <div className="balance-age" data-testid="balance-age">
+            <Icon name="clock" size={13} />
+            <span>
+              Balance as of {dateLabel(p.balanceDate)}, {ageLabel}{" "}
+              <button className="text-button" onClick={() => navigate("/app/update")}>
+                Update
+              </button>
+            </span>
           </div>
         </div>
         <Gauge percent={allocated} />
@@ -258,14 +296,14 @@ export function Dashboard() {
       </section>
       <div className="summary-foot">
         <span>
-          <Icon name="clock" size={13} />
-          Balance updated {dateLabel(p.balanceDate)}
-          {state.sample ? " · Sample data" : ""}
+          <Icon name="shield" size={13} />
+          {state.sample ? "Sample data, built from a synthetic bank export" : "Your plan is stored in this browser"}
         </span>
         {p.horizonEndDate >= today() && (
           <button className="text-button reminder-button" onClick={remind}>
             <Icon name="calendar" size={13} />
             Remind me on {dateLabel(p.horizonEndDate)}
+            <PlusTag />
           </button>
         )}
         <details className="calculation">
@@ -304,6 +342,8 @@ export function Dashboard() {
               ? `Bills are covered, but you need ${money(-plan.afterEssentials)} more for everyday spending.`
               : `Bills and everyday spending are covered. You are ${money(-plan.remainderCents)} below your reserve.`}
         </Notice>
+      )}
+        </>
       )}
       <div className="dashboard-content">
         <div className="bills-area">
@@ -377,6 +417,8 @@ export function Dashboard() {
               ))}
             </details>
           )}
+          {!updateFirst && <WhatIfs />}
+          {!updateFirst && (
           <section className="spending-panel">
             <div className="section-heading">
               <div>
@@ -422,6 +464,7 @@ export function Dashboard() {
               ))}
             </div>
           </section>
+          )}
           <section className="activity-panel">
             <div className="section-heading">
               <h2>Recent transactions</h2>
@@ -463,6 +506,7 @@ export function Dashboard() {
           </section>
         </div>
         <aside className="dashboard-aside">
+          {!updateFirst && (
           <section className="purchase-panel">
             <div className="section-heading">
               <span className="entity-icon">
@@ -538,10 +582,31 @@ export function Dashboard() {
                     </p>
                   )}
                   <small>A preview only. Your balance hasn’t changed.</small>
+                  <div className="save-whatif-row">
+                    <input
+                      aria-label="Name this purchase (optional)"
+                      placeholder="Name it (optional)"
+                      maxLength={60}
+                      value={purchaseName}
+                      onChange={(e) => setPurchaseName(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="text-button save-whatif"
+                      onClick={() => {
+                        save({ kind: "purchase", label: purchaseName, amountCents: parseMoney(purchase) ?? 0 });
+                        setPurchaseName("");
+                      }}
+                    >
+                      <Icon name="plus" size={13} />
+                      Save as a what-if
+                    </button>
+                  </div>
                 </div>
               ))}
           </section>
-          {p.horizonEndDate >= today() && <LatePayCard />}
+          )}
+          {!updateFirst && p.horizonEndDate >= today() && <LatePayCard />}
           <section className="reserve-panel">
             <span className="reserve-mark">
               <Icon name="shield" size={23} />
@@ -559,21 +624,34 @@ export function Dashboard() {
               <Icon name="up" size={19} />
             </button>
           </section>
-          {state.lastUpdate && (
+          {state.lastUpdate && !updateFirst && (
             <section className="last-update">
               <div className="section-heading">
                 <h3>Since last update</h3>
-                <Icon name="refresh" size={16} />
+                <PlusTag />
               </div>
+              {state.lastUpdate.newPeriod && (
+                <p data-testid="period-recap">
+                  {state.lastUpdate.endedPeriod
+                    ? `Your last period, ${dateLabel(state.lastUpdate.endedPeriod.start)} – ${dateLabel(state.lastUpdate.endedPeriod.end)}: ${money(state.lastUpdate.endedPeriod.paidCents)} of bills paid. `
+                    : ""}
+                  A new period started {dateLabel(state.lastUpdate.date)} with {money(state.lastUpdate.newBalanceCents)}
+                  {" "}(was {money(state.lastUpdate.previousBalanceCents)}). Your bills, reserve and settings carried over.
+                </p>
+              )}
               <p>
                 {state.lastUpdate.closedBills.length
                   ? `${state.lastUpdate.closedBills.join(", ")} marked paid.`
-                  : "Balance refreshed."}
+                  : state.lastUpdate.newPeriod
+                    ? "No bills were marked paid."
+                    : "Balance refreshed."}
               </p>
-              <p>
-                {money(state.lastUpdate.essentialsSpentCents)} of everyday
-                spending accounted for.
-              </p>
+              {!state.lastUpdate.newPeriod && (
+                <p>
+                  {money(state.lastUpdate.essentialsSpentCents)} of everyday
+                  spending accounted for.
+                </p>
+              )}
               {state.lastUpdate.excessCents > 0 && (
                 <Notice error>
                   {money(state.lastUpdate.excessCents)} beyond your everyday
@@ -591,6 +669,7 @@ export function Dashboard() {
         <Icon name="shield" size={14} />A plan based on what you’ve confirmed.
         Review it whenever life changes.
       </div>
+      {dialog}
     </>
   );
 }

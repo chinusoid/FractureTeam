@@ -193,13 +193,16 @@ details p {
 .skip-link {
   position: fixed;
   left: 20px;
-  top: -60px;
+  top: 10px;
   z-index: 100;
   background: white;
   padding: 12px;
+  opacity: 0;
+  pointer-events: none;
 }
 .skip-link:focus-visible {
-  top: 10px;
+  opacity: 1;
+  pointer-events: auto;
 }
 .muted {
   color: var(--muted);
@@ -4246,4 +4249,249 @@ details p {
   .import-preview td:nth-child(2) {
     display: none;
   }
+}
+
+/* The pay-period loop: an old balance asks for an update first; what-ifs are kept and compared. */
+.update-first {
+  background: #faf5e9;
+  border: 1px solid #eee2ce;
+  border-radius: 10px;
+  padding: 28px 25px;
+  margin-bottom: 26px;
+}
+.update-first h2 {
+  font-size: 25px;
+  letter-spacing: -0.6px;
+  margin: 14px 0 10px;
+}
+.update-first > p {
+  color: var(--muted);
+  max-width: 620px;
+  margin-bottom: 20px;
+}
+.balance-age {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 8px;
+}
+.balance-age svg {
+  margin-top: 4px;
+}
+.balance-age .text-button {
+  font-size: 13px;
+}
+.plus-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid #c9d0b6;
+  background: var(--cream);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.reminder-button .plus-tag {
+  margin-left: 6px;
+}
+.whatifs-panel {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 23px;
+  padding: 21px;
+}
+.whatifs-panel .section-heading {
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.whatifs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.whatifs-table th,
+.whatifs-table td {
+  text-align: left;
+  padding: 11px 10px 11px 0;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+  font-weight: 400;
+}
+.whatifs-table th {
+  background: none;
+}
+.whatifs-table thead th {
+  border-top: 0;
+  font-size: 12px;
+  color: var(--faint);
+  padding-top: 0;
+}
+.whatifs-table .number {
+  text-align: right;
+  white-space: nowrap;
+  padding-right: 18px;
+}
+.whatifs-table small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.whatifs-now th,
+.whatifs-now td {
+  background: var(--cream);
+  padding-left: 10px;
+}
+.whatifs-now td:last-child {
+  padding-right: 10px;
+}
+.whatifs-table tbody tr:not(.whatifs-now) th {
+  padding-left: 10px;
+}
+.pill.touches-reserve {
+  background: #f6ecd9;
+  color: var(--warning);
+}
+.pill.touches-everyday,
+.pill.touches-bills {
+  background: #f6e3df;
+  color: var(--danger);
+}
+.pill.touches-nothing {
+  background: var(--cream);
+  color: var(--green);
+}
+.whatifs-empty {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 560px;
+}
+.whatifs-add {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  font-size: 14px;
+}
+.whatifs-form {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin: 14px 0 10px;
+}
+.whatifs-form label {
+  font-size: 13px;
+  gap: 6px;
+}
+.save-whatif {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.save-whatif-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.save-whatif-row input {
+  flex: 1 1 150px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+.save-whatif-row .save-whatif {
+  margin-top: 0;
+  white-space: nowrap;
+}
+.next-period-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 4px 0 8px;
+}
+.next-period-fields .field-block {
+  margin-top: 12px;
+}
+.modal .plus-offer {
+  margin-top: 8px;
+}
+@media (max-width: 700px) {
+  .update-first {
+    padding: 22px 18px;
+  }
+  .update-first h2 {
+    font-size: 21px;
+  }
+  .whatifs-form,
+  .next-period-fields {
+    grid-template-columns: 1fr;
+  }
+  .whatifs-table thead {
+    display: none;
+  }
+  .whatifs-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 6px 10px;
+    border-top: 1px solid var(--line);
+    padding: 12px 0;
+  }
+  .whatifs-table th,
+  .whatifs-table td,
+  .whatifs-table .number {
+    border-top: 0;
+    padding: 0;
+  }
+  .whatifs-table tr > :nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .whatifs-table tr > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .whatifs-table tr > :nth-child(3) {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+  }
+  .whatifs-table tr > :nth-child(4) {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .whatifs-now th,
+  .whatifs-now td,
+  .whatifs-table tbody tr:not(.whatifs-now) th {
+    padding-left: 0;
+    background: none;
+  }
+  .save-whatif-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.pricing-note {
+  margin-top: 12px;
+  max-width: 330px;
+}
+.whatifs-table tbody th {
+  color: var(--ink);
+}
+.whatifs-now td {
+  white-space: nowrap;
+}
+.start-over {
+  margin-top: 12px;
 }

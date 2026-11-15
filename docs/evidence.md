@@ -8,8 +8,8 @@ Each line names the claim as it appears in [the pitch deck](../pitch/covered-pit
 | --- | --- | --- |
 | Live, no sign-up | <https://covered-fracture.vercel.app> serves `main`. Production answers with our own model and keeps quotas in Upstash: see `/api/health` | Open the link, press **Try sample data** |
 | The main scenario passes on the live site with the real model | **Passed at 1280×800 and 390×844**, 15 Nov 02:05, right after the last deploy. Checks: setup review by the assistant, $300 plan, "$400 is $100 below the reserve", bill change confirmed to $270, reload, balance update without double counting, server tool calls, no horizontal overflow | `cd app && BASE_URL=https://covered-fracture.vercel.app node tests/e2e/release.mjs` |
-| Browser walkthroughs on every change | CI runs 30 browser checks per screen size on every pull request (samples A and B, consent, AI unavailable, quota fallback, corrupt storage, partial CSV, stale proposals, save failures…) | `.github/workflows/ci.yml`, job "Browser walkthrough"; locally `npm run e2e` |
-| 171 unit tests | **171 passed in 14 files**, 15 Nov 02:10 | `cd app && npm test` |
+| Browser walkthroughs on every change | CI runs 39 browser checks per screen size on every pull request (samples A and B, consent, AI unavailable, quota fallback, corrupt storage, partial CSV, stale proposals, save failures, saved what-ifs, update first on an old balance, the next pay period…) | `.github/workflows/ci.yml`, job "Browser walkthrough"; locally `npm run e2e` |
+| 182 unit tests | **182 passed in 15 files**, 15 Nov | `cd app && npm test` |
 
 ## The core is real, not hardcoded
 
@@ -46,16 +46,25 @@ The 25 scenarios (`app/tests/ai-eval/scenarios.ts`) include purchase phrasings, 
 
 ## What we sell
 
+The first plan is free; Covered Plus is the recurring job of keeping it true. $10 a month is the price we are testing: nobody has paid yet.
+
 | Claim | Where |
 | --- | --- |
-| 5 free cloud questions a day, then the Plus offer | `AI_FREE_PER_DAY` (default 5) in `app/src/lib/ai/env.ts`; the offer is in `app/src/components/Assistant.tsx` |
-| What Plus adds | Up to 60 cloud questions a day instead of 5 (`app/src/lib/ai/env.ts`), answered by our model with OpenAI behind it. Private mode stays free and unlimited but uses our model alone. Payday reminders are free. Bank sync is planned for the pilot, not built |
-| We count who takes the offer | `POST /api/plus` counts each browser once; `GET /api/plus` returns the count. Payment is not connected yet: the offer turns Plus on for free during early access |
+| Free: the first plan, the number, a purchase check, the math explained on your device | The whole setup and overview work with Plus off; the on-device assistant has no limit (`app/src/lib/client/onDevice.ts`) |
+| Plus: carry the plan from paycheck to paycheck | `startNextPeriod` in `app/src/lib/client/model.ts`: bills ticked as paid are closed and repeat, the reserve and settings stay, everyday spending starts again. With Plus off, **Start next period** shows the offer first (`UpdateScreen` in `app/src/components/management.tsx`); building a new plan from scratch stays free. Tests "the next pay period" in `app/tests/unit/whatifs.test.ts`; in the browser, `app/tests/e2e/loop.mjs` |
+| Plus: see what changed since last time, and why | "Since last update" on the overview, from `previewBalanceUpdate` in `model.ts` |
+| Plus: save and compare what-ifs | `app/src/lib/client/scenarios.ts` and `app/src/components/WhatIfs.tsx`. Each saved what-if is re-evaluated against the plan as it is now; saving never changes the plan. Tests "saved what-ifs" in `whatifs.test.ts` |
+| Plus: a payday reminder and a recap of the period | `app/src/lib/client/reminder.ts` (a calendar file that repeats on the pay rhythm and opens the update screen). After a new period starts, "Since last update" shows the period that ended: its dates and the bills paid from it (`endedPeriod` in `model.ts`) |
+| An old balance is not shown as today's answer | After 7 days, or once payday has passed, the overview holds back the number and everything computed from it (the allocation, the purchase check, what-ifs, the recap) and asks for the update first (`app/src/components/Dashboard.tsx`); checked in `loop.mjs` and `stage2.mjs`. The assistant is not held back |
+| The offer is live, and counted | Starting the next period, saving the first what-if, or running out of the 5 free cloud questions shows the Plus offer (`app/src/components/Plus.tsx`). Turning Plus on counts the browser once (`POST /api/plus`); `GET /api/plus` returns the count |
+| What is not there | Payment. Plus features are marked in the product but free during early access. A click on the offer is interest; a real purchase in a paid pilot is the proof. The 30-second update is a target, not a measurement |
 
 ## Market numbers in the deck
 
 | Number | Source |
 | --- | --- |
+| 43% of US private establishments pay every two weeks | BLS, "Length of pay periods in the Current Employment Statistics survey", February 2023 (weekly 27.0%, semimonthly 19.8%, monthly 10.3%) |
+| 24% uncomfortable sharing bank credentials with third-party apps | PYMNTS and MX, "Convenience Versus Security", 2021, 2,368 consumers ("slightly" or "not at all" comfortable) |
 | 63% live paycheck to paycheck | CNBC \| SurveyMonkey Quarterly Money Survey, July 2026 |
 | 37% would not cover $400 with cash | Federal Reserve, Economic Well-Being of U.S. Households, 2025 |
 | $14.5B in card late fees | CFPB Consumer Credit Card Market Report, 2023 (2022 data) |

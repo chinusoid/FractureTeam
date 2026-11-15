@@ -2,6 +2,7 @@ import { chromium } from "@playwright/test";
 import path from "node:path";
 import { runScenario } from "./scenario.mjs";
 import { runStage2Scenario } from "./stage2.mjs";
+import { runLoopScenario } from "./loop.mjs";
 
 async function main() {
   const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
@@ -30,6 +31,10 @@ async function main() {
           ),
         );
         console.log(JSON.stringify(await runStage2Scenario(
+          await context.newPage(), baseURL, width, height,
+          path.resolve("tests/e2e/screenshots"),
+        )));
+        console.log(JSON.stringify(await runLoopScenario(
           await context.newPage(), baseURL, width, height,
           path.resolve("tests/e2e/screenshots"),
         )));

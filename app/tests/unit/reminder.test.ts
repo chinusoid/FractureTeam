@@ -43,7 +43,7 @@ test("reminder: text is escaped and long lines are folded to 75 bytes", () => {
   const ics = buildReminderIcs({ ...base, url: "https://covered.example/app/update?from=calendar&note=a-very-long-address-that-needs-more-than-one-line" });
   for (const line of lines(ics)) assert.ok(new TextEncoder().encode(line).length <= 75, `line too long: ${line}`);
   const unfolded = ics.replace(/\r\n /g, "");
-  assert.match(unfolded, /DESCRIPTION:Enter your new balance and tick the bills you paid\. It takes about two minutes\.\\n/, "the line break inside the text is escaped");
+  assert.match(unfolded, /DESCRIPTION:Enter your new balance and tick the bills you paid\. Your bills\\, reserve and settings are kept\.\\n/, "the line break inside the text is escaped");
   assert.ok(unfolded.includes("URL:https://covered.example/app/update?from=calendar&note=a-very-long-address-that-needs-more-than-one-line"));
   assert.ok(unfolded.includes("\\nhttps://covered.example/app/update?from=calendar"));
 });

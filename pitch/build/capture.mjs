@@ -64,7 +64,6 @@ try {
   await page.locator(".proposal-card").first().waitFor({ timeout: 30000 });
   await group.screenshot({ path: out("proposal") });
   for (let i = 0; i < 6 && !(await page.locator(".plus-offer").count()); i++) await ask("Explain my plan");
-  await page.locator(".plus-offer").first().screenshot({ path: out("plus-offer") });
 
   // Private mode: the same question, answered in the browser.
   await page.getByRole("button", { name: "Private, on this device" }).first().click();
@@ -73,6 +72,24 @@ try {
   await page.locator(".served-by.on-device").last().waitFor({ timeout: 30000 });
   await group.screenshot({ path: out("private") });
   await page.getByRole("button", { name: "Close dialog" }).click();
+
+  // Saved what-ifs: the first save shows the Plus offer; accepting it saves. Then two more, side by side.
+  await page.getByLabel("Purchase amount").fill("400");
+  await page.getByRole("button", { name: "Check a purchase", exact: true }).click();
+  await page.getByLabel("Name this purchase (optional)").fill("Sneakers");
+  await page.locator(".purchase-result").getByRole("button", { name: "Save as a what-if" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Get Plus free", exact: true }).click();
+  await page.getByTestId("whatif-row").first().waitFor();
+  await page.getByTestId("late-pay").getByRole("button", { name: "Save as a what-if" }).click();
+  await page.getByText("What if a new bill appears?").click();
+  await page.getByPlaceholder("Vet visit").fill("Vet visit");
+  await page.getByLabel("What-if bill amount").fill("120");
+  await page.getByTestId("whatifs").getByRole("button", { name: "Save as a what-if" }).click();
+  await page.getByTestId("whatif-row").nth(2).waitFor();
+  await page.getByText("What if a new bill appears?").click();
+  await page.getByRole("button", { name: "Dismiss notification" }).click().catch(() => {});
+  await page.waitForTimeout(400);
+  await page.getByTestId("whatifs").screenshot({ path: out("whatifs") });
 
   await page.goto(baseURL + "/app/bills");
   await page.getByRole("button", { name: "Lower it" }).first().click();

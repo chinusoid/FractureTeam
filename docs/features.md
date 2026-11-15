@@ -18,6 +18,13 @@ The [README](../README.md) has the short version. This is every feature in the l
 - Settings, new-period review, optional assistant consent, JSON export, confirmed data clearing, and versioned/validated local storage with corruption backup and visible failures.
 - Responsive navigation, keyboard-accessible dialogs with focus trapping, reduced-motion support, and mobile layout at 390 px.
 
+## The pay-period loop
+
+- **Update first.** The overview always shows how old the balance is ("Balance as of Nov 15, today"). After 7 days, or once payday has passed, it holds the number back and asks for the update; "Show the plan anyway" is one click away.
+- **Update in a few fields.** New balance, tick what was paid, confirm. Paid bills are closed and repeating ones get their next date.
+- **The next pay period.** Tick "My paycheck is in this balance" (or come back after payday): choose the next payday (suggested from your pay rhythm) and everyday spending for the period. Bills, the reserve, settings and what-ifs carry over. No CSV is imported again.
+- **Saved what-ifs (Covered Plus).** Save a purchase check, a late paycheck or a bill that might appear. They sit side by side with the plan, each with what is left to spend and what it would touch (nothing, the reserve, everyday spending, bills), and are recalculated whenever the plan changes. They never change the plan.
+
 ## Only in Covered
 
 - **Private mode** (assistant → "Private, on this device", or "Use private mode" on the consent screen, or Settings): our own Covered model answers inside the browser (`app/src/lib/client/onDevice.ts`). The request is built exactly as for the server but never sent: no network, no quota, no cost, no daily limit, and it works offline. Without private mode, the assistant still falls back to the device when the server can't be reached, and offers private mode when the free cloud questions are used up. Turns answered in private mode are never sent to the cloud later as chat history.
@@ -27,4 +34,4 @@ The [README](../README.md) has the short version. This is every feature in the l
 
 ## Not included in this version
 
-Bank connections, login and sync across devices, credit-card interest, payments, investment features, and restoring a JSON export. The plan lives in one browser until accounts arrive in the pilot.
+Bank connections, login and sync across devices, credit-card interest, payments, investment features, and restoring a JSON export. The plan lives in one browser until sign-in arrives.
