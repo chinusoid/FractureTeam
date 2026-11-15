@@ -54,7 +54,7 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 - **Live end to end, no sign-up:** CSV import, recurring-bill detection, a plan, purchase checks, bill changes in plain English, balance updates, private mode. Try it at <https://covered-fracture.vercel.app>.
 - **The core is real code, not a mockup:** money is integer cents in `app/src/lib/finance`; the sample goes through the same CSV import as a real file (`app/src/lib/import`).
 - **AI cannot make up money:** the model only picks one of four functions (`app/src/lib/ai/tools.ts`); any dollar figure in its text that does not match a computed value is replaced (`app/src/lib/ai/guard.ts`).
-- **Tested:** 186 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
+- **Tested:** 202 unit tests, 25 assistant scenarios, browser walkthroughs at desktop and phone size in CI on every pull request, and a release check against production with the real model.
 
 ### What do we sell? (20%)
 
@@ -151,7 +151,7 @@ app/                      Next.js 16 + TypeScript, deployed on Vercel
   src/lib/ai/             server assistant: tools, guard, prompts, providers, quotas
   src/lib/ai/own/         our model's runtime and weights
   src/lib/client/         browser side: on-device model, stress test, lower-a-bill, reminders
-  tests/unit/             186 unit tests (vitest)
+  tests/unit/             202 unit tests (vitest)
   tests/ai-eval/          25 assistant scenarios and 34 interview scenarios
   tests/e2e/              browser walkthroughs (Playwright), the production release check, the timing script
   tools/ml/               training data generator and training script for covered-nlu-1
@@ -163,7 +163,7 @@ docs/                     evidence, architecture details, feature list
 
 | Check | Result | Command (from `app/`) |
 | --- | --- | --- |
-| Unit tests | 186 passed | `npm test` |
+| Unit tests | 202 passed | `npm test` |
 | Typecheck | clean, `strict` | `npm run typecheck` |
 | Our model alone, 25 assistant scenarios | 24 of 25 (CI requires 90%) | `AI_PROVIDER=own AI_FALLBACK_TO_OPENAI=false npx tsx tests/ai-eval/run.ts` |
 | Browser walkthrough, 1280 and 390 px | passed | `npm run e2e` (with the app running) |

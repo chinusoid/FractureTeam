@@ -8,8 +8,8 @@ Each line names the claim as it appears in [the pitch deck](../pitch/covered-pit
 | --- | --- | --- |
 | Live, no sign-up | <https://covered-fracture.vercel.app> serves `main`. Production answers with our own model and keeps quotas in Upstash: see `/api/health` | Open the link, press **Try sample data** |
 | The main scenario passes on the live site with the real model | **Passed at 1280×800 and 390×844**, 15 Nov 08:40, right after the last deploy. Checks: setup review by the assistant, $300 plan, "$400 is $100 below the reserve", bill change confirmed to $270, reload, balance update without double counting, server tool calls, no horizontal overflow | `cd app && BASE_URL=https://covered-fracture.vercel.app node tests/e2e/release.mjs` |
-| Browser walkthroughs on every change | CI runs 39 browser checks per screen size on every pull request (samples A and B, consent, AI unavailable, quota fallback, corrupt storage, partial CSV, stale proposals, save failures, saved what-ifs, update first on an old balance, the next pay period…) | `.github/workflows/ci.yml`, job "Browser walkthrough"; locally `npm run e2e` |
-| 186 unit tests | **186 passed in 15 files**, 15 Nov | `cd app && npm test` |
+| Browser walkthroughs on every change | CI runs 40 browser checks per screen size on every pull request (samples A and B, consent, AI unavailable, quota fallback, corrupt storage, partial CSV, stale proposals, save failures, saved what-ifs, update first on an old balance, the next pay period, a bill due twice before payday…) | `.github/workflows/ci.yml`, job "Browser walkthrough"; locally `npm run e2e` |
+| 202 unit tests | **202 passed in 16 files**, 15 Nov | `cd app && npm test` |
 
 ## The core is real, not hardcoded
 
