@@ -149,11 +149,35 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   await page.getByRole("button", { name: "Remove what-if: Sneakers, $400" }).click();
   await expect(rows).toHaveCount(2);
 
+  // A weekly bill that comes due twice before payday is set aside twice, and paying one changes nothing.
+  const fresh = await stored();
+  const firstDue = back(fresh.plan.balanceDate, -1);
+  const times = 1 + Math.floor((Date.parse(fresh.plan.horizonEndDate) - Date.parse(firstDue)) / (7 * 86400000));
+  assert.ok(times >= 2, "the new period is long enough for a weekly bill to repeat");
+  const beforeWeekly = await page.getByTestId("plan-remainder").innerText();
+  const toCents = (text) => Math.round(Number(text.replace(/[$,]/g, "")) * 100);
+  await page.goto(`${baseURL}/app/bills`);
+  await page.getByRole("button", { name: "Add a bill", exact: true }).click();
+  await page.getByPlaceholder("e.g. Car insurance").fill("Childcare");
+  await page.getByLabel("Bill amount").fill("50");
+  await page.getByLabel("Due date").fill(firstDue);
+  await page.getByLabel("Frequency").selectOption("Weekly");
+  await page.getByRole("button", { name: "Add bill", exact: true }).click();
+  await page.goto(`${baseURL}/app`);
+  await expect(page.getByTestId("bill-repeats")).toContainText(`Due ${times} times before payday: ${dollars(times * 5000)} set aside`);
+  const withWeekly = await page.getByTestId("plan-remainder").innerText();
+  assert.equal(toCents(beforeWeekly) - toCents(withWeekly), times * 5000, "every payment before payday is set aside");
+  await page.goto(`${baseURL}/app/bills`);
+  await page.locator(".bill-list-row").filter({ hasText: "Childcare" }).getByRole("button", { name: "Mark paid", exact: true }).first().click();
+  await page.getByRole("button", { name: "No, deduct it now", exact: true }).click();
+  await page.goto(`${baseURL}/app`);
+  await expect(page.getByTestId("plan-remainder")).toHaveText(withWeekly);
+
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "no horizontal overflow");
   assert.deepEqual(errors, [], "no browser exceptions");
   return {
     viewport: `${width}×${height}`,
     loop: "passed",
-    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap counts bills paid before the move and at it", "no overflow", "no browser exceptions"],
+    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap counts bills paid before the move and at it", "a bill due twice before payday is set aside twice", "no overflow", "no browser exceptions"],
   };
 }

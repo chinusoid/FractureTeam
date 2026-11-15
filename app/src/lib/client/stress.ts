@@ -34,9 +34,16 @@ export function daysLeft(state: AppState, now = today()): number {
   return Math.max(1, daysBetween(start, state.plan.horizonEndDate) + 1);
 }
 
-/** Everyday spending per day at the current plan: what is left for everyday, spread over the days left. */
+/**
+ * Everyday spending per day at the current plan: what was left for everyday on the balance date, spread
+ * over the days from that date to payday (at least 1). Both are as of the balance date, so the pace
+ * does not change when only the calendar moves; `now` is kept for callers and no longer matters.
+ */
 export function everydayPerDay(state: AppState, now = today()): number {
-  return Math.round(state.plan.essentialsCents / daysLeft(state, now));
+  void now;
+  return Math.round(
+    state.plan.essentialsCents / Math.max(1, daysBetween(state.plan.balanceDate, state.plan.horizonEndDate) + 1),
+  );
 }
 
 const STEP_DAYS: Partial<Record<Bill["frequency"], number>> = { Weekly: 7, Biweekly: 14 };

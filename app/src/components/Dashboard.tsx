@@ -43,7 +43,9 @@ function LatePayCard() {
       <h2 id="late-pay-title">What if payday is late?</h2>
       <p>
         {cushion === 0
-          ? "Your plan is already short, so any delay adds to the gap."
+          ? computePlan(state).afterEssentials < 0
+            ? "Your plan is already short, so any delay adds to the gap."
+            : "Covered today, but even one day late leaves you short."
           : cushion >= 30
             ? "Your bills and everyday spending stay covered even a month past payday."
             : `Your bills and everyday spending stay covered for up to ${cushion} extra day${cushion === 1 ? "" : "s"}.`}
@@ -121,11 +123,13 @@ export function Dashboard() {
     p = state.plan;
   const [purchase, setPurchase] = useState(""),
     [date, setDate] = useState(today()),
-    [result, setResult] = useState<ReturnType<typeof simulatePurchase> | null>(
+    [checked, setChecked] = useState<{ amountCents: number; date: string } | null>(
       null,
     ),
     [purchaseName, setPurchaseName] = useState(""),
     [showOld, setShowOld] = useState(false);
+  // Worked out on every render, so the answer always matches the plan as it is now.
+  const result = checked ? simulatePurchase(state, checked.amountCents, checked.date) : null;
   const { save, dialog } = useSaveWhatIf();
   // A number built on an old balance is not one to trust: ask for the update first.
   const age = daysBetween(p.balanceDate, today());
@@ -266,7 +270,7 @@ export function Dashboard() {
           </div>
           <strong>{money(plan.billsCents)}</strong>
           <p>
-            {due.length} payments in this period
+            {plan.paymentCount} {plan.paymentCount === 1 ? "payment" : "payments"} in this period
             <button
               className="icon-button"
               aria-label="View all bills"
@@ -366,16 +370,23 @@ export function Dashboard() {
                   <span className="entity-icon">
                     <Icon name={billIcon(b.name)} size={21} />
                   </span>
+                  {!updateFirst && (
                   <span className="pill">
                     <span
                       className={`tiny-dot ${plan.status === "bills_short" ? "warning" : ""}`}
                     />
                     {plan.status === "bills_short" ? "Review" : "Covered"}
                   </span>
+                  )}
                 </div>
                 <h3>{b.name}</h3>
                 <p className="bill-frequency">{b.frequency} payment</p>
                 <strong className="bill-amount">{money(b.amountCents)}</strong>
+                {(plan.payments[b.id] ?? 1) > 1 && (
+                  <p className="bill-repeats" data-testid="bill-repeats">
+                    Due {plan.payments[b.id]} times before payday: {money(b.amountCents * plan.payments[b.id]!)} set aside
+                  </p>
+                )}
                 <div className="bill-card-bottom">
                   <span>
                     <Icon name="calendar" size={13} />
@@ -519,9 +530,7 @@ export function Dashboard() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                setResult(
-                  simulatePurchase(state, parseMoney(purchase) ?? 0, date),
-                );
+                setChecked({ amountCents: parseMoney(purchase) ?? 0, date });
               }}
             >
               <label htmlFor="purchase-amount">Purchase amount</label>
@@ -534,7 +543,7 @@ export function Dashboard() {
                   value={purchase}
                   onChange={(e) => {
                     setPurchase(e.target.value);
-                    setResult(null);
+                    setChecked(null);
                   }}
                   required
                 />
@@ -546,7 +555,7 @@ export function Dashboard() {
                 value={date}
                 onChange={(e) => {
                   setDate(e.target.value);
-                  setResult(null);
+                  setChecked(null);
                 }}
                 required
               />
@@ -594,8 +603,9 @@ export function Dashboard() {
                       type="button"
                       className="text-button save-whatif"
                       onClick={() => {
-                        save({ kind: "purchase", label: purchaseName, amountCents: parseMoney(purchase) ?? 0 });
-                        setPurchaseName("");
+                        save({ kind: "purchase", label: purchaseName, amountCents: parseMoney(purchase) ?? 0 }, () =>
+                          setPurchaseName(""),
+                        );
                       }}
                     >
                       <Icon name="plus" size={13} />

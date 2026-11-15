@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newId, ProposalSchema, today, type AppState, type Bill, type Transaction } from "./model";
+import { newId, ProposalSchema, repeatOf, today, type AppState, type Bill, type Transaction } from "./model";
 import {
   AssistantErrorSchema,
   AssistantResponseSchema as ContractResponseSchema,
@@ -132,6 +132,8 @@ function clientId() {
 }
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+/** The most bills one request may carry (the server's limit). */
+export const MAX_SENT_BILLS = 60;
 const CADENCE: Record<Bill["frequency"], "monthly" | "biweekly" | "weekly" | null> = {
   Monthly: "monthly",
   Biweekly: "biweekly",
@@ -151,18 +153,26 @@ export function buildAssistantRequest(
   history: HistoryItem[] = [],
 ): AssistantRequest {
   const { plan } = state;
-  const obligations = state.bills
+  const sendable = state.bills
     .filter((b) => b.status !== "dismissed" && b.amountCents > 0 && SAFE_ID.test(b.id))
-    .filter((b) => mode === "setup" || b.status !== "candidate")
-    .slice(0, 60)
-    .map((b) => ({
-      id: b.id,
-      name: billName(b.name),
-      amountCents: b.amountCents,
-      dueDate: b.dueDate,
-      paymentStatus: b.status === "paid" ? ("paid" as const) : ("unpaid" as const),
-      confirmationStatus: b.status === "candidate" ? ("suggested" as const) : ("confirmed" as const),
-    }));
+    .filter((b) => mode === "setup" || b.status !== "candidate");
+  // The server takes 60 bills. Paid ones pile up as periods go by, so when the list is longer the unpaid
+  // bills go first (the plan is computed from them), then the most recently paid.
+  const kept =
+    sendable.length <= MAX_SENT_BILLS
+      ? sendable
+      : [...sendable.filter((b) => b.status !== "paid"), ...sendable.filter((b) => b.status === "paid").reverse()].slice(0, MAX_SENT_BILLS);
+  const obligations = kept.map((b) => ({
+    id: b.id,
+    name: billName(b.name),
+    amountCents: b.amountCents,
+    dueDate: b.dueDate,
+    paymentStatus: b.status === "paid" ? ("paid" as const) : ("unpaid" as const),
+    confirmationStatus: b.status === "candidate" ? ("suggested" as const) : ("confirmed" as const),
+    // How the bill repeats: a bill due twice before payday is counted twice, here and on the server.
+    ...(repeatOf(b) ? { repeat: repeatOf(b) } : {}),
+    ...(b.recurrenceAnchorDay ? { anchorDay: b.recurrenceAnchorDay } : {}),
+  }));
   const request: AssistantRequest = {
     mode: mode === "setup" ? "setup" : "chat",
     message: message.slice(0, 500),

@@ -125,7 +125,8 @@ export function ImportScreen({
       const hash = await fileHash(text);
       // The same file again only blocks when a plan was built from it; the way on is that plan.
       // An import that was started and left (no plan yet) can simply be done again.
-      if (state.importHashes.includes(hash) && state.plan.confirmed) {
+      // Only the file the current plan was built from counts: an import replaces the plan.
+      if (state.importHashes[state.importHashes.length - 1] === hash && state.plan.confirmed) {
         setError(
           "You already imported this exact file. Choose a different file or continue with your existing plan.",
         );
@@ -138,7 +139,7 @@ export function ImportScreen({
         ...base,
         stateVersion: s.stateVersion + 1,
         aiConsent: s.aiConsent,
-        importHashes: [...s.importHashes.filter((h) => h !== hash).slice(-98), hash],
+        importHashes: [hash],
         transactions: selected,
         bills: suggestion.bills,
         sample: isSample,

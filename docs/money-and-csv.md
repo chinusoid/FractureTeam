@@ -13,7 +13,7 @@ available = entered bank balance
           − reserve
 ```
 
-Overdue unpaid bills remain included. Bills beyond the period end are displayed separately. Past imported transactions and predicted income do not change the entered bank balance. Purchase checks are hypothetical. Bills, everyday-spending shortfalls, and reserve shortfalls have different explanations.
+Overdue unpaid bills remain included. A bill that comes due more than once before the period end is set aside each time: a weekly $50 bill with two payments before payday counts as $100 (`paymentsBy` in `app/src/lib/finance/calc.ts`, used by both the browser and the server, so the overview and the assistant count the same way). Bills beyond the period end are displayed separately. Past imported transactions and predicted income do not change the entered bank balance. Purchase checks are hypothetical. Bills, everyday-spending shortfalls, and reserve shortfalls have different explanations.
 
 Sample A, generated relative to the browser's current date:
 
@@ -54,3 +54,14 @@ or, with separate columns:
 - Rows that cannot be read are listed with their row number and skipped. Same date + amount + description is flagged as a possible duplicate and kept unless you exclude it. Transfers (Zelle, Venmo, card payments, "transfer to savings") are flagged.
 - Recurring bills are grouped by merchant (card numbers and reference codes are ignored), need at least two payments with a monthly, two-week or weekly rhythm, and keep the day of the month (Jan 31 → Feb 28 → Mar 31). Varying amounts, transfers and payments that probably happened after the file ends are called out on the bill card.
 - The period ends at your next detected payday (weekly, every two weeks, twice a month or monthly), otherwise in two weeks. Everyday spending is estimated from the last 28 days of the file, without detected bills, transfers and one-off purchases of $400 or more, scaled to the period and rounded to $10. Review all estimates before confirming.
+
+## Known limits
+
+Found in two code reviews on 15 Nov and not fixed yet. None of them affects the sample data.
+
+- **Paid twice a month.** The suggested payday is right for "15th and last day" only; other twice-a-month schedules (1st and 15th, 5th and 20th) get a payday that is too late, and the next period is suggested 15 days on. Check the date on the setup and update screens. Every-two-weeks, weekly and monthly pay are detected correctly.
+- **Bills and paydays on the 29th–31st.** A bill first seen in a short month keeps that month's day (the 28th or 30th) afterwards, and a monthly payday can drift the same way. The monthly calendar reminder for such a day is skipped by some calendar apps in shorter months.
+- **Dismissing a suggested bill.** Its past payments are left out of the everyday-spending estimate too, so the estimate can be low. Raise everyday spending by hand if you dismiss a regular charge.
+- **A bill paid twice within one period.** When the period ends, the update screen lists the bill once. Tick it, then mark the second payment paid on the bills page.
+- **Answering the five questions when a plan already exists** replaces that plan without the warning the CSV import shows.
+- **The Plus offer** is shown when the plan is carried over and when the first what-if is saved; the reminder and "Since last update" carry the Plus tag but work without it.

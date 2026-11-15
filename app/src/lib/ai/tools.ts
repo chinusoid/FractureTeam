@@ -189,7 +189,14 @@ export function executeTool(name: string, rawArgs: string, ctx: ToolContext, eff
       balance: formatUSD(plan.availableCents),
       balance_as_of: plan.balanceAsOf,
       ...evaluationForModel(plan),
-      bills_counted: plan.billsInPeriod.map((b) => ({ id: b.id, name: b.name, amount: formatUSD(b.amountCents), due: b.dueDate, overdue: b.overdue })),
+      bills_counted: plan.billsInPeriod.map((b) => ({
+        id: b.id,
+        name: b.name,
+        amount: formatUSD(b.amountCents),
+        due: b.dueDate,
+        overdue: b.overdue,
+        ...(b.payments > 1 ? { payments_before_period_end: b.payments, counted: formatUSD(b.totalCents) } : {}),
+      })),
       bills_after_period: plan.billsOutsidePeriod.map((b) => ({ id: b.id, name: b.name, amount: formatUSD(b.amountCents), due: b.dueDate })),
       verified_summary: summaryMessage(plan),
     });

@@ -4,6 +4,7 @@ import {
   buildSetupSuggestion,
   computePlan,
   dateLabel,
+  daysBetween,
   emptyState,
   everydayForNextPeriod,
   markBillPaid,
@@ -13,6 +14,7 @@ import {
   parseMoney,
   previewBalanceUpdate,
   startNextPeriod,
+  STALE_AFTER_DAYS,
   today,
   type Bill,
 } from "@/lib/client/model";
@@ -20,6 +22,7 @@ import { useApp } from "./context";
 import { Button, downloadText, Modal, Notice, PageHeading } from "./UI";
 import { billIcon, Icon } from "./Icon";
 import { clearState } from "@/lib/storage/local";
+import { addMonths } from "@/lib/finance/dates";
 import { aiWhere, onAiWhereChange, setAiWhere, type AiWhere } from "@/lib/client/onDevice";
 import { guideDueLine, lowerBillGuide } from "@/lib/client/lowerBill";
 import { PlusOffer, PlusTag, usePlus } from "./Plus";
@@ -267,7 +270,8 @@ export function BillsScreen() {
   const active = state.bills.filter((b) => b.status === "confirmed" || b.status === "paid");
   const cats = useCategories(active);
   const recurring = new Map<string, Bill>();
-  for (const b of active) {
+  // Unpaid bills only: a paid occurrence is history, and its next one is already on file.
+  for (const b of active.filter((b) => b.status === "confirmed")) {
     const c = cats[b.id];
     if (c && (c.label === "subscription" || c.label === "gym") && c.confidence >= 0.5 && PER_MONTH[b.frequency] > 0) {
       if (!recurring.has(b.name)) recurring.set(b.name, b);
@@ -279,7 +283,10 @@ export function BillsScreen() {
     try {
       change((s) => markBillPaid(s, pay!.id, already));
       setPay(null);
-      toast("Bill marked paid. Your plan is up to date.");
+      // An old balance or a period that has ended: the plan is not up to date until the balance is updated.
+      const outdated =
+        daysBetween(state.plan.balanceDate, today()) >= STALE_AFTER_DAYS || today() > state.plan.horizonEndDate;
+      toast(outdated ? "Bill marked paid." : "Bill marked paid. Your plan is up to date.");
     } catch (e) {
       setError((e as Error).message);
     }
@@ -661,7 +668,7 @@ export function UpdateScreen() {
                   <p>
                     Bills due before {dateLabel(payday)}
                     <strong>
-                      {nextPlan.bills.length} · {money(nextPlan.billsCents)}
+                      {nextPlan.paymentCount} · {money(nextPlan.billsCents)}
                     </strong>
                   </p>
                   <p>
@@ -866,8 +873,10 @@ export function SettingsScreen() {
                   ...s.plan,
                   horizonEndDate: end,
                   essentialsCents: ec,
-                  // A new end date means a new period was planned: later periods start from this amount.
-                  everydayPerPeriodCents: changedDate ? ec : s.plan.everydayPerPeriodCents,
+                  // A new end date with a new amount means a new period was planned: later periods start from it.
+                  // An amount left as prefilled is only what remains of this period, not a per-period figure.
+                  everydayPerPeriodCents:
+                    changedDate && ec !== s.plan.essentialsCents ? ec : s.plan.everydayPerPeriodCents,
                   reserveCents: rc,
                 },
               }));
@@ -1098,24 +1107,24 @@ export function SettingsScreen() {
                     balanceCents: 0,
                     balanceDate: today(),
                     horizonEndDate: addDays(today(), 13),
+                    // Prefill everyday spending for a whole period, not what was left of this one.
+                    essentialsCents: everydayForNextPeriod(s),
                   },
+                  // A paid bill is left out: its next occurrence is already on file as a confirmed bill.
                   bills: s.bills
                     .filter(
                       (b) =>
-                        b.frequency !== "One-time" && b.status !== "dismissed",
+                        b.frequency !== "One-time" && b.status !== "dismissed" && b.status !== "paid",
                     )
                     .map((b) => {
-                      const interval =
-                        b.frequency === "Weekly"
-                          ? 7
-                          : b.frequency === "Biweekly"
-                            ? 14
-                            : 30;
-                      let due =
-                        b.status === "paid"
-                          ? addDays(b.dueDate, interval)
-                          : b.dueDate;
-                      while (due < today()) due = addDays(due, interval);
+                      const anchor = b.recurrenceAnchorDay ?? Number(b.dueDate.slice(8));
+                      let due = b.dueDate;
+                      // An overdue date moves forward by the bill's own rhythm.
+                      while (due < today())
+                        due =
+                          b.frequency === "Monthly"
+                            ? addMonths(due, 1, anchor)
+                            : addDays(due, b.frequency === "Weekly" ? 7 : 14);
                       return {
                         ...b,
                         dueDate: due,

@@ -1,7 +1,7 @@
 // Saved what-ifs: a purchase, a new bill or a late paycheck, kept with the plan.
 // Each one is re-evaluated against the plan as it is now, so the answer stays true after every update.
 // A what-if never changes the plan.
-import { computePlan, dateLabel, money, newId, type AppState, type Scenario } from "./model";
+import { computePlan, dateLabel, money, newId, periodSoFar, type AppState, type Scenario } from "./model";
 import { latePaycheck } from "./stress";
 
 /** What the what-if would dip into: nothing, the reserve, everyday spending, or the bills themselves. */
@@ -73,7 +73,8 @@ export function evaluateScenario(state: AppState, s: Scenario, now?: string): Sc
     );
   }
   // A bill counts when it is due in this period: not after it ends, and not before it started.
-  const past = s.kind === "new_bill" && s.dueDate < state.plan.balanceDate;
+  // The period's first day, not the balance date: that one moves with every balance update.
+  const past = s.kind === "new_bill" && s.dueDate < periodSoFar(state).start;
   const inPeriod = s.kind === "purchase" || (!past && s.dueDate <= state.plan.horizonEndDate);
   const cost = inPeriod ? s.amountCents : 0;
   return outcome(

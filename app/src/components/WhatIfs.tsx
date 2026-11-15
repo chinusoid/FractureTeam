@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { dateLabel, money, parseMoney, today, type Scenario } from "@/lib/client/model";
+import { dateLabel, money, parseMoney, periodSoFar, today, type Scenario } from "@/lib/client/model";
 import { addScenario, evaluateScenario, removeScenario, scenarioTitle, TOUCHES_LABEL } from "@/lib/client/scenarios";
 import { useApp } from "./context";
 import { Button, Modal, Notice } from "./UI";
@@ -11,13 +11,14 @@ type Draft = Parameters<typeof addScenario>[1];
 /**
  * Saving a what-if belongs to Covered Plus. With Plus off, the first save shows the offer;
  * accepting it turns Plus on (and counts one more interested browser), then saves.
+ * `stored` runs once the what-if is really kept, so a form is cleared only then ("Not now" keeps what was typed).
  */
 export function useSaveWhatIf() {
   const { change, toast, state } = useApp();
   const [plus, turnOnPlus] = usePlus();
-  const [pending, setPending] = useState<Draft | null>(null);
+  const [pending, setPending] = useState<{ draft: Draft; stored?: () => void } | null>(null);
   const [busy, setBusy] = useState(false);
-  function store(draft: Draft) {
+  function store(draft: Draft, stored?: () => void) {
     try {
       const before = state.scenarios.length;
       let after = before;
@@ -26,12 +27,13 @@ export function useSaveWhatIf() {
         after = next.scenarios.length;
         return next;
       });
+      stored?.();
       toast(after > before ? "Saved to your what-ifs. It is recalculated whenever your plan changes." : "That what-if is already saved.");
     } catch (e) {
       toast(e instanceof Error ? e.message : "This what-if could not be saved.");
     }
   }
-  const save = (draft: Draft) => (plus ? store(draft) : setPending(draft));
+  const save = (draft: Draft, stored?: () => void) => (plus ? store(draft, stored) : setPending({ draft, stored }));
   const dialog = pending && (
     <Modal title="Saved what-ifs are part of Covered Plus" close={() => setPending(null)}>
       <PlusOffer
@@ -41,7 +43,7 @@ export function useSaveWhatIf() {
         onAccept={() => {
           setBusy(true);
           void turnOnPlus().then(() => {
-            store(pending);
+            store(pending.draft, pending.stored);
             setBusy(false);
             setPending(null);
           });
@@ -143,9 +145,10 @@ export function WhatIfs() {
               return;
             }
             setError("");
-            save({ kind: "new_bill", label: name, amountCents: cents, dueDate: due });
-            setName("");
-            setAmount("");
+            save({ kind: "new_bill", label: name, amountCents: cents, dueDate: due }, () => {
+              setName("");
+              setAmount("");
+            });
           }}
         >
           <label>
@@ -161,7 +164,7 @@ export function WhatIfs() {
           </label>
           <label>
             Due
-            <input type="date" value={due} min={state.plan.balanceDate} onChange={(e) => setDue(e.target.value)} />
+            <input type="date" value={due} min={periodSoFar(state).start} onChange={(e) => setDue(e.target.value)} />
           </label>
           <Button type="submit" kind="secondary">
             Save as a what-if

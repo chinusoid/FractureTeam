@@ -78,6 +78,8 @@ const kicker = (slide, value, color = C.accent2) => text(slide, value, { x: MX, 
 const TAGS = {
   FACT: { fill: C.accent4, color: C.accent1, w: 0.72 },
   ESTIMATE: { fill: C.accent5, color: C.accent6, w: 1.14 },
+  SCENARIO: { fill: C.accent5, color: C.accent6, w: 1.14 },
+  ASSUMPTION: { fill: C.accent5, color: C.accent6, w: 1.4 },
 };
 function tag(slide, kind, x, y) {
   const t = TAGS[kind];
@@ -216,7 +218,7 @@ async function build() {
     text(s, "$2,200 − $1,300 − $350 − $250 = $300", { x: MX + 0.3, y: 5.4, w: 4.6, h: 0.4, fontSize: 17, bold: true, color: C.text1, valign: "middle" });
     text(s, "balance − bills − everyday spending − reserve = available", { x: MX + 0.3, y: 5.85, w: 4.6, h: 0.3, fontSize: 11, color: C.text2, valign: "middle" });
     await shot(s, "plan.png", { x: 6.2, y: TOP + 0.1, w: W - MX - 6.2, radiusPx: 28, alt: "Covered overview: $300 available to spend, $1,300 of upcoming bills, $350 of everyday spending, three bills coming up and a purchase check" });
-    s.addNotes("0:45 — switch to the live product here. Three ways in: a bank CSV, five questions answered in plain words, or the numbers typed by hand; whichever you pick, you confirm every bill before the plan exists. For the demo: Try sample data, continue to setup, confirm the bills (point at the savings transfer it flagged), build the plan. $2,200 in the account, $300 actually free.");
+    s.addNotes("0:45 — switch to the live product here. Three ways in: a bank CSV, five questions answered in plain words, or the numbers typed by hand; whichever you pick, you confirm every bill before the plan exists. For the demo: Try sample data, continue to setup, confirm the bills (point at the savings transfer it flagged), build the plan. $2,200 in the account, $300 actually free. The decision this gives me: how much I can spend until payday without touching rent, groceries or the reserve.");
   }
 
   // 4 — in the product
@@ -248,7 +250,7 @@ async function build() {
         { text: PROD_URL, options: { bold: true, color: C.text1, hyperlink: { url: "https://" + PROD_URL, tooltip: "Open the live product" } } },
       ], { x: tx + 0.25, y: 6.02, w: tw - 0.5, h: 0.6, fontSize: 13, valign: "middle" });
     }
-    s.addNotes("1:25, still live. Ask: can I afford $400 this weekend? The answer is precise: $100 below the reserve, bills still covered. Then: my car insurance went up by $30. A draft with before and after appears; press Confirm, the plan moves from $300 to $270. Then update the balance to $950 and tick rent as paid: still $270, nothing counted twice. Backup: recorded video.");
+    s.addNotes("1:25, still live, one story. A purchase: can I afford $400 this weekend? The answer is precise: $100 below the reserve, bills still covered. So I can buy it and dip into the reserve, spend $300 instead, or wait for payday. A late paycheck: three days late is covered with $35 of the reserve, and I see which payments land before the money, so I decide what to move before it happens. A change: my car insurance went up by $30. A draft with before and after appears; press Confirm, the plan moves from $300 to $270. A bill is paid: rent goes out, I update the balance to $950 and tick rent: still $270, nothing counted twice, so I keep spending as planned. Backup: recorded video.");
   }
 
   // 5 — how it works
@@ -384,11 +386,11 @@ async function build() {
       if (i < loop.length - 1) s.addImage({ data: await icon(fi.FiArrowRight, HEX.dk2), x: x + lw + (gap - 0.26) / 2, y: ly + (lh - 0.26) / 2, w: 0.26, h: 0.26, objectName: name("Arrow") });
     }
     text(s, [
-      { text: "Bills, reserve and settings carry over; nothing is imported again. Target: 30 seconds, not measured yet. " },
+      { text: "Nothing is imported again. Measured: 1 field, 3 ticks, 2 clicks, and 0.2 s of the product's own time. Not measured yet: how long people take. " },
       { text: "How we test the price. ", options: { bold: true, color: C.text1 } },
       { text: "Carrying the plan over, or saving a what-if, shows the Plus offer, and we count who takes it. A click is interest; the proof is a real purchase in a paid pilot. Payment is not connected yet." },
     ], { x: MX, y: ly + lh + 0.14, w: CW, h: 0.5, fontSize: 11.5, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import; our target is thirty seconds and we have not measured it yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
+    s.addNotes("3:35. What we sell is the recurring job, not AI questions. Getting your number is free: the first plan, what you can spend until payday, a purchase check, the math explained on your device. Plus is keeping it right: the plan carries over from paycheck to paycheck, you see what changed and why, your what-ifs are saved and compared, and a reminder brings you back. Coming back is four steps and no new import. We measured it in the product: one field, three ticks and two clicks, and the product itself answers in a fifth of a second. How long a person takes we have not measured yet. Ten dollars a month is the price we are testing: the offer is live and counted, but a click is only interest. The proof is a real purchase in a paid pilot.");
   }
 
   // 9 — business potential
@@ -408,9 +410,9 @@ async function build() {
 
     // LTV scenarios
     const y1 = TOP + 1.0;
-    const tw = tag(s, "ESTIMATE", MX, y1);
+    const tw = tag(s, "SCENARIO", MX, y1);
     text(s, "LTV: what one subscriber pays us, $9.38 a month × months they stay. CAC: the cost to win one; keep it under LTV ÷ 3.", { x: MX + tw + 0.15, y: y1, w: CW - tw - 0.15, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    const sc = [["4 months  ·  our base case", "$38", "$13"], ["6 months", "$56", "$19"], ["12 months", "$113", "$38"]];
+    const sc = [["4 months  ·  base scenario", "$38", "$13"], ["6 months", "$56", "$19"], ["12 months", "$113", "$38"]];
     const cw = (CW - 0.6) / 3, y2 = y1 + 0.42, ch = 1.3;
     sc.forEach((c, i) => {
       const x = MX + i * (cw + 0.3), base = i === 0;
@@ -433,12 +435,12 @@ async function build() {
     text(s, "Card fee $0.59 (Stripe 2.9% + 30¢). AI: $0 when our model answers, about 3¢ for 100 questions on OpenAI, at most 54¢ at the 60-a-day cap.", { x: MX + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.65, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
     const rx = MX + lw + 0.3;
     box(s, { x: rx, y: y3, w: lw, h: h3, fill: { color: C.background1 }, line: { color: C.accent3, width: 1 } });
-    tag(s, "FACT", rx + 0.3, y3 + 0.18);
-    text(s, "About 4 paid months per subscriber", { x: rx + 1.15, y: y3 + 0.18, w: lw - 1.4, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    tag(s, "ASSUMPTION", rx + 0.3, y3 + 0.18);
+    text(s, "About 4 paid months per subscriber", { x: rx + 1.83, y: y3 + 0.18, w: lw - 2.08, h: 0.28, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
     text(s, "54–57% renew after month one (RevenueCat, 2026). We assume 82% a month after that: 1 + 0.55 ÷ 0.18 ≈ 4 months.", { x: rx + 0.3, y: y3 + 0.55, w: lw - 0.6, h: 0.65, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
 
-    text(s, "A CAC under $13 rules out paid ads at first. The first channel is the free, no-sign-up purchase check, reached from search and personal-finance communities. The pilot measures CAC and months retained.", { x: MX, y: 6.36, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
-    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep about $9.38 a month; the AI is about three cents, measured. So LTV is decided by how long people stay, and the benchmark is hard: only 54 to 57% of monthly subscribers in comparable app categories renew after the first month. Our base case assumes 82% a month after that, about four paid months: LTV $38, so a subscriber must cost under $13 to acquire. That rules out paid ads at first, which is why the entry point is the free purchase check, with no sign-up. The pilot measures CAC and months retained.");
+    text(s, "These are scenarios with assumptions, not forecasts: nobody has paid yet. A CAC under $13 rules out paid ads at first, so the first channel is the free, no-sign-up purchase check. The pilot measures CAC and months retained.", { x: MX, y: 6.36, w: CW, h: 0.45, fontSize: 11, color: C.text2, lineSpacingMultiple: 1.1 });
+    s.addNotes("4:00. Scale first: at $10 a month, $100M a year is 834,000 subscribers, under 1% of US adults aged 25 to 44. Unit economics: after the card fee and the AI, we keep about $9.38 a month; the AI is about three cents, measured. So LTV is decided by how long people stay, and the benchmark is hard: only 54 to 57% of monthly subscribers in comparable app categories renew after the first month. These are scenarios with assumptions, not forecasts: nobody has paid yet. The base scenario assumes 82% a month after that, about four paid months: LTV $38, so a subscriber must cost under $13 to acquire. That rules out paid ads at first, which is why the entry point is the free purchase check, with no sign-up. The pilot measures CAC and months retained.");
   }
 
   // 10 — evidence and next steps (the case allows ten slides)
@@ -454,14 +456,14 @@ async function build() {
           "Live in production, no sign-up needed",
           "Our own model alone: 24 of 25 test questions, 77% on new wordings",
           "With OpenAI as backup: 25 of 25 test questions, 34 of 34 setup answers",
-          "186 automated tests on the money math, import and AI guards",
+          "202 automated tests on the money math, import and AI guards",
         ],
       },
       {
         label: "NOT PROVEN YET · WEEKS 1–2", title: "The pain and the habit", dark: false, fill: C.background2, line: C.background2,
         items: [
           "10–15 interviews with people paid every two weeks",
-          "The payday update, timed: the target is 30 seconds",
+          "The payday update, timed with people, not only by a script",
           "A pass: they describe this moment unprompted, and come back after their next paycheck",
         ],
       },
@@ -469,7 +471,7 @@ async function build() {
         label: "NOT PROVEN YET · WEEKS 3–6", title: "The price", dark: true, fill: C.text1, line: C.text1,
         items: [
           "A paid pilot: a real $10 charge, not a click",
-          "Day-7 and day-30 return; the base case needs 4 paid months",
+          "Day-7 and day-30 return; the base scenario needs 4 paid months",
           "If the free purchase check is enough for people, we change the model",
           "A bank connection only after that: it changes the privacy promise",
         ],
@@ -490,7 +492,7 @@ async function build() {
       { text: " in the repo", options: { color: C.text2 } },
     ], { x: MX, y: TOP + h + 0.8, w: 6.6, h: 0.3, fontSize: 12.5, valign: "middle" });
     prodLink(s, MX + 6.9, TOP + h + 0.1, { color: C.text1, mutedColor: C.text2, w: CW - 6.9 });
-    s.addNotes("4:25. What is proven is the engineering: the product is live, our own model passes 24 of 25 test questions by itself and 77% on wordings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand, the habit and the price, and we know how we test each. First two weeks: 10 to 15 interviews with people paid every two weeks, and the payday update timed against our thirty-second target. Then a paid pilot with a real ten-dollar charge, because a click on an offer is not a purchase. If the free purchase check turns out to be enough for people, we change the model. Covered: $2,200 in the bank, $300 is yours.");
+    s.addNotes("4:25. What is proven is the engineering: the product is live, our own model passes 24 of 25 test questions by itself and 77% on wordings it has never seen; with OpenAI as backup all 25 pass, including prompt injection. Tests cover the money math, and browser walkthroughs run on desktop and phone on every change. What is not proven is demand, the habit and the price, and we know how we test each. First two weeks: 10 to 15 interviews with people paid every two weeks, and the payday update timed with them, because so far only a script has timed it. Then a paid pilot with a real ten-dollar charge, because a click on an offer is not a purchase. If the free purchase check turns out to be enough for people, we change the model. Covered: $2,200 in the bank, $300 is yours.");
   }
 
   await pres.writeFile({ fileName: OUT });

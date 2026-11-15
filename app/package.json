@@ -9,6 +9,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "e2e": "tsx tests/e2e/run.ts",
+    "measure": "tsx tests/e2e/measure.ts",
     "eval:ai": "tsx tests/ai-eval/run.ts",
     "eval:intake": "tsx tests/ai-eval/intake.ts",
     "e2e:assistant": "tsx tests/e2e/assistant-mock.ts"

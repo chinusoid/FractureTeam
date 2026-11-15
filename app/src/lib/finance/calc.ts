@@ -1,5 +1,5 @@
 import { type Cents, sumCents } from "./money";
-import { type ISODate, isWithin } from "./dates";
+import { type ISODate, addDays, addMonths, diffDays, isWithin } from "./dates";
 import type { AppState, PlanInput } from "./types";
 
 export type PlanStatus = "ok" | "reserve_short" | "essentials_short" | "bills_short";
@@ -10,6 +10,49 @@ export interface BillLine {
   amountCents: Cents;
   dueDate: ISODate;
   overdue: boolean;
+  /** Payments of this bill that fall on or before the period end: 1, or more for a bill that repeats inside it. */
+  payments: number;
+  /** amountCents × payments: what the plan sets aside for this bill. */
+  totalCents: Cents;
+}
+
+export type Repeat = "weekly" | "biweekly" | "monthly";
+
+/** What counting a bill's payments needs to know about it and about the bills around it. */
+export interface RepeatingBill {
+  id: string;
+  name: string;
+  dueDate: ISODate;
+  paid: boolean;
+  repeat?: Repeat;
+  /** Day of the month a monthly bill keeps across short months. */
+  anchorDay?: number;
+}
+
+/**
+ * How many payments of an unpaid bill fall on or before `endDate`: the one on its due date, plus its
+ * repeats. A weekly bill can come due twice before payday, and the plan has to set both aside.
+ * Only the latest unpaid bill of a name projects repeats, and a repeat is skipped when another bill
+ * of that name already stands within three days of it, so a payment is never counted twice.
+ * Shared by the browser and the server: the overview and the assistant count the same way.
+ */
+export function paymentsBy(bill: RepeatingBill, all: readonly RepeatingBill[], endDate: ISODate): number {
+  if (bill.dueDate > endDate) return 0;
+  if (!bill.repeat) return 1;
+  const name = bill.name.trim().toLowerCase();
+  const others = all.filter((o) => o.id !== bill.id && o.name.trim().toLowerCase() === name);
+  const laterUnpaid = others.some((o) => !o.paid && (o.dueDate > bill.dueDate || (o.dueDate === bill.dueDate && o.id > bill.id)));
+  if (laterUnpaid) return 1;
+  const anchor = bill.anchorDay ?? Number(bill.dueDate.slice(8));
+  let count = 1;
+  let next = bill.dueDate;
+  for (let i = 0; i < 60; i++) {
+    next = bill.repeat === "monthly" ? addMonths(next, 1, anchor) : addDays(next, bill.repeat === "weekly" ? 7 : 14);
+    if (next > endDate) break;
+    const date = next;
+    if (!others.some((o) => Math.abs(diffDays(o.dueDate, date)) <= 3)) count++;
+  }
+  return count;
 }
 
 /** Result of checking money against the three layers, in priority order. */
@@ -85,18 +128,29 @@ export function computePlan(input: PlanInput): PlanResult {
   const confirmedUnpaid = input.obligations.filter(
     (o) => o.confirmationStatus === "confirmed" && o.paymentStatus === "unpaid",
   );
-  const toLine = (o: PlanInput["obligations"][number]): BillLine => ({
-    id: o.id,
-    name: o.name,
-    amountCents: o.amountCents,
-    dueDate: o.dueDate,
-    overdue: o.dueDate < input.today,
-  });
+  const standing: RepeatingBill[] = input.obligations
+    .filter((o) => o.confirmationStatus === "confirmed")
+    .map((o) => ({ id: o.id, name: o.name, dueDate: o.dueDate, paid: o.paymentStatus === "paid", repeat: o.repeat, anchorDay: o.anchorDay }));
+  const toLine = (o: PlanInput["obligations"][number]): BillLine => {
+    const payments = Math.max(
+      1,
+      paymentsBy({ id: o.id, name: o.name, dueDate: o.dueDate, paid: false, repeat: o.repeat, anchorDay: o.anchorDay }, standing, input.endDate),
+    );
+    return {
+      id: o.id,
+      name: o.name,
+      amountCents: o.amountCents,
+      dueDate: o.dueDate,
+      overdue: o.dueDate < input.today,
+      payments,
+      totalCents: o.amountCents * payments,
+    };
+  };
   const byDate = (a: BillLine, b: BillLine) => (a.dueDate === b.dueDate ? a.name.localeCompare(b.name) : a.dueDate < b.dueDate ? -1 : 1);
   // Bills due up to and including the end date count. Unpaid bills from before the period are still owed.
   const billsInPeriod = confirmedUnpaid.filter((o) => o.dueDate <= input.endDate).map(toLine).sort(byDate);
   const billsOutsidePeriod = confirmedUnpaid.filter((o) => o.dueDate > input.endDate).map(toLine).sort(byDate);
-  const billsCents = sumCents(billsInPeriod.map((b) => b.amountCents));
+  const billsCents = sumCents(billsInPeriod.map((b) => b.totalCents));
   const evaluation = evaluate(input.balanceCents, billsCents, input.essentialRemainingCents, input.reserveTargetCents);
   return {
     ...evaluation,
