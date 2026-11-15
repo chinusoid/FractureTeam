@@ -53,6 +53,13 @@ describe("late paycheck stress test", () => {
     expect(everydayPerDay(plan(BASE), NOW)).toBe(10000);
   });
 
+  it("keeps the daily pace when days pass without a balance update", () => {
+    // Three days later with the same balance date: still $600 over the 6 days from Nov 15 to Nov 20.
+    expect(everydayPerDay(plan(BASE), "2026-11-18")).toBe(10000);
+    expect(latePaycheck(plan(BASE), 1, "2026-11-18").extraEverydayCents).toBe(10000);
+    expect(latePaycheck(plan(BASE), 1, "2026-11-20").extraEverydayCents).toBe(10000);
+  });
+
   it("uses part of the reserve when the paycheck is a day late", () => {
     const r = latePaycheck(plan(BASE), 1, NOW);
     expect(r.newEnd).toBe("2026-11-21");

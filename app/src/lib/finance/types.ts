@@ -130,5 +130,9 @@ export interface PlanInput {
   endDate: ISODate;
   essentialRemainingCents: Cents;
   reserveTargetCents: Cents;
-  obligations: Pick<Obligation, "id" | "name" | "amountCents" | "dueDate" | "paymentStatus" | "confirmationStatus">[];
+  obligations: (Pick<Obligation, "id" | "name" | "amountCents" | "dueDate" | "paymentStatus" | "confirmationStatus"> & {
+    /** How the bill repeats; absent for a one-time bill. A bill that repeats inside the period is counted each time. */
+    repeat?: "weekly" | "biweekly" | "monthly";
+    anchorDay?: number;
+  })[];
 }

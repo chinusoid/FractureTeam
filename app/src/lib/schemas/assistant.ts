@@ -27,6 +27,9 @@ export const ObligationContextSchema = z.object({
   dueDate: isoDate,
   paymentStatus: z.enum(["unpaid", "paid"]),
   confirmationStatus: z.enum(["suggested", "confirmed"]),
+  /** How the bill repeats, so a bill due twice before payday is counted twice. Absent for a one-time bill. */
+  repeat: z.enum(["weekly", "biweekly", "monthly"]).optional(),
+  anchorDay: z.number().int().min(1).max(31).optional(),
 });
 
 /** Rule-based recurring candidates sent for the setup review (descriptions already scrubbed by the client). */

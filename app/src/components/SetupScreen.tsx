@@ -35,7 +35,7 @@ export function SetupScreen() {
       String(state.plan.essentialsCents / 100),
     ),
     [reserve, setReserve] = useState(state.plan.reserveCents),
-    [custom, setCustom] = useState(false),
+    [custom, setCustom] = useState(!RESERVE_OPTIONS_CENTS.includes(state.plan.reserveCents)),
     [error, setError] = useState(""),
     [editor, setEditor] = useState<Bill | "new" | null>(null);
   /** Started without a file: nothing was detected, every number comes from the person. */
