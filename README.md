@@ -45,8 +45,8 @@ The case: a web product that closes a fundamental money pain for US adults aged 
 | --- | --- | --- |
 | **Does it work?** (40%) | Yes: live, no sign-up, end to end; tested code computes every dollar | [Production checks](docs/evidence.md#the-product-works-in-production) |
 | **What do we sell?** (20%) | The first plan is free. Covered Plus keeps the number right after every paycheck; $10 a month is the price we are testing | [What Plus adds](docs/evidence.md#what-we-sell) |
-| **Who do we sell to?** (15%) | Working adults, 25–45, paid every two weeks, with bills between paychecks, who do not want to connect their bank to one more app | [Market numbers](docs/evidence.md#market-numbers-in-the-deck) |
-| **Why does it make money?** (15%) | We keep $9.38 of $10. In the base scenario a subscriber stays 4 months (LTV $38); $100M ARR is 834,000 subscribers, 0.9% of US adults aged 25–44. Scenarios with assumptions, not forecasts | [Unit economics](docs/evidence.md#market-numbers-in-the-deck) |
+| **Who do we sell to?** (15%) | Working adults, 25–45, paid every two weeks, with bills between paychecks, who do not want to connect their bank to one more app | [Market numbers](docs/evidence.md#market-numbers-in-the-deck-and-the-readme) |
+| **Why does it make money?** (15%) | We keep $9.38 of $10. In the base scenario a subscriber stays 4 months (LTV $38); $100M ARR is 834,000 subscribers, 0.9% of US adults aged 25–44. Scenarios with assumptions, not forecasts | [Unit economics](docs/evidence.md#market-numbers-in-the-deck-and-the-readme) |
 | **Is it new?** (10%) | It names what a purchase breaks, asks for no bank login, and runs our own model on your device | [Only in Covered](docs/features.md#only-in-covered) |
 
 ### Does it work? (40%)
@@ -105,10 +105,10 @@ These are scenarios with assumptions, not forecasts: nobody has paid yet.
 | | Number | What it rests on |
 | --- | --- | --- |
 | Margin | We keep about **$9.38** of every $10 | Fact: Stripe's list fee ($0.59) and the measured AI cost (about 3¢ for 100 questions; at most 54¢ at the 60-a-day cap; $0 when our model answers) |
-| Scale | $100M ARR is **834,000** subscribers | Arithmetic at $10 a month: about 0.9% of ~89 million US adults aged 25–44. Whether that many will pay is not known |
+| Scale | $100M ARR is **834,000** subscribers | Arithmetic at $10 a month: about 0.9% of ~89 million US adults aged 25–44. A goal, not a forecast: at a 4-month stay it would take about 208,000 new subscribers a month, so it depends on retention well above the base scenario |
 | Retention | About **4** paid months in the base scenario | Assumption: 55% renew after month one (RevenueCat's 54–57% for comparable monthly plans), then 82% a month |
 | LTV and CAC | LTV **$38**, so winning a subscriber must cost under **$13** | Follows from the two rows above. At 6 months it is $56 and $19; at 12 months, $113 and $38. At $9.38 a month, $13 pays back in under 2 months |
-| CAC by channel | Search and communities → the free purchase check: content cost only. Creators: paid per subscriber, capped at **$13**. Paid ads: not before the pilot | Assumption: 2% of free plans become paid, so $13 buys 50 free plans, $0.26 each. The 2% is the median for freemium apps in RevenueCat's 2026 report (2.1% of installs pay within 35 days); ours is a web product, so it is an analogy, not a measurement. Paid clicks cost more than $0.26, so ads wait until retention is measured |
+| CAC by channel | Search and communities → the free purchase check: content cost only. Creators: paid per subscriber, capped at **$13**. Paid ads: not before the pilot | Assumption: 2% of free plans become paid, so $13 buys 50 free plans, $0.26 each. The 2% is the median for freemium apps in RevenueCat's 2026 report (2.1% of installs pay within 35 days); ours is a web product, so it is an analogy, not a measurement. At 2%, a visit may cost at most $0.26, so paid ads wait until retention is measured |
 
 The paid pilot measures CAC and months retained and replaces these assumptions.
 

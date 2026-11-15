@@ -61,7 +61,7 @@ The first plan is free; Covered Plus is the recurring job of keeping it true. $1
 | The paywall is live, with a test checkout, and counted | Starting the next period, saving the first what-if, or running out of the 5 free cloud questions opens the paywall with the price, then a checkout marked "Test mode" (`app/src/components/Plus.tsx`). Plus turns on only when the checkout is completed, which counts the browser once (`POST /api/plus`); `GET /api/plus` returns the count. On the sample plan, **Demo: skip to payday** (`skipToPayday` in `model.ts`) moves the dates so the return on payday can be seen at once |
 | What is not there | Real payment. The paywall leads to a checkout in test mode that charges nothing and asks for no card. A completed test checkout is interest; a real purchase in a paid pilot is the proof. How long people take to update is not measured |
 
-## Market numbers in the deck
+## Market numbers in the deck and the README
 
 | Number | Source |
 | --- | --- |
@@ -77,6 +77,7 @@ The first plan is free; Covered Plus is the recurring job of keeping it true. $1
 | About 3¢ of AI a month | 100 questions × $0.0003, the measured OpenAI cost per task; $0 when our model answers. Worst case 60 a day, all on OpenAI: 1,800 × $0.0003 = $0.54 |
 | About 4 paid months in the base scenario (an assumption, not a measurement) | 1 + 0.55 ÷ (1 − 0.82) ≈ 4.1: 55% renew after month one (RevenueCat median), then an assumed 82% a month. LTV = 4 × $9.38 ≈ $38; CAC ceiling = LTV ÷ 3 ≈ $13 |
 | 2% of free plans become paid (assumption behind CAC by channel) | RevenueCat, State of Subscription Apps 2026: freemium apps convert a median 2.1% of installs to a paid subscription within 35 days (hard paywalls 10.7%). Mobile apps, used here as an analogy for a web product |
+| $100M ARR at a 4-month stay needs about 208,000 new subscribers a month | 834,000 ÷ 4. Stated on the deck's money slide as the reason the goal depends on retention well above the base scenario |
 | $13 pays back in under 2 months | $13 ÷ $9.38 kept per month ≈ 1.4 months |
 | Competitor prices | PocketGuard's own pricing page; YNAB and Monarch list prices as reported in November 2026 |
 
