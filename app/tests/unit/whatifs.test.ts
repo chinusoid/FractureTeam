@@ -62,6 +62,24 @@ describe("saved what-ifs", () => {
     expect(stale.detail).toContain("no longer counts");
   });
 
+  it("a new bill due earlier in this period still counts after an ordinary balance update", () => {
+    // The period began Nov 11; the what-if bill is due Nov 14; the balance is then updated on a later day.
+    const began = { ...plan(), plan: { ...plan().plan, balanceDate: "2026-11-11", periodStartDate: "2026-11-11", periodPaidCents: 0 } };
+    const vet = { id: "v", kind: "new_bill" as const, label: "Vet", amountCents: 12000, dueDate: "2026-11-14" };
+    expect(evaluateScenario(began, vet, NOW)).toMatchObject({ remainderCents: 18000, changeCents: -12000 });
+    // The update stamps the balance with the day it is made (pinned here to Nov 15); the period start stays.
+    const refreshed = previewBalanceUpdate(began, 220000, [], true).state;
+    const updated = { ...refreshed, plan: { ...refreshed.plan, balanceDate: NOW } };
+    expect(updated.plan.periodStartDate).toBe("2026-11-11");
+    const out = evaluateScenario(updated, vet, NOW);
+    expect(out).toMatchObject({ remainderCents: 18000, changeCents: -12000 });
+    expect(out.detail).toContain("before your next payday");
+    // Due before the period began: it still drops out.
+    const old = evaluateScenario(updated, { ...vet, dueDate: "2026-11-10" }, NOW);
+    expect(old).toMatchObject({ changeCents: 0 });
+    expect(old.detail).toContain("before this period started");
+  });
+
   it("a late paycheck adds the bills that land first and the extra days of everyday spending", () => {
     const state = plan([bill("Gym", 40, "2026-11-28")]);
     const out = evaluateScenario(state, { id: "l", kind: "late_payday", lateDays: 7 }, NOW);
@@ -173,5 +191,73 @@ describe("the next pay period", () => {
   it("falls back to what was planned plus what was counted as spent, for plans saved before the field existed", () => {
     const old = { ...plan(), plan: { ...plan().plan, everydayPerPeriodCents: undefined, essentialsCents: 20000 }, lastUpdate: { date: NOW, previousBalanceCents: 220000, newBalanceCents: 205000, closedBills: [], essentialsSpentCents: 15000, excessCents: 0 } };
     expect(everydayForNextPeriod(old)).toBe(35000);
+  });
+});
+
+describe("a bill paid around a balance update", () => {
+  // Rent ($1,100) left the account and $50 was spent on everyday things: the bank shows $1,050.
+  const money = (s: AppState) => ({
+    balanceCents: s.plan.balanceCents,
+    essentialsCents: s.plan.essentialsCents,
+    periodPaidCents: s.plan.periodPaidCents,
+    remainderCents: computePlan(s).remainderCents,
+    unpaid: s.bills.filter((b) => b.status === "confirmed").map((b) => `${b.name} ${b.dueDate}`).sort(),
+  });
+
+  it("gives the same money in any order: ticked in the update, marked already deducted after it, or deducted before it", () => {
+    const ticked = previewBalanceUpdate(plan(), 105000, ["rent"], true).state;
+    expect(money(ticked)).toMatchObject({ balanceCents: 105000, essentialsCents: 30000, periodPaidCents: 110000, remainderCents: 30000 });
+
+    // Not ticked: the whole $1,150 drop looks like everyday spending, $800 of it beyond the budget.
+    const unticked = previewBalanceUpdate(plan(), 105000, [], true).state;
+    expect(unticked.plan.essentialsCents).toBe(0);
+    expect(unticked.lastUpdate).toMatchObject({ essentialsSpentCents: 35000, excessCents: 80000 });
+    const after = markBillPaid(unticked, "rent", true);
+    expect(money(after)).toEqual(money(ticked));
+    expect(after.lastUpdate).toMatchObject({ essentialsSpentCents: 5000, excessCents: 0, closedBills: ["Rent"] });
+    expect(after.lastUpdate).toEqual(ticked.lastUpdate);
+
+    const before = previewBalanceUpdate(markBillPaid(plan(), "rent", false), 105000, [], true).state;
+    expect(money(before)).toEqual(money(ticked));
+    expect(before.lastUpdate).toMatchObject({ essentialsSpentCents: 5000, excessCents: 0 });
+  });
+
+  it("two bills marked already deducted after the update match ticking both", () => {
+    const ticked = previewBalanceUpdate(plan(), 90000, ["rent", "insurance"], true).state;
+    const unticked = previewBalanceUpdate(plan(), 90000, [], true).state;
+    const after = markBillPaid(markBillPaid(unticked, "rent", true), "insurance", true);
+    expect(money(after)).toEqual(money(ticked));
+    expect(after.lastUpdate).toMatchObject({ essentialsSpentCents: 5000, excessCents: 0, closedBills: ["Rent", "Insurance"] });
+  });
+
+  it("keeps what is still beyond the everyday budget once the bill is taken out", () => {
+    // $2,200 to $600: rent explains $1,100 of the $1,600, everyday $350, and $150 is still beyond it.
+    const ticked = previewBalanceUpdate(plan(), 60000, ["rent"], true).state;
+    const after = markBillPaid(previewBalanceUpdate(plan(), 60000, [], true).state, "rent", true);
+    expect(money(after)).toEqual(money(ticked));
+    expect(after.lastUpdate).toMatchObject({ essentialsSpentCents: 35000, excessCents: 15000 });
+  });
+
+  it("an update that counted nothing as everyday spending stays that way", () => {
+    const ticked = previewBalanceUpdate(plan(), 60000, ["rent"], false).state;
+    const after = markBillPaid(previewBalanceUpdate(plan(), 60000, [], false).state, "rent", true);
+    expect(money(after)).toEqual(money(ticked));
+    expect(after.plan.essentialsCents).toBe(35000);
+    expect(after.lastUpdate).toMatchObject({ essentialsSpentCents: 0, excessCents: 15000 });
+  });
+
+  it("leaves everyday spending alone when the balance did not come from that update", () => {
+    const unticked = previewBalanceUpdate(plan(), 105000, [], true).state;
+    // The update was made on an earlier day than the balance the plan now stands on.
+    const older = { ...unticked, lastUpdate: { ...unticked.lastUpdate!, date: "2026-11-01" } };
+    expect(markBillPaid(older, "rent", true).plan.essentialsCents).toBe(0);
+    expect(markBillPaid(older, "rent", true).lastUpdate).toEqual(older.lastUpdate);
+    // A move to a new period, and "deduct it now", are not redone either.
+    const moved = startNextPeriod(plan(), 290000, [], "2026-12-09", 35000, "2026-11-25").state;
+    expect(markBillPaid(moved, "rent", true).lastUpdate).toEqual(moved.lastUpdate);
+    expect(markBillPaid(moved, "rent", true).plan.essentialsCents).toBe(35000);
+    const now = markBillPaid(unticked, "insurance", false);
+    expect(now.plan).toMatchObject({ balanceCents: 90000, essentialsCents: 0 });
+    expect(now.lastUpdate).toEqual(unticked.lastUpdate);
   });
 });

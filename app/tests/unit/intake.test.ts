@@ -172,7 +172,7 @@ test("interview in the browser: answers fill a draft in order, and the draft ope
   assert.equal(s.plan.reserveCents, 25_000);
   assert.equal(s.stateVersion, 5);
   assert.equal(s.aiConsent, true);
-  assert.deepEqual(s.importHashes, ["h"]);
+  assert.deepEqual(s.importHashes, []);
   assert.equal(s.transactions.length, 0);
   assert.equal(s.bills.length, 1);
   assert.equal(s.bills[0].status, "candidate");

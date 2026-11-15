@@ -13,7 +13,7 @@ available = entered bank balance
           − reserve
 ```
 
-Overdue unpaid bills remain included. Bills beyond the period end are displayed separately. Past imported transactions and predicted income do not change the entered bank balance. Purchase checks are hypothetical. Bills, everyday-spending shortfalls, and reserve shortfalls have different explanations.
+Overdue unpaid bills remain included. A bill that comes due more than once before the period end is set aside each time: a weekly $50 bill with two payments before payday counts as $100 (`paymentsBy` in `app/src/lib/finance/calc.ts`, used by both the browser and the server, so the overview and the assistant count the same way). Bills beyond the period end are displayed separately. Past imported transactions and predicted income do not change the entered bank balance. Purchase checks are hypothetical. Bills, everyday-spending shortfalls, and reserve shortfalls have different explanations.
 
 Sample A, generated relative to the browser's current date:
 

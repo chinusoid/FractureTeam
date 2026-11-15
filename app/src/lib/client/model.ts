@@ -2,6 +2,7 @@
 // modules (src/lib/import, src/lib/demo); plan math mirrors src/lib/finance used by the server.
 import { z } from "zod";
 import { addMonths } from "../finance/dates";
+import { paymentsBy, type Repeat, type RepeatingBill } from "../finance/calc";
 import { validatePayload } from "../finance/proposals";
 import { ChangeProposalSchema } from "../schemas/assistant";
 import { parseCsv as sharedParseCsv } from "../import/csv";
@@ -164,15 +165,36 @@ export const STATUS_LABEL = {
   essentials_short: "Everyday spending needs attention",
   reserve_short: "Your reserve needs attention",
 };
+const REPEAT: Record<Bill["frequency"], Repeat | undefined> = {
+  Weekly: "weekly",
+  Biweekly: "biweekly",
+  Monthly: "monthly",
+  "One-time": undefined,
+};
+/** How a bill repeats, in the words the shared money code uses. */
+export const repeatOf = (bill: Pick<Bill, "frequency">) => REPEAT[bill.frequency];
+/**
+ * How many payments of each unpaid bill fall on or before the period end. Usually 1; a weekly bill
+ * in a two-week period is 2. The same function counts on the server, so the assistant agrees.
+ */
+export function paymentsInPeriod(state: AppState): Record<string, number> {
+  const standing: RepeatingBill[] = state.bills
+    .filter((b) => b.status === "confirmed" || b.status === "paid")
+    .map((b) => ({ id: b.id, name: b.name, dueDate: b.dueDate, paid: b.status === "paid", repeat: repeatOf(b), anchorDay: b.recurrenceAnchorDay }));
+  const out: Record<string, number> = {};
+  for (const b of standing) if (!b.paid) out[b.id] = paymentsBy(b, standing, state.plan.horizonEndDate);
+  return out;
+}
 export function computePlan(state: AppState) {
   const { plan } = state;
   const bills = state.bills.filter(
     (b) => b.status === "confirmed" && b.dueDate <= plan.horizonEndDate,
   );
+  const payments = paymentsInPeriod(state);
   const outsideBills = state.bills.filter(
     (b) => b.status === "confirmed" && b.dueDate > plan.horizonEndDate,
   );
-  const billsCents = bills.reduce((n, b) => n + b.amountCents, 0);
+  const billsCents = bills.reduce((n, b) => n + b.amountCents * (payments[b.id] ?? 1), 0);
   const afterBills = plan.balanceCents - billsCents;
   const afterEssentials = afterBills - plan.essentialsCents;
   const remainderCents = afterEssentials - plan.reserveCents;
@@ -187,6 +209,10 @@ export function computePlan(state: AppState) {
   return {
     bills,
     outsideBills,
+    /** Payments before the period end, by bill id: more than 1 for a bill that repeats inside the period. */
+    payments,
+    /** All payments counted in billsCents. */
+    paymentCount: bills.reduce((n, b) => n + (payments[b.id] ?? 1), 0),
     billsCents,
     afterBills,
     afterEssentials,
@@ -286,6 +312,27 @@ export function markBillPaid(
     throw new Error(
       "This payment exceeds your balance. Update your balance first.",
     );
+  // "Already deducted" from a balance that came from the last update, where this bill was not ticked:
+  // that update counted the payment as everyday spending (and the rest as beyond it). Redo its split
+  // without the bill, so the money ends up the same as ticking the bill in the update.
+  const last = state.lastUpdate;
+  const redo = alreadyDeducted && last && !last.newPeriod && last.date === state.plan.balanceDate ? last : null;
+  let essentialsCents = state.plan.essentialsCents,
+    lastUpdate = state.lastUpdate;
+  if (redo) {
+    const essentialsBefore = state.plan.essentialsCents + redo.essentialsSpentCents;
+    const unexplained = redo.essentialsSpentCents + redo.excessCents - bill.amountCents;
+    // An update that counted nothing as everyday spending (the box was unticked) stays that way.
+    const room = redo.essentialsSpentCents > 0 ? essentialsBefore : 0;
+    const spent = Math.min(room, Math.max(0, unexplained));
+    essentialsCents = essentialsBefore - spent;
+    lastUpdate = {
+      ...redo,
+      essentialsSpentCents: spent,
+      excessCents: Math.max(0, unexplained - room),
+      closedBills: [...redo.closedBills, bill.name],
+    };
+  }
   return {
     ...state,
     stateVersion: state.stateVersion + 1,
@@ -293,9 +340,11 @@ export function markBillPaid(
       ...state.plan,
       balanceCents:
         state.plan.balanceCents - (alreadyDeducted ? 0 : bill.amountCents),
+      essentialsCents,
       ...countPaid(state, [bill]),
     },
     bills: closeBills(state.bills, [id]),
+    lastUpdate,
   };
 }
 export function previewBalanceUpdate(

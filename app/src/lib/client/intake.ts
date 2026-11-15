@@ -84,7 +84,8 @@ export function draftToState(current: AppState, d: InterviewDraft): AppState {
     ...base,
     stateVersion: current.stateVersion + 1,
     aiConsent: current.aiConsent,
-    importHashes: current.importHashes,
+    // The interview replaces the plan with one that was not built from a file.
+    importHashes: [],
     bills,
     plan: {
       ...base.plan,
