@@ -55,9 +55,10 @@ The first plan is free; Covered Plus is the recurring job of keeping it true. $1
 | Plus: see what changed since last time, and why | "Since last update" on the overview, from `previewBalanceUpdate` in `model.ts` |
 | Plus: save and compare what-ifs | `app/src/lib/client/scenarios.ts` and `app/src/components/WhatIfs.tsx`. Each saved what-if is re-evaluated against the plan as it is now; saving never changes the plan. Tests "saved what-ifs" in `whatifs.test.ts` |
 | Plus: a payday reminder and a recap of the period | `app/src/lib/client/reminder.ts` (a calendar file that repeats on the pay rhythm and opens the update screen). After a new period starts, "Since last update" shows the period that ended: its dates and every bill marked paid during it, whether on the bills page, with a balance update or at the move (`periodSoFar` and `endedPeriod` in `model.ts`; tests "the recap counts a bill marked paid earlier in the period…" in `whatifs.test.ts`) |
+| Coming back takes one field, a few ticks and two clicks | Measured 15 Nov on production with a script, synthetic sample CSV, desktop Chromium 1280×800, 7 runs each. First plan from a CSV: 5 clicks, 1 file, 1 field; product's own time 0.3 s. Update after paying a bill: 2 clicks, 1 tick, 1 field; 0.1 s. Payday update: 2 clicks, 3 ticks, 1 field; 0.2 s. This is the amount of work and the product's share of the time, not how long a person takes. Reproduce: `cd app && BASE_URL=https://covered-fracture.vercel.app npm run measure`; with a person doing the steps, `npm run measure -- --person` |
 | An old balance is not shown as today's answer | After 7 days, or once payday has passed, the overview holds back the number and everything computed from it (the allocation, the purchase check, what-ifs, the recap) and asks for the update first (`app/src/components/Dashboard.tsx`); checked in `loop.mjs` and `stage2.mjs`. The assistant is not held back |
 | The offer is live, and counted | Starting the next period, saving the first what-if, or running out of the 5 free cloud questions shows the Plus offer (`app/src/components/Plus.tsx`). Turning Plus on counts the browser once (`POST /api/plus`); `GET /api/plus` returns the count |
-| What is not there | Payment. Plus features are marked in the product but free during early access. A click on the offer is interest; a real purchase in a paid pilot is the proof. The 30-second update is a target, not a measurement |
+| What is not there | Payment. Plus features are marked in the product but free during early access. A click on the offer is interest; a real purchase in a paid pilot is the proof. How long people take to update is not measured |
 
 ## Market numbers in the deck
 
@@ -73,7 +74,7 @@ The first plan is free; Covered Plus is the recurring job of keeping it true. $1
 | About 89 million US adults aged 25–44 | US Census Bureau population estimates, 2024 |
 | $0.59 card fee on $10 | Stripe list price, 2.9% + 30¢ |
 | About 3¢ of AI a month | 100 questions × $0.0003, the measured OpenAI cost per task; $0 when our model answers. Worst case 60 a day, all on OpenAI: 1,800 × $0.0003 = $0.54 |
-| About 4 paid months in the base case | 1 + 0.55 ÷ (1 − 0.82) ≈ 4.1: 55% renew after month one (RevenueCat median), then an assumed 82% a month. LTV = 4 × $9.38 ≈ $38; CAC ceiling = LTV ÷ 3 ≈ $13 |
+| About 4 paid months in the base scenario (an assumption, not a measurement) | 1 + 0.55 ÷ (1 − 0.82) ≈ 4.1: 55% renew after month one (RevenueCat median), then an assumed 82% a month. LTV = 4 × $9.38 ≈ $38; CAC ceiling = LTV ÷ 3 ≈ $13 |
 | Competitor prices | PocketGuard's own pricing page; YNAB and Monarch list prices as reported in November 2026 |
 
 ## Not proven yet
