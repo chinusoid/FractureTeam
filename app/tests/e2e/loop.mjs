@@ -92,15 +92,30 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   // Payday has passed: the update starts the next period and carries everything over.
   await rewrite((s) => {
     s.plan.balanceDate = back(s.plan.balanceDate, 6);
+    s.plan.periodStartDate = s.plan.balanceDate;
     s.plan.horizonEndDate = back(s.plan.horizonEndDate, 11);
     for (const b of s.bills) b.dueDate = back(b.dueDate, 11);
   });
   await expect(page.getByTestId("update-first")).toContainText("Payday has passed");
+  // One bill is marked paid on the bills page before the move: the recap has to count it too.
+  const ending = await stored();
+  const early = ending.bills
+    .filter((x) => x.status === "confirmed" && x.dueDate <= ending.plan.horizonEndDate)
+    .reduce((a, b) => (b.amountCents > a.amountCents ? b : a));
+  await page.goto(`${baseURL}/app/bills`);
+  await page.locator(".bill-list-row").filter({ hasText: early.name }).getByRole("button", { name: "Mark paid", exact: true }).first().click();
+  await page.getByRole("button", { name: "Yes, already deducted", exact: true }).click();
+  assert.equal((await stored()).plan.periodPaidCents, early.amountCents, "a bill marked paid on the bills page is counted in the period");
+  await page.goto(`${baseURL}/app`);
   await page.getByRole("button", { name: "Update now", exact: true }).click();
   await page.getByLabel("New available balance").fill("2900");
   const before = await stored();
-  for (const b of before.bills.filter((x) => x.status === "confirmed" && x.dueDate <= before.plan.horizonEndDate))
+  const atMove = before.bills.filter((x) => x.status === "confirmed" && x.dueDate <= before.plan.horizonEndDate);
+  for (const b of atMove)
     await page.locator(".payment-checklist label", { hasText: b.name }).first().locator("input").check();
+  const paidInPeriod = early.amountCents + atMove.reduce((n, b) => n + b.amountCents, 0);
+  const dollars = (c) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: c % 100 ? 2 : 0 }).format(c / 100);
+  await expect(page.getByTestId("ended-period-paid")).toContainText(dollars(paidInPeriod));
   await expect(page.getByLabel("Everyday spending for the new period")).toHaveValue("350");
   const payday = await page.getByLabel("Next payday").inputValue();
   assert.ok(payday > new Date().toISOString().slice(0, 10), "the suggested payday is in the future");
@@ -126,7 +141,10 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   for (const name of paidNames) assert.ok(after.bills.some((b) => b.name === name && b.status === "confirmed"), `${name} repeats`);
   assert.equal(after.transactions.length, before.transactions.length);
   await expect(page.getByText("Since last update", { exact: true })).toBeVisible();
-  await expect(page.getByTestId("period-recap")).toContainText("of bills paid");
+  assert.equal(after.lastUpdate.endedPeriod.paidCents, paidInPeriod, "the recap counts bills paid before the move and at it");
+  assert.deepEqual([after.plan.periodStartDate, after.plan.periodPaidCents], [after.plan.balanceDate, 0], "the new period starts its own count");
+  assert.deepEqual([after.lastUpdate.endedPeriod.start, after.lastUpdate.endedPeriod.end], [before.plan.periodStartDate, before.plan.horizonEndDate], "the recap gives the dates of the period that ended");
+  await expect(page.getByTestId("period-recap")).toContainText(`${dollars(paidInPeriod)} of bills paid`);
   await expect(page.getByRole("button", { name: "Remove what-if: Sneakers, $400" })).toBeVisible();
   await page.getByRole("button", { name: "Remove what-if: Sneakers, $400" }).click();
   await expect(rows).toHaveCount(2);
@@ -136,6 +154,6 @@ export async function runLoopScenario(page, baseURL, width, height, shots) {
   return {
     viewport: `${width}×${height}`,
     loop: "passed",
-    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap", "no overflow", "no browser exceptions"],
+    checks: ["Plus offer before the first save", "three what-ifs saved and kept", "what-ifs follow the plan", "update first on an old balance", "Plus offer before the plan is carried over", "next period carries bills, reserve, settings and what-ifs", "period recap counts bills paid before the move and at it", "no overflow", "no browser exceptions"],
   };
 }

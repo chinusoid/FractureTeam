@@ -107,6 +107,9 @@ export function SetupScreen() {
         balanceDate: today(),
         essentialsCents,
         everydayPerPeriodCents: essentialsCents,
+        // A plan built here starts its own pay period, with nothing paid in it yet.
+        periodStartDate: today(),
+        periodPaidCents: 0,
         reserveCents: reserve,
         horizonEndDate: end,
         confirmed: true,
